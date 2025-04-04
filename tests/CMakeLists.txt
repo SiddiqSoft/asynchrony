@@ -34,7 +34,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
                     ${PROJECT_SOURCE_DIR}/tests/simple_worker.cpp)
 
     # Dependencies (specifically and only for the tests program)
-    cpmaddpackage("gh:google/googletest#v1.15.2")
+    cpmaddpackage("gh:google/googletest#v1.16.0")
     target_link_libraries(${TESTPROJ} PRIVATE GTest::gtest_main)
     cpmaddpackage("gh:nlohmann/json#v3.11.3")
     target_link_libraries(${TESTPROJ} PRIVATE nlohmann_json::nlohmann_json)

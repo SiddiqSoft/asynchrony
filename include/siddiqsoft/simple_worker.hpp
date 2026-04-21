@@ -122,7 +122,7 @@ namespace siddiqsoft
             return {{"_typver", "siddiqsoft.asynchrony-lib.simple_worker/0.10"},
                     {"dequeSize", items.size()},
                     //{"semaphoreMax", signal.max()}, // conflicts with windows headers :-(
-                    {"queueCounter", queueCounter},
+                    {"queueCounter", queueCounter.load()},
                     {"threadPriority", Pri},
                     {"outstandingCallback", outstandingCallback.load()},
                     {"waitInterval", signalWaitInterval.count()}};
@@ -133,7 +133,7 @@ namespace siddiqsoft
         /// @brief Check the outstanding callback
         std::atomic_uint outstandingCallback {0};
         /// @brief Track number of times we've got items added into our queue
-        uint64_t queueCounter {0};
+        std::atomic_uint64_t queueCounter {0};
         /// @brief The internal queue for this worker.
         std::deque<T> items {};
         /// @brief Mutex to protect the items
@@ -178,7 +178,7 @@ namespace siddiqsoft
         /// @return An optional which may contain the item or empty (most of the time it'll be empty)
         std::optional<T> getNextItem(std::chrono::milliseconds& delta)
         {
-            if (signal.try_acquire_for(signalWaitInterval)) {
+            if (signal.try_acquire_for(delta)) {
                 // Guard against empty signals which are terminating indicator
                 if (std::unique_lock<std::shared_mutex> myWriterLock(items_mutex); !items.empty()) {
                     RunOnEnd onScopeExit([&]() { items.pop_front(); });

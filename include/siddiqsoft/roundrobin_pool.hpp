@@ -83,10 +83,10 @@ namespace siddiqsoft
         /// (one per thread) while we may have any number of producers.
         void queue(T&& item)
         {
-            // Increment counter *before* we invoke nextWorkerIndex..
+            // Add into the thread's internal queue using round-robin index
+            workers.at(nextWorkerIndex()).queue(std::move(item));
+            // Increment counter *after* we use it for index calculation
             ++queueCounter;
-            // Add into the thread's internal queue
-            workers.at(nextWorkerIndex()).queue(std::forward<T>(item));
         }
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)

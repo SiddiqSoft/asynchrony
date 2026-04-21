@@ -40,6 +40,7 @@
 #include <string>
 #include <thread>
 #include <barrier>
+#include <atomic>
 
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/simple_pool.hpp"
@@ -174,4 +175,274 @@ TEST(simple_pool, test3)
     std::this_thread::sleep_for(std::chrono::milliseconds(1500));
     EXPECT_EQ(passTest.load(), std::thread::hardware_concurrency());
     std::cerr << nlohmann::json(workers).dump() << std::endl;
+}
+
+
+/// @brief Test simple_pool with a fixed small pool size
+TEST(simple_pool, fixed_pool_size)
+{
+    constexpr uint16_t POOL_SIZE  = 2;
+    constexpr unsigned ITEM_COUNT = 20;
+    std::atomic_uint   passTest {0};
+
+    siddiqsoft::simple_pool<nlohmann::json, POOL_SIZE> workers {[&passTest](auto&& item) {
+        passTest++;
+    }};
+
+    for (unsigned i = 0; i < ITEM_COUNT; i++) {
+        workers.queue({{"index", i}});
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    EXPECT_EQ(ITEM_COUNT, passTest.load());
+}
+
+
+/// @brief Test toJson returns expected fields
+TEST(simple_pool, toJson_fields)
+{
+    siddiqsoft::simple_pool<nlohmann::json, 2> workers {[](auto&&) {}};
+
+    workers.queue({{"test", true}});
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    auto j = workers.toJson();
+    EXPECT_TRUE(j.contains("_typver"));
+    EXPECT_TRUE(j.contains("workersSize"));
+    EXPECT_TRUE(j.contains("dequeSize"));
+    EXPECT_TRUE(j.contains("queueCounter"));
+    EXPECT_TRUE(j.contains("waitInterval"));
+    EXPECT_EQ(2u, j["workersSize"].get<unsigned>());
+    EXPECT_EQ(1u, j["queueCounter"].get<uint64_t>());
+}
+
+
+/// @brief Test that destroying the pool with no items queued is safe
+TEST(simple_pool, destroy_empty)
+{
+    using pool_t = siddiqsoft::simple_pool<nlohmann::json, 2>;
+    EXPECT_NO_THROW({
+        pool_t workers {[](auto&&) {}};
+        // Destructor fires immediately — should not hang or crash
+    });
+}
+
+
+/// @brief Test that destroying the pool with pending items is safe
+TEST(simple_pool, destroy_with_pending)
+{
+    using pool_t = siddiqsoft::simple_pool<nlohmann::json, 2>;
+    EXPECT_NO_THROW({
+        pool_t workers {[](auto&&) {
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+        }};
+
+        for (unsigned i = 0; i < 10; i++) {
+            workers.queue({{"index", i}});
+        }
+        // Destructor fires — should not hang indefinitely or crash
+    });
+}
+
+
+/// @brief Test with string type items
+TEST(simple_pool, string_type)
+{
+    constexpr unsigned ITEM_COUNT = 30;
+    std::atomic_uint   passTest {0};
+
+    siddiqsoft::simple_pool<std::string, 4> workers {[&passTest](auto&& item) {
+        EXPECT_FALSE(item.empty());
+        passTest++;
+    }};
+
+    for (unsigned i = 0; i < ITEM_COUNT; i++) {
+        workers.queue(std::format("item-{}", i));
+    }
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    EXPECT_EQ(ITEM_COUNT, passTest.load());
+}
+
+
+/// @brief Verify the pool continues processing after callbacks throw exceptions.
+/// All pool threads catch exceptions internally; items that don't throw should
+/// still be processed even when interleaved with throwing items.
+TEST(simple_pool, callback_exception_resilience)
+{
+    constexpr unsigned ITEM_COUNT = 40;
+    std::atomic_uint   processedCount {0};
+    std::atomic_uint   exceptionCount {0};
+
+    siddiqsoft::simple_pool<nlohmann::json, 4> workers {[&](auto&& item) {
+        unsigned idx = item["index"].template get<unsigned>();
+        if (idx % 5 == 0) {
+            exceptionCount++;
+            throw std::runtime_error("deliberate pool exception");
+        }
+        processedCount++;
+    }};
+
+    for (unsigned i = 0; i < ITEM_COUNT; i++) {
+        workers.queue({{"index", i}});
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    // Indices 0,5,10,15,20,25,30,35 throw => 8 exceptions
+    // Remaining 32 items should be processed
+    EXPECT_EQ(8u, exceptionCount.load());
+    EXPECT_EQ(ITEM_COUNT - 8u, processedCount.load());
+}
+
+
+/// @brief Stress test: rapidly create and destroy pools in a tight loop.
+/// Validates that multiple jthread lifecycle management is robust under
+/// rapid construction/destruction cycles.
+TEST(simple_pool, rapid_create_destroy_cycles)
+{
+    using pool_t = siddiqsoft::simple_pool<std::string, 4>;
+    constexpr unsigned CYCLES = 30;
+
+    EXPECT_NO_THROW({
+        for (unsigned c = 0; c < CYCLES; c++) {
+            pool_t workers {[](auto&&) {}};
+            workers.queue(std::string("ping"));
+            // Immediate destruction — no sleep
+        }
+    });
+}
+
+
+/// @brief High-contention concurrent queue flooding from many producer threads
+/// into a pool with multiple consumer threads. Uses a barrier for maximum contention.
+TEST(simple_pool, concurrent_producer_flood)
+{
+    constexpr int  PRODUCER_COUNT     = 8;
+    constexpr int  ITEMS_PER_PRODUCER = 100;
+    constexpr int  TOTAL_ITEMS        = PRODUCER_COUNT * ITEMS_PER_PRODUCER;
+    constexpr int  POOL_SIZE          = 4;
+    std::atomic_uint processedCount {0};
+
+    siddiqsoft::simple_pool<nlohmann::json, POOL_SIZE> workers {[&](auto&&) {
+        processedCount++;
+    }};
+
+    std::barrier              startBarrier {PRODUCER_COUNT};
+    std::vector<std::jthread> producers;
+    producers.reserve(PRODUCER_COUNT);
+
+    for (int p = 0; p < PRODUCER_COUNT; p++) {
+        producers.emplace_back([&, p]() {
+            startBarrier.arrive_and_wait();
+            for (int i = 0; i < ITEMS_PER_PRODUCER; i++) {
+                workers.queue({{"producer", p}, {"item", i}});
+            }
+        });
+    }
+
+    // Wait for producers to finish
+    producers.clear();
+    // Wait for pool to drain
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+
+    EXPECT_EQ(static_cast<unsigned>(TOTAL_ITEMS), processedCount.load());
+}
+
+
+/// @brief Burst-queue a large number of items then immediately destroy the pool.
+/// Validates that the destructor properly shuts down all threads even when
+/// the deque is full and the semaphore has a large count.
+TEST(simple_pool, burst_queue_then_destroy)
+{
+    using pool_t = siddiqsoft::simple_pool<std::string, 4>;
+    constexpr unsigned BURST_SIZE = 500;
+    std::atomic_uint   processedCount {0};
+
+    EXPECT_NO_THROW({
+        pool_t workers {[&](auto&&) {
+            processedCount++;
+        }};
+
+        for (unsigned i = 0; i < BURST_SIZE; i++) {
+            workers.queue(std::format("burst-{}", i));
+        }
+        // Immediate destruction
+    });
+
+    EXPECT_LE(processedCount.load(), BURST_SIZE);
+}
+
+
+/// @brief Test that a slow callback on one thread doesn't block other threads
+/// in the pool from processing their items.
+TEST(simple_pool, slow_callback_doesnt_block_others)
+{
+    std::atomic_uint fastCount {0};
+    std::atomic_bool slowStarted {false};
+
+    siddiqsoft::simple_pool<nlohmann::json, 4> workers {[&](auto&& item) {
+        if (item.contains("slow") && item["slow"].template get<bool>()) {
+            slowStarted = true;
+            std::this_thread::sleep_for(std::chrono::seconds(2));
+        } else {
+            fastCount++;
+        }
+    }};
+
+    // Queue one slow item first
+    workers.queue({{"slow", true}});
+    // Then queue many fast items
+    for (unsigned i = 0; i < 20; i++) {
+        workers.queue({{"slow", false}, {"index", i}});
+    }
+
+    // Wait enough for fast items but not for the slow one to finish
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    // The slow item should have started, and the fast items should have been
+    // processed by other threads in the pool
+    EXPECT_TRUE(slowStarted.load());
+    EXPECT_EQ(20u, fastCount.load());
+}
+
+
+/// @brief Pool that never receives any items should shut down cleanly.
+TEST(simple_pool, idle_pool_clean_shutdown)
+{
+    using pool_t = siddiqsoft::simple_pool<std::string, 4>;
+    EXPECT_NO_THROW({
+        pool_t workers {[](auto&&) {
+            FAIL() << "Callback should never be invoked on an idle pool";
+        }};
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    });
+}
+
+
+/// @brief Test queuing from within the callback (re-entrant queue into the pool).
+/// The callback runs outside the items_mutex lock, so re-entrant queuing
+/// should not deadlock.
+TEST(simple_pool, reentrant_queue_from_callback)
+{
+    std::atomic_uint processedCount {0};
+    constexpr unsigned INITIAL_ITEMS = 10;
+    constexpr unsigned EXPECTED_TOTAL = INITIAL_ITEMS * 2;
+
+    siddiqsoft::simple_pool<nlohmann::json, 4>* poolPtr = nullptr;
+
+    siddiqsoft::simple_pool<nlohmann::json, 4> workers {[&](auto&& item) {
+        processedCount++;
+        if (item.contains("spawn") && item["spawn"].template get<bool>()) {
+            poolPtr->queue({{"spawn", false}, {"child_of", item["index"]}});
+        }
+    }};
+    poolPtr = &workers;
+
+    for (unsigned i = 0; i < INITIAL_ITEMS; i++) {
+        workers.queue({{"index", i}, {"spawn", true}});
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    EXPECT_EQ(EXPECTED_TOTAL, processedCount.load());
 }

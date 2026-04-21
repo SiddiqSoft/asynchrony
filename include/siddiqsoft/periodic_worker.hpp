@@ -112,7 +112,7 @@ namespace siddiqsoft
             return {{"_typver"s, "siddiqsoft.asynchrony-lib.periodic_worker/0.10"s},
                     {"threadName", threadName},
                     {"outstandingCallbacks", outstandingCallback.load()},
-                    {"invokeCounter"s, invokeCounter},
+                    {"invokeCounter"s, invokeCounter.load()},
                     {"threadPriority"s, Pri},
                     {"waitInterval"s, invokePeriod.count()}};
         }
@@ -125,7 +125,7 @@ namespace siddiqsoft
         /// @brief Internal name of the worker thread (when supported the thread name displays in the debugger)
         std::string threadName {"anonymous-periodic-worker"};
         /// @brief Track number of times we've invoked the callback
-        uint64_t invokeCounter {0};
+        std::atomic_uint64_t invokeCounter {0};
         /// @brief Semaphore with initial max of 128 items (backlog)
         std::counting_semaphore<1> signal {0};
         /// @brief This is the interval we wait on the signal. It starts off with 500ms and when the thread is to shutdown, it is

@@ -117,7 +117,7 @@ namespace siddiqsoft
             {
                 std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
 
-                items.emplace_back(std::forward<T>(item));
+                items.emplace_back(std::move(item));
             }
             signal.release();
             ++queueCounter;
@@ -164,7 +164,7 @@ namespace siddiqsoft
         /// @return An optional which may contain the item or empty (most of the time it'll be empty)
         std::optional<T> getNextItem(std::chrono::milliseconds& delta)
         {
-            if (signal.try_acquire_for(signalWaitInterval)) {
+            if (signal.try_acquire_for(delta)) {
                 // Guard against empty signals which are terminating indicator
                 if (std::unique_lock<std::shared_mutex> myWriterLock(items_mutex); !items.empty()) {
                     siddiqsoft::RunOnEnd onCleanup([&]() { items.pop_front(); });

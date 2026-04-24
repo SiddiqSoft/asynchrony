@@ -378,3 +378,66 @@ TEST(simple_worker, idle_worker_clean_shutdown)
         // Destructor fires — should not hang
     });
 }
+
+
+/// @brief Test the ADL to_json free function for simple_worker.
+/// This exercises the nlohmann::json serialization path via `nlohmann::json j = worker;`
+/// which invokes the free `to_json(json&, const simple_worker<T>&)` function.
+TEST(simple_worker, adl_to_json)
+{
+    siddiqsoft::simple_worker<nlohmann::json> worker {[](auto&&) {}};
+
+    worker.queue({{"test", "adl"}});
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    // This uses the ADL to_json free function, not the member toJson()
+    nlohmann::json j;
+    siddiqsoft::to_json(j, worker);
+    EXPECT_TRUE(j.contains("_typver"));
+    EXPECT_TRUE(j.contains("queueCounter"));
+    EXPECT_EQ(1u, j["queueCounter"].get<uint64_t>());
+    std::cerr << "ADL to_json result: " << j.dump() << std::endl;
+}
+
+
+/// @brief Test the move constructor of simple_worker.
+/// The move constructor is used internally when building vectors of workers
+/// (e.g., in roundrobin_pool). This test exercises it directly by std::move
+/// from an lvalue, which prevents copy elision.
+TEST(simple_worker, move_constructor)
+{
+    std::atomic_uint processedCount {0};
+
+    siddiqsoft::simple_worker<nlohmann::json> original {[&](auto&& item) {
+        processedCount++;
+    }};
+
+    // Explicit std::move from lvalue — copy elision cannot apply here
+    siddiqsoft::simple_worker<nlohmann::json> worker {std::move(original)};
+
+    worker.queue({{"test", "move"}});
+    worker.queue({{"test", "move2"}});
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    EXPECT_EQ(2u, processedCount.load());
+}
+
+
+/// @brief Test the move constructor with string type to cover another template instantiation.
+TEST(simple_worker, move_constructor_string)
+{
+    std::atomic_uint processedCount {0};
+
+    siddiqsoft::simple_worker<std::string> original {[&](auto&& item) {
+        processedCount++;
+    }};
+
+    // Explicit std::move from lvalue — copy elision cannot apply here
+    siddiqsoft::simple_worker<std::string> worker {std::move(original)};
+
+    worker.queue(std::string("hello"));
+    worker.queue(std::string("world"));
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    EXPECT_EQ(2u, processedCount.load());
+}

@@ -171,7 +171,7 @@ namespace siddiqsoft
     /// @tparam T base typename
     /// @param dest destination json object
     /// @param src source object
-    template <uint16_t Pri = 0>
+    template <int Pri = 0>
     static void to_json(nlohmann::json& dest, const siddiqsoft::periodic_worker<Pri>& src)
     {
         dest = src.toJson();

@@ -361,6 +361,28 @@ TEST(roundrobin_pool, idle_pool_clean_shutdown)
 }
 
 
+/// @brief Test the ADL to_json free function for roundrobin_pool.
+/// This exercises the nlohmann::json serialization path via `nlohmann::json j = pool;`
+/// which invokes the free `to_json(json&, const roundrobin_pool<T, N>&)` function.
+TEST(roundrobin_pool, adl_to_json)
+{
+    siddiqsoft::roundrobin_pool<nlohmann::json, 2> workers {[](auto&&) {}};
+
+    workers.queue({{"test", "adl"}});
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    // This uses the to_json free function, not the member toJson()
+    nlohmann::json j;
+    siddiqsoft::to_json(j, workers);
+    EXPECT_TRUE(j.contains("_typver"));
+    EXPECT_TRUE(j.contains("workersSize"));
+    EXPECT_TRUE(j.contains("queueCounter"));
+    EXPECT_EQ(2u, j["workersSize"].get<unsigned>());
+    EXPECT_EQ(1u, j["queueCounter"].get<uint64_t>());
+    std::cerr << "to_json result: " << j.dump() << std::endl;
+}
+
+
 /// @brief Test queuing from within the callback (re-entrant queue).
 /// Each simple_worker's callback runs outside its items_mutex lock, so
 /// re-entrant queuing into the parent roundrobin_pool should not deadlock.

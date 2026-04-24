@@ -259,6 +259,28 @@ TEST(periodic_worker, very_short_interval)
 }
 
 
+/// @brief Test the ADL to_json free function for periodic_worker.
+/// This exercises the nlohmann::json serialization path via `nlohmann::json(worker)`
+/// which invokes the free `to_json(json&, const periodic_worker<Pri>&)` function.
+TEST(periodic_worker, adl_to_json)
+{
+    std::atomic_uint passTest {0};
+
+    siddiqsoft::periodic_worker worker {[&]() { passTest++; }, std::chrono::milliseconds(50)};
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    EXPECT_GT(passTest.load(), 0u);
+
+    // This uses the ADL to_json free function, not the member toJson()
+    nlohmann::json j;
+    siddiqsoft::to_json(j, worker);
+    EXPECT_TRUE(j.contains("_typver"));
+    EXPECT_TRUE(j.contains("invokeCounter"));
+    EXPECT_GT(j["invokeCounter"].get<uint64_t>(), 0u);
+    std::cerr << "ADL to_json result: " << j.dump() << std::endl;
+}
+
+
 /// @brief Test that the periodic worker's outstandingCallback counter is accurate.
 /// While a slow callback is running, outstandingCallback should be 1.
 TEST(periodic_worker, outstanding_callback_tracking)

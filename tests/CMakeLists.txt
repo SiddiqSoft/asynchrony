@@ -36,7 +36,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
     # Dependencies (specifically and only for the tests program)
     cpmaddpackage("gh:google/googletest#v1.17.0")
     target_link_libraries(${TESTPROJ} PRIVATE GTest::gtest_main)
-    cpmaddpackage("gh:nlohmann/json#v3.11.3")
+    cpmaddpackage("gh:nlohmann/json#v3.12.0")
     target_link_libraries(${TESTPROJ} PRIVATE nlohmann_json::nlohmann_json)
 
     # Dependencies (specified by the library and to its clients)

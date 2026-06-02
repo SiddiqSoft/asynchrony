@@ -11,16 +11,14 @@ asynchrony : Add asynchrony to your apps
 - We needed to add asynchrony to our code.
 - The code here is a set of helpers that utilize the underlying deque, semaphore, mutex features found in std.
 - Be instructive while providing functional code
-- Use only C++20 standard code: jthread, deque, semaphore, barriers and latch
+- Use only C++23 standard code: jthread, deque, semaphore, barriers and latch
 - Depends on RunOnEnd for encapsulating cleanup code on destructor.
 
 # Usage
 
-> Requires C++20 support!
+> Requires C++23 support!
 >
 > Specifically we require `jthread` and `stop_token` support which is unfortunately not available in the Apple Clang 16 version. This library works with gcc 14+ or MSVC 17+ or Clang 18+.
-
-Refer to the [documentation](https://siddiqsoft.github.io/asynchrony/) for details.
 
 The library uses concepts to ensure the type `T` meets move construct requirements.
 

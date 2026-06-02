@@ -84,9 +84,10 @@ namespace siddiqsoft
         void queue(T&& item)
         {
             // Add into the thread's internal queue using round-robin index
-            workers.at(nextWorkerIndex()).queue(std::move(item));
-            // Increment counter *after* we use it for index calculation
-            ++queueCounter;
+            // Atomic fetch_add to ensures each thread gets a unique index
+            // and cast to size_t to avoid type mismatch issues
+            size_t idx = nextWorkerIndex();
+            workers.at(idx).queue(std::move(item));
         }
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)
@@ -119,9 +120,12 @@ namespace siddiqsoft
         /// @brief Calculates the index into the workers thread using modulo and the running counter of the number of items pushed
         /// into the queue.
         /// @return size_t index into the workers array
-        constexpr size_t nextWorkerIndex()
+        /// Atomic fetch_add for thread-safe increment, remove constexpr qualifier,
+        /// and cast to size_t to avoid type mismatch on 32-bit systems
+        size_t nextWorkerIndex()
         {
-            return workersSize == 0 ? 0 : queueCounter.load() % workersSize;
+            if (workersSize == 0) return 0;
+            return static_cast<size_t>(queueCounter.fetch_add(1, std::memory_order_relaxed) % workersSize);
         }
     };
 

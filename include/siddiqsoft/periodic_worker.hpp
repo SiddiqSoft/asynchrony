@@ -92,7 +92,6 @@ namespace siddiqsoft
                         std::chrono::microseconds interval,
                         std::string         name = {"anonymous-periodic-worker"})
             : callback(std::move(c))
-            , outstandingCallback(0)
             , invokePeriod(interval)
             , threadName(std::move(name))
         {
@@ -130,7 +129,8 @@ namespace siddiqsoft
         std::counting_semaphore<1> signal {0};
         /// @brief This is the interval we wait on the signal. It starts off with 500ms and when the thread is to shutdown, it is
         /// set to 1ms.
-        std::chrono::microseconds invokePeriod {};
+        /// Initialize to a sensible default (1500ms) to avoid confusion about zero initialization
+        std::chrono::microseconds invokePeriod {std::chrono::milliseconds(1500)};
         /// @brief The callback is invoked whenever there is an item in the queue
         std::function<void()> callback;
         /// @brief Processor thread

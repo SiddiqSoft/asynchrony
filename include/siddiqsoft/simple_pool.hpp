@@ -118,9 +118,10 @@ namespace siddiqsoft
                 std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
 
                 items.emplace_back(std::move(item));
+                // Move queueCounter increment inside the lock to ensure thread-safe updates
+                ++queueCounter;
             }
             signal.release();
-            ++queueCounter;
         }
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)

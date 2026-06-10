@@ -5,6 +5,9 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
     set( CMAKE_CXX_STANDARD_REQUIRED On)
     set( CMAKE_CXX_EXTENSIONS Off)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+    set(CMAKE_ENABLE_C_CLANG_TIDY ON)
+    set(CMAKE_ENABLE_CXX_CLANG_TIDY ON)
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     
     add_executable(${TESTPROJ})
 
@@ -13,26 +16,57 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
                             PRIVATE
                             $<$<CXX_COMPILER_ID:MSVC>:/std:c++latest> )
 
-    # ASAN and Coverage only for Debug builds on Linux (not supported on Apple Xcode)
-    if(((CMAKE_CXX_COMPILER_ID MATCHES [Cc][Ll][Aa][Nn][Gg]) 
-        #OR (CMAKE_CXX_COMPILER_ID MATCHES [Gg][Nn][Uu])
-        )
-        AND (CMAKE_BUILD_TYPE MATCHES [Dd][Ee][Bb][Uu][Gg])
-        #AND NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin"
-        )
-        # Enabling the sanitizer/leak on GCC causes failures whereas it works on Clang(non-XCODE).
-        message(STATUS "  >> Using sanitizers for leak and address on ${CMAKE_CXX_COMPILER_ID} system ${CMAKE_SYSTEM_NAME} - ${CMAKE_SYSTEM_PROCESSOR}...")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,leak -fno-omit-frame-pointer")
-        target_link_libraries(${TESTPROJ} PRIVATE -fsanitize=address,leak)
-        #message(STATUS "  >> Enable instrumentation for code coverage")
-        #target_compile_options(${TESTPROJ} PRIVATE -coverage -O0 -g)
-        #target_link_options(${TESTPROJ} PRIVATE -coverage)
+    # Check if mold is available on the system
+    find_program(MOLD_LINKER mold)
+
+    if(MOLD_LINKER)
+        message(STATUS "  >> Found mold linker, using it for build.")
+        # Apply mold as the linker for executables and shared libraries
+        add_link_options("-fuse-ld=mold")
+    else()
+        message(STATUS "  >> mold not found, falling back to default linker.")
     endif()
+
+    find_program(CLANG_TIDY_EXE NAMES "clang-tidy")
+
+    if(CLANG_TIDY_EXE AND CMAKE_BUILD_TYPE MATCHES [Dd][Ee][Bb][Uu][Gg])
+        # This runs the analyzer with all default checks enabled
+        message(STATUS "  >> Using clang-tidy checks=*")
+        set(CMAKE_CXX_CLANG_TIDY ${CLANG_TIDY_EXE} "-checks=*")
+    endif()
+
+    # UndefinedBehaviorSanitizer is not available on Windows
+    if( CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" )
+        message(STATUS "  >> UBSAN is not supported on Windows/MSVC, skipping..")
+        message(STATUS "  >> Coverage flags is not supported on Windows/MSVC, skipping..")
+    else()
+        set(ASAN_FLAGS "-fsanitize=address")
+        set(UBSAN_FLAGS "-fsanitize=undefined")
+        # Coverage Flags is not available on Windows
+        set(COVERAGE_FLAGS "-coverage")
+        set(OPTIMIZE_FLAGS "-O0")
+        set(OTHER_FLAGS "-g")
+    endif()
+
+    # LeakSanitizer is not available on Windows and Darwin/macOS with AppleClang
+    if( CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang" OR CMAKE_SYSTEM_NAME STREQUAL "Windows" )
+        message(STATUS "  >> LSAN is not supported on Windows/MSVC and AppleClang, skipping..")
+    else()
+        set(LSAN_FLAGS "-fsanitize=leak")
+    endif()
+
+    message(STATUS "  >> Enable compile options for ${TESTPROJ} -- ${OPTIMIZE_FLAGS} ${OTHER_FLAGS} ${COVERAGE_FLAGS} ${ASAN_FLAGS} ${LSAN_FLAGS} ${UBSAN_FLAGS}")
+    target_compile_options(${TESTPROJ} PRIVATE ${COVERAGE_FLAGS} ${OPTIMIZE_FLAGS} ${OTHER_FLAGS} ${ASAN_FLAGS} ${LSAN_FLAGS} ${UBSAN_FLAGS})
+    target_link_options(${TESTPROJ} PRIVATE ${COVERAGE_FLAGS} ${OPTIMIZE_FLAGS} ${OTHER_FLAGS} ${ASAN_FLAGS} ${LSAN_FLAGS} ${UBSAN_FLAGS})
 
     if( CMAKE_BUILD_TYPE MATCHES [Dd][Ee][Bb][Uu][Gg])
         message(STATUS "  >> Setting DEBUG macro..")
         target_compile_definitions(${TESTPROJ} PRIVATE DEBUG=1 _DEBUG=1)
     endif()
+
+    # Our tests depend on this preprocessor definition during CI/test mode to enable
+    # access to protected members.
+    target_compile_definitions(${TESTPROJ} PRIVATE ${PROJECT_NAME}_TESTING_MODE=1)
 
     # On macOS with Homebrew LLVM, the CURL::libcurl imported target adds the Xcode SDK
     # include path (-isystem .../MacOSX.sdk/usr/include) which conflicts with LLVM's own
@@ -50,14 +84,9 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
         endif()
     endif()
 
-    # Our tests depend on this preprocessor definition during CI/test mode to enable
-    # access to protected members.
-    target_compile_definitions(${TESTPROJ} PRIVATE ${PROJECT_NAME}_TESTING_MODE=1)
-
     # Dependencies
     CPMAddPackage("gh:google/googletest#v1.17.0")
     CPMAddPackage("gh:nlohmann/json#v3.12.0")
-    target_link_libraries(${PROJECT_NAME} INTERFACE nlohmann_json::nlohmann_json)
 
     target_sources( ${TESTPROJ}
                     PRIVATE

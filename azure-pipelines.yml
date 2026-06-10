@@ -26,13 +26,12 @@ trigger:
       - main
       - master
       - development
-      - develop
+      - devel
       - release/*
   paths:
     exclude:
       - README.md
       - .azure/*
-      - .github/workflows/*
       - azure-pipelines.yml # Avoids recursive triggers when modifying the pipeline itself
 pr:
   branches:
@@ -73,7 +72,7 @@ parameters:
 
   - name: Compilers_Linux
     type: stringList
-    default: [ Clang, GCC ]
+    default: [ Clang ]
     values: [ Clang, GCC ]
     displayName: "Linux compilers to build (Clang, GCC)"
 

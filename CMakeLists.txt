@@ -42,6 +42,12 @@ target_include_directories(${PROJECT_NAME}
 # Compile features and options
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_23)
 
+# Install natvis file for Visual Studio debugger visualization
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/SiddiqSoft.asynchrony.natvis
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
+        COMPONENT natvis
+        OPTIONAL)
+
 # ____________________________________
 # Dependencies
 # Here we explicitly declare that we depend on the nlohmann_json package and that

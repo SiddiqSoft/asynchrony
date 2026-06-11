@@ -6,7 +6,7 @@
 #   - GenProcessInfo_BUILD_TESTS=ON
 #   - CI_BUILDID must be set to the gitversion
 # 
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.31)
 
 # Version detection must precede project() declaration
 # Figures out ${CURRENT_PROJECT_VERSION} and brings in CPM module

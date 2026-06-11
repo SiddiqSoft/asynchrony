@@ -110,8 +110,8 @@ namespace siddiqsoft
 
             return {{"_typver"s, "siddiqsoft.asynchrony-lib.periodic_worker/0.10"s},
                     {"threadName", threadName},
-                    {"outstandingCallbacks", outstandingCallback.load()},
-                    {"invokeCounter"s, invokeCounter.load()},
+                    {"outstandingCallbacks", outstandingCallback.load(std::memory_order_acquire)},
+                    {"invokeCounter"s, invokeCounter.load(std::memory_order_acquire)},
                     {"threadPriority"s, Pri},
                     {"waitInterval"s, invokePeriod.count()}};
         }
@@ -119,7 +119,7 @@ namespace siddiqsoft
 
     private:
         /// @brief Tracks the outstanding callback invocations so we can ensure that they are completed
-        ///        neatly prior to pool shutdown.
+        ///        neatly prior to pool shutdown. Uses acquire/release semantics for proper synchronization.
         std::atomic_uint outstandingCallback {0};
         /// @brief Internal name of the worker thread (when supported the thread name displays in the debugger)
         std::string threadName {"anonymous-periodic-worker"};
@@ -153,11 +153,20 @@ namespace siddiqsoft
                     auto _ = signal.try_acquire_for(invokePeriod);
 
                     if (!st.stop_requested()) {
-                        // Delegate to the callback outside the lock
-                        ++outstandingCallback;
-                        callback();
-                        invokeCounter++;
-                        --outstandingCallback;
+                        // Increment outstanding callback with acquire semantics
+                        outstandingCallback.fetch_add(1, std::memory_order_acquire);
+                        try {
+                            // Delegate to the callback outside the lock
+                            callback();
+                            invokeCounter.fetch_add(1, std::memory_order_release);
+                        }
+                        catch (...) {
+                            // Ensure we decrement even if callback throws
+                            outstandingCallback.fetch_sub(1, std::memory_order_release);
+                            throw;
+                        }
+                        // Decrement outstanding callback with release semantics
+                        outstandingCallback.fetch_sub(1, std::memory_order_release);
                     }
                 }
                 catch (...) {

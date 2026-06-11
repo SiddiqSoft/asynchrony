@@ -105,7 +105,7 @@ namespace siddiqsoft
                 std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
 
                 items.emplace_back(std::move(item));
-                queueCounter++;
+                queueCounter.fetch_add(1, std::memory_order_release);
             }
             // Signal outside the lock and after adding the item.
             signal.release();
@@ -122,7 +122,7 @@ namespace siddiqsoft
             return {{"_typver", "siddiqsoft.asynchrony-lib.simple_worker/0.10"},
                     {"dequeSize", items.size()},
                     //{"semaphoreMax", signal.max()}, // conflicts with windows headers :-(
-                    {"queueCounter", queueCounter.load()},
+                    {"queueCounter", queueCounter.load(std::memory_order_acquire)},
                     {"threadPriority", Pri},
                     {"outstandingCallback", outstandingCallback.load()},
                     {"waitInterval", signalWaitInterval.count()}};

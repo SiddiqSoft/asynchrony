@@ -118,8 +118,8 @@ namespace siddiqsoft
                 std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
 
                 items.emplace_back(std::move(item));
-                // Move queueCounter increment inside the lock to ensure thread-safe updates
-                ++queueCounter;
+                // Use atomic fetch_add with release semantics to ensure thread-safe updates
+                queueCounter.fetch_add(1, std::memory_order_release);
             }
             signal.release();
         }
@@ -135,7 +135,7 @@ namespace siddiqsoft
             return nlohmann::json {{"_typver", "siddiqsoft.asynchrony-lib.simple_pool/0.10"},
                                    {"workersSize", workers.size()},
                                    {"dequeSize", items.size()},
-                                   {"queueCounter", queueCounter.load()},
+                                   {"queueCounter", queueCounter.load(std::memory_order_acquire)},
                                    {"waitInterval", signalWaitInterval.count()}};
         }
 #endif

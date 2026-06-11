@@ -88,6 +88,8 @@ namespace siddiqsoft
             // and cast to size_t to avoid type mismatch issues
             size_t idx = nextWorkerIndex();
             workers.at(idx).queue(std::move(item));
+            // Increment the queue counter with release semantics for visibility
+            queueCounter.fetch_add(1, std::memory_order_release);
         }
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)
@@ -98,7 +100,7 @@ namespace siddiqsoft
         {
             return {{"_typver", "siddiqsoft.asynchrony-lib.roundrobin_pool/0.10"},
                     {"workersSize", workersSize},
-                    {"queueCounter", queueCounter.load()}};
+                    {"queueCounter", queueCounter.load(std::memory_order_acquire)}};
         }
 #endif
 
@@ -125,7 +127,7 @@ namespace siddiqsoft
         size_t nextWorkerIndex()
         {
             if (workersSize == 0) return 0;
-            return static_cast<size_t>(queueCounter.fetch_add(1, std::memory_order_relaxed) % workersSize);
+            return static_cast<size_t>(queueCounter.load(std::memory_order_relaxed) % workersSize);
         }
     };
 

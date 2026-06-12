@@ -632,6 +632,9 @@ TEST(callback_lockup, periodic_worker_indefinite_lockup_cleanup)
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
         // Destructor should clean up even with indefinite lockup
+        // TODO: This test tends to lockup the build servers and we should
+        // exclude it from the CI tests and instead ust it only manually.
+        std::println(std::cerr, "WE SHOULD be destroying periodic_worker while locked up...");
     });
 
     EXPECT_EQ(1u, invokeCount.load());

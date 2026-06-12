@@ -33,6 +33,7 @@
  */
 
 #pragma once
+#include <pthread.h>
 #ifndef PERIODIC_WORKER_HPP
 #define PERIODIC_WORKER_HPP
 
@@ -73,17 +74,46 @@ namespace siddiqsoft
         /// signal a release then the timeout might be quite large!
         ~periodic_worker()
         {
+#if defined(DEBUG) || defined(_DEBUG)
+            std::println(std::cerr,
+                         "Shutting down periodic worker [{}] with outstanding callbacks [{}] and total invoke count [{}]\n",
+                         threadName,
+                         outstandingCallback.load(std::memory_order_acquire),
+                         invokeCounter.load(std::memory_order_acquire));
+#endif
+
             // This is critical step since we wait on the semaphore for a long time (keeps threads suspended) and if we do not
             // decrease this interval then the shutdown will be quite delayed.
             invokePeriod = std::chrono::milliseconds(0);
             // Empty signal to get our thread to wake up
             signal.release();
+
+#if defined(DEBUG) || defined(_DEBUG)
+            std::println(std::cerr, "Signaled shutdown for periodic worker [{}], waiting for thread to join...\n", threadName);
+#endif
+
             try {
-                // Ask thread to shutdown and if joinable.. join.
-                if (processor.request_stop() && processor.joinable()) processor.join();
+                // Notify the thread to stop.. and wait for a bit.. and then instead of joining we should just let the jthread
+                // destroy. Ask thread to shutdown and if joinable.. join.
+                processor.request_stop();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+#if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+                auto nativeHandle = processor.native_handle();
+                pthread_cancel(nativeHandle);
+                processor.detach();
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+                auto nativeHandle = processor.native_handle();
+                TerminateThread(nativeHandle, 0);
+                processor.detach();
+#endif
             }
-            catch (const std::exception&) {
+            catch (const std::exception& ex) {
+                std::println(std::cerr, "Exception while shutting down periodic worker [{}]: {}", threadName, ex.what());
             }
+
+#if defined(DEBUG) || defined(_DEBUG)
+            std::println(std::cerr, "End of desstructor for periodic worker [{}], waiting for thread to join...\n", threadName);
+#endif
         }
 
 

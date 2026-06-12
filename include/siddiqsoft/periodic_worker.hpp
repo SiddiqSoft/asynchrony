@@ -48,8 +48,10 @@
 #include <utility>
 #include <exception>
 
-#if defined(_Linux_)
-   #include <pthread.h>
+#if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+#include <pthread.h>
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+#include <processthreadsapi.h>
 #endif
 
 #include "private/common.hpp"

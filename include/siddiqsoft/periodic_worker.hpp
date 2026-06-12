@@ -48,47 +48,10 @@
 #include <utility>
 #include <exception>
 
+#include "private/common.hpp"
 
 namespace siddiqsoft
 {
-    /// @brief Helper function to determine if an exception is critical and should be rethrown
-    /// @details Critical exceptions include memory allocation failures and other fatal errors
-    /// that indicate the system is in an unstable state
-    /// @param ep The exception pointer to check
-    /// @return true if the exception is critical and should be rethrown, false otherwise
-    inline bool isCriticalException(const std::exception_ptr& ep)
-    {
-        if (!ep) return false;
-        
-        try {
-            std::rethrow_exception(ep);
-        }
-        catch (const std::bad_alloc&) {
-            // Memory allocation failure - critical
-            return true;
-        }
-        catch (const std::bad_exception&) {
-            // Bad exception - critical
-            return true;
-        }
-        catch (const std::bad_cast&) {
-            // Bad cast - critical
-            return true;
-        }
-        catch (const std::bad_typeid&) {
-            // Bad typeid - critical
-            return true;
-        }
-        catch (const std::exception&) {
-            // Regular exception - not critical
-            return false;
-        }
-        catch (...) {
-            // Unknown exception - treat as critical
-            return true;
-        }
-    }
-
     /// @brief Implements a simple queue + semaphore driven asynchronous processor
     /// @tparam T The data type for this processor
     /// @tparam Pri Optional thread priority level. 0=Normal
@@ -129,7 +92,7 @@ namespace siddiqsoft
         /// @param interval The interval between each invocation
         periodic_worker(std::function<void()>     c,
                         std::chrono::microseconds interval,
-                        std::string         name = {"anonymous-periodic-worker"})
+                        std::string               name = {"anonymous-periodic-worker"})
             : callback(std::move(c))
             , invokePeriod(interval)
             , threadName(std::move(name))

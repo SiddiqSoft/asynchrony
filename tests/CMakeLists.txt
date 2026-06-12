@@ -91,6 +91,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
     target_sources( ${TESTPROJ}
                     PRIVATE
                     ${PROJECT_SOURCE_DIR}/tests/periodic_worker.cpp
+                    ${PROJECT_SOURCE_DIR}/tests/additional_bugs.cpp
                     ${PROJECT_SOURCE_DIR}/tests/bug_tests.cpp
                     ${PROJECT_SOURCE_DIR}/tests/roundrobin_pool.cpp
                     ${PROJECT_SOURCE_DIR}/tests/simple_pool.cpp

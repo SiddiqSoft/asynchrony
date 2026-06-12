@@ -39,6 +39,7 @@
 #include "simple_worker.hpp"
 #include <optional>
 #include <latch>
+#include <exception>
 #include "siddiqsoft/RunOnEnd.hpp"
 
 namespace siddiqsoft
@@ -104,6 +105,15 @@ namespace siddiqsoft
                             }
                         }
                         catch (...) {
+                            // Capture the exception pointer to check if it's critical
+                            auto ep = std::current_exception();
+                            if (isCriticalException(ep)) {
+                                // Rethrow critical exceptions to terminate the thread
+                                // This will cause the thread to exit and signal a fatal error
+                                std::rethrow_exception(ep);
+                            }
+                            // Non-critical exceptions are silently swallowed
+                            // The worker continues processing
                         }
                     } // while ..continue until we're asked to stop
                 });

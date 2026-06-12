@@ -46,10 +46,49 @@
 #include <semaphore>
 #include <stop_token>
 #include <utility>
+#include <exception>
 
 
 namespace siddiqsoft
 {
+    /// @brief Helper function to determine if an exception is critical and should be rethrown
+    /// @details Critical exceptions include memory allocation failures and other fatal errors
+    /// that indicate the system is in an unstable state
+    /// @param ep The exception pointer to check
+    /// @return true if the exception is critical and should be rethrown, false otherwise
+    inline bool isCriticalException(const std::exception_ptr& ep)
+    {
+        if (!ep) return false;
+        
+        try {
+            std::rethrow_exception(ep);
+        }
+        catch (const std::bad_alloc&) {
+            // Memory allocation failure - critical
+            return true;
+        }
+        catch (const std::bad_exception&) {
+            // Bad exception - critical
+            return true;
+        }
+        catch (const std::bad_cast&) {
+            // Bad cast - critical
+            return true;
+        }
+        catch (const std::bad_typeid&) {
+            // Bad typeid - critical
+            return true;
+        }
+        catch (const std::exception&) {
+            // Regular exception - not critical
+            return false;
+        }
+        catch (...) {
+            // Unknown exception - treat as critical
+            return true;
+        }
+    }
+
     /// @brief Implements a simple queue + semaphore driven asynchronous processor
     /// @tparam T The data type for this processor
     /// @tparam Pri Optional thread priority level. 0=Normal
@@ -161,15 +200,29 @@ namespace siddiqsoft
                             invokeCounter.fetch_add(1, std::memory_order_release);
                         }
                         catch (...) {
+                            // Capture the exception pointer to check if it's critical
+                            auto ep = std::current_exception();
                             // Ensure we decrement even if callback throws
                             outstandingCallback.fetch_sub(1, std::memory_order_release);
-                            throw;
+                            if (isCriticalException(ep)) {
+                                // Rethrow critical exceptions to terminate the thread
+                                std::rethrow_exception(ep);
+                            }
+                            // Non-critical exceptions are silently swallowed
+                            // The worker continues processing
                         }
                         // Decrement outstanding callback with release semantics
                         outstandingCallback.fetch_sub(1, std::memory_order_release);
                     }
                 }
                 catch (...) {
+                    // Capture the exception pointer to check if it's critical
+                    auto ep = std::current_exception();
+                    if (isCriticalException(ep)) {
+                        // Rethrow critical exceptions to terminate the thread
+                        std::rethrow_exception(ep);
+                    }
+                    // Non-critical exceptions are silently swallowed
                 }
             } // while ..continue until we're asked to stop
         }};

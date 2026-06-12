@@ -44,6 +44,7 @@
 #include <vector>
 #include <mutex>
 #include <set>
+#include <limits.h>
 
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/simple_worker.hpp"

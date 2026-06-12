@@ -33,7 +33,6 @@
  */
 
 #pragma once
-#include <pthread.h>
 #ifndef PERIODIC_WORKER_HPP
 #define PERIODIC_WORKER_HPP
 
@@ -48,6 +47,10 @@
 #include <stop_token>
 #include <utility>
 #include <exception>
+
+#if defined(_Linux_)
+   #include <pthread.h>
+#endif
 
 #include "private/common.hpp"
 

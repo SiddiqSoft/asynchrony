@@ -1,0 +1,649 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake: configure [Apple-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--preset",
+                "Apple-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$cmake"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Configure using default Apple Clang compiler from Xcode"
+        },
+        {
+            "label": "cmake: build [Apple-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "--preset",
+                "Apple-Debug",
+                "--",
+                "-v"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "dependsOn": [
+                "cmake: configure [Apple-Debug]"
+            ],
+            "detail": "Build tests using default Apple Clang compiler from Xcode"
+        },
+        {
+            "label": "cmake: configure [Apple-LLVM-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--preset",
+                "Apple-LLVM-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$cmake"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Configure using Homebrew LLVM compiler (/opt/homebrew/opt/llvm/bin/clang++)"
+        },
+        {
+            "label": "cmake: build [Apple-LLVM-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "--preset",
+                "Apple-LLVM-Debug",
+                "--",
+                "-v"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "dependsOn": [
+                "cmake: configure [Apple-LLVM-Debug]"
+            ],
+            "detail": "Build tests using Homebrew LLVM compiler (/opt/homebrew/opt/llvm/bin/clang++)"
+        },
+        {
+            "label": "cmake: configure [Linux-GCC-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--preset",
+                "Linux-GCC-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$cmake"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Configure using GCC compiler"
+        },
+        {
+            "label": "cmake: build [Linux-GCC-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "--preset",
+                "Linux-GCC-Debug",
+                "--",
+                "-v"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "dependsOn": [
+                "cmake: configure [Linux-GCC-Debug]"
+            ],
+            "detail": "Build tests using GCC compiler"
+        },
+        {
+            "label": "cmake: configure [Linux-Clang-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--preset",
+                "Linux-Clang-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$cmake"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Configure using Clang compiler"
+        },
+        {
+            "label": "cmake: build [Linux-Clang-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "--preset",
+                "Linux-Clang-Debug",
+                "--",
+                "-v"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "dependsOn": [
+                "cmake: configure [Linux-Clang-Debug]"
+            ],
+            "detail": "Build tests using Clang compiler"
+        },
+        {
+            "label": "cmake: configure [Windows-x64-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--preset",
+                "Windows-x64-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$cmake"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Configure for Windows x64 Debug"
+        },
+        {
+            "label": "cmake: build [Windows-x64-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "--preset",
+                "Windows-x64-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "dependsOn": [
+                "cmake: configure [Windows-x64-Debug]"
+            ],
+            "detail": "Build tests for Windows x64 Debug"
+        },
+        {
+            "label": "cmake: configure [Windows-arm64-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--preset",
+                "Windows-arm64-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$cmake"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Configure for Windows ARM64 Debug"
+        },
+        {
+            "label": "cmake: build [Windows-arm64-Debug]",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "--preset",
+                "Windows-arm64-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$msCompile"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "dependsOn": [
+                "cmake: configure [Windows-arm64-Debug]"
+            ],
+            "detail": "Build tests for Windows ARM64 Debug"
+        },
+        {
+            "label": "cmake: build all (Apple-Debug)",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "--preset",
+                "Apple-Debug",
+                "--",
+                "-v"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Default build using Apple Clang (Xcode)"
+        },
+        {
+            "label": "cmake: clean [Apple-Debug]",
+            "type": "shell",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "${workspaceFolder}/build/Apple-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean Apple-Debug build directory"
+        },
+        {
+            "label": "cmake: clean [Apple-LLVM-Debug]",
+            "type": "shell",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "${workspaceFolder}/build/Apple-LLVM-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean Apple-LLVM-Debug build directory"
+        },
+        {
+            "label": "cmake: clean [Linux-GCC-Debug]",
+            "type": "shell",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "${workspaceFolder}/build/Linux-GCC-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean Linux-GCC-Debug build directory"
+        },
+        {
+            "label": "cmake: clean [Linux-Clang-Debug]",
+            "type": "shell",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "${workspaceFolder}/build/Linux-Clang-Debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean Linux-Clang-Debug build directory"
+        },
+        {
+            "label": "cmake: clean all",
+            "type": "shell",
+            "command": "rm",
+            "args": [
+                "-rf",
+                "${workspaceFolder}/build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean all build directories"
+        },
+        {
+            "label": "cmake: rebuild [Apple-Debug]",
+            "type": "shell",
+            "command": "rm -rf ${workspaceFolder}/build/Apple-Debug && cmake --build --preset Apple-Debug -- -v",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": [
+                        "-c"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean and rebuild using Apple Clang (Xcode)"
+        },
+        {
+            "label": "cmake: rebuild [Apple-LLVM-Debug]",
+            "type": "shell",
+            "command": "rm -rf ${workspaceFolder}/build/Apple-LLVM-Debug && cmake --build --preset Apple-LLVM-Debug -- -v",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": [
+                        "-c"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean and rebuild using Homebrew LLVM (/opt/homebrew/opt/llvm/bin/clang++)"
+        },
+        {
+            "label": "cmake: rebuild [Linux-GCC-Debug]",
+            "type": "shell",
+            "command": "rm -rf ${workspaceFolder}/build/Linux-GCC-Debug && cmake --build --preset Linux-GCC-Debug -- -v",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": [
+                        "-c"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean and rebuild using GCC compiler"
+        },
+        {
+            "label": "cmake: rebuild [Linux-Clang-Debug]",
+            "type": "shell",
+            "command": "rm -rf ${workspaceFolder}/build/Linux-Clang-Debug && cmake --build --preset Linux-Clang-Debug -- -v",
+            "options": {
+                "cwd": "${workspaceFolder}",
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": [
+                        "-c"
+                    ]
+                }
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared",
+                "showReuseMessage": true,
+                "clear": false
+            },
+            "detail": "Clean and rebuild using Clang compiler"
+        }
+    ]
+}

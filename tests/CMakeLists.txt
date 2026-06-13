@@ -48,6 +48,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
         set(COVERAGE_FLAGS "-coverage")
         set(OPTIMIZE_FLAGS "-O0")
         set(OTHER_FLAGS "-g")
+        set(DEBUG_COMPILE_FLAGS -g3 -O0)
     endif()
 
     # LeakSanitizer is not available on Windows and Darwin/macOS with AppleClang

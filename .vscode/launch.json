@@ -1,0 +1,122 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Tests (Apple-Debug)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Apple-Debug/tests/asynchrony_tests",
+            "args": [],
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "cmake: build [Apple-Debug]",
+            "sourceLanguages": [
+                "cpp"
+            ]
+        },
+        {
+            "name": "Debug Tests (Apple-LLVM-Debug)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Apple-LLVM-Debug/tests/asynchrony_tests",
+            "args": [],
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "cmake: build [Apple-LLVM-Debug]",
+            "sourceLanguages": [
+                "cpp"
+            ]
+        },
+        {
+            "name": "Debug Tests (Linux-GCC-Debug)",
+            "type": "gdb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Linux-GCC-Debug/tests/asynchrony_tests",
+            "args": [],
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "cmake: build [Linux-GCC-Debug]",
+            "sourceLanguages": [
+                "cpp"
+            ]
+        },
+        {
+            "name": "Debug Tests (Linux-Clang-Debug)",
+            "type": "gdb",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Linux-Clang-Debug/tests/asynchrony_tests",
+            "args": [],
+            "stopOnEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "cmake: build [Linux-Clang-Debug]",
+            "sourceLanguages": [
+                "cpp"
+            ]
+        },
+        {
+            "name": "Debug Tests (Windows-x64-Debug)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Windows-x64-Debug/tests/asynchrony_tests.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "preLaunchTask": "cmake: build [Windows-x64-Debug]",
+            "sourceLanguages": [
+                "cpp"
+            ]
+        },
+        {
+            "name": "Debug Tests (Windows-arm64-Debug)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/Windows-arm64-Debug/tests/asynchrony_tests.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "preLaunchTask": "cmake: build [Windows-arm64-Debug]",
+            "sourceLanguages": [
+                "cpp"
+            ]
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug All Tests",
+            "configurations": [
+                "Debug Tests (Apple-Debug)",
+                "Debug Tests (Apple-LLVM-Debug)"
+            ]
+        }
+    ]
+}

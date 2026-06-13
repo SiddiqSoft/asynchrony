@@ -3,15 +3,16 @@
     "configurations": [
         {
             "name": "Debug Tests (Apple-Debug)",
-            "type": "lldb",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Apple-Debug/tests/asynchrony_tests",
             "args": [],
-            "stopOnEntry": false,
+            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "lldb",
+            "miDebuggerPath": "/usr/bin/lldb",
             "preLaunchTask": "cmake: build [Apple-Debug]",
             "sourceLanguages": [
                 "cpp"
@@ -19,15 +20,16 @@
         },
         {
             "name": "Debug Tests (Apple-LLVM-Debug)",
-            "type": "lldb",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Apple-LLVM-Debug/tests/asynchrony_tests",
             "args": [],
-            "stopOnEntry": false,
+            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "lldb",
+            "miDebuggerPath": "/opt/homebrew/opt/llvm/bin/lldb",
             "preLaunchTask": "cmake: build [Apple-LLVM-Debug]",
             "sourceLanguages": [
                 "cpp"
@@ -35,15 +37,16 @@
         },
         {
             "name": "Debug Tests (Linux-GCC-Debug)",
-            "type": "gdb",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Linux-GCC-Debug/tests/asynchrony_tests",
             "args": [],
-            "stopOnEntry": false,
+            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -58,15 +61,16 @@
         },
         {
             "name": "Debug Tests (Linux-Clang-Debug)",
-            "type": "gdb",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/Linux-Clang-Debug/tests/asynchrony_tests",
             "args": [],
-            "stopOnEntry": false,
+            "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",

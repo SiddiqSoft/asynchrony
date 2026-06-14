@@ -48,14 +48,14 @@
 #include <stop_token>
 #include <utility>
 #include <exception>
-
+/*
 #if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
 #include <pthread.h>
 #elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
 #include <windows.h>
 #include <processthreadsapi.h>
 #endif
-
+*/
 #include "private/common.hpp"
 
 namespace siddiqsoft
@@ -69,8 +69,8 @@ namespace siddiqsoft
     {
     public:
         // Not copy-able
-        periodic_worker(periodic_worker&)  = delete;
-        auto& operator=(periodic_worker&)  = delete;
+        periodic_worker(periodic_worker&) = delete;
+        auto& operator=(periodic_worker&) = delete;
         // Not move-able
         periodic_worker(periodic_worker&&) = delete;
         auto& operator=(periodic_worker&&) = delete;
@@ -106,15 +106,7 @@ namespace siddiqsoft
                 // destroy. Ask thread to shutdown and if joinable.. join.
                 processor.request_stop();
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
-#if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
-                auto nativeHandle = processor.native_handle();
-                pthread_cancel(nativeHandle);
-                processor.detach();
-#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
-                auto nativeHandle = processor.native_handle();
-                TerminateThread(nativeHandle, 0);
-                processor.detach();
-#endif
+                if (processor.joinable()) processor.join();
             }
             catch (const std::exception& ex) {
                 std::println(std::cerr, "Exception while shutting down periodic worker [{}]: {}", threadName, ex.what());

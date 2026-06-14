@@ -201,7 +201,7 @@ namespace siddiqsoft
                         outstandingCallback.fetch_add(1, std::memory_order_acquire);
                         try {
                             // Delegate to the callback outside the lock
-                            callback();
+                            if (callback) callback();
                             invokeCounter.fetch_add(1, std::memory_order_release);
                         }
                         catch (const std::exception& ex) {

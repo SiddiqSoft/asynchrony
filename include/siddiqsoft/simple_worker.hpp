@@ -172,7 +172,8 @@ namespace siddiqsoft
                     // The getNextItem performs the wait on the signal and if it expires, returns empty.
                     // If there is an item, it will get that item (minimizing move) and performs the pop
                     // and returns the item so we can invoke the callback outside the lock.
-                    if (auto item = getNextItem(signalWaitInterval); item && !st.stop_requested()) {
+                    // We must ensure that the callback is nonempty!
+                    if (auto item = getNextItem(signalWaitInterval); item && !st.stop_requested() && callback) {
                         // Delegate to the callback outside the lock
                         callback(std::move(*item));
                     }

@@ -33,6 +33,7 @@
  */
 
 #pragma once
+#include <iostream>
 #ifndef SIMPLE_WORKER_HPP
 #define SIMPLE_WORKER_HPP
 
@@ -133,19 +134,27 @@ namespace siddiqsoft
     private:
         /// @brief Check the outstanding callback
         std::atomic_uint outstandingCallback {0};
+
         /// @brief Track number of times we've got items added into our queue
         std::atomic_uint64_t queueCounter {0};
+
         /// @brief The internal queue for this worker.
         std::deque<T> items {};
+
         /// @brief Mutex to protect the items
         std::shared_mutex items_mutex {};
+
         /// @brief Semaphore with default max signals.
         std::counting_semaphore<> signal {0};
-        /// @brief This is the interval we wait on the signal. It starts off with 500ms and when the thread is to shutdown, it is
+
+        /// @brief This is the interval we wait on the signal.
+        /// It starts off with 500ms and when the thread is to shutdown, it is
         /// set to 1ms.
         std::chrono::milliseconds signalWaitInterval {1500};
+
         /// @brief The callback is invoked whenever there is an item in the queue
         std::function<void(T&&)> callback;
+
         /// @brief Processor thread
         /// The driver runs forever until signalled to stop
         /// Tries to get next item ready in the queue (for max 500ms cycle)
@@ -168,16 +177,9 @@ namespace siddiqsoft
                         callback(std::move(*item));
                     }
                 }
-                catch (...) {
-                    // Capture the exception pointer to check if it's critical
-                    auto ep = std::current_exception();
-                    if (isCriticalException(ep)) {
-                        // Rethrow critical exceptions to terminate the thread
-                        // This will cause the thread to exit and signal a fatal error
-                        std::rethrow_exception(ep);
-                    }
-                    // Non-critical exceptions are silently swallowed
-                    // The worker continues processing
+                catch (const std::exception& ex) {
+                    // We swallow exceptions from the callback to avoid thread termination and log it if needed.
+                    std::println(std::cerr, "Ignoring Exception in simple_worker callback: {}", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};

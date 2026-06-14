@@ -104,16 +104,9 @@ namespace siddiqsoft
                                 callback(std::move(*item));
                             }
                         }
-                        catch (...) {
-                            // Capture the exception pointer to check if it's critical
-                            auto ep = std::current_exception();
-                            if (isCriticalException(ep)) {
-                                // Rethrow critical exceptions to terminate the thread
-                                // This will cause the thread to exit and signal a fatal error
-                                std::rethrow_exception(ep);
-                            }
-                            // Non-critical exceptions are silently swallowed
-                            // The worker continues processing
+                        catch (const std::exception& ex) {
+                            // We swallow exceptions from the callback to avoid thread termination and log it if needed.
+                            std::println(std::cerr, "Ignoring Exception in simple_worker callback: {}", ex.what());
                         }
                     } // while ..continue until we're asked to stop
                 });

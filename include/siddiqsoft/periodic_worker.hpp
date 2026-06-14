@@ -68,8 +68,10 @@ namespace siddiqsoft
     struct periodic_worker
     {
     public:
+        // Not copy-able
         periodic_worker(periodic_worker&)  = delete;
         auto& operator=(periodic_worker&)  = delete;
+        // Not move-able
         periodic_worker(periodic_worker&&) = delete;
         auto& operator=(periodic_worker&&) = delete;
 

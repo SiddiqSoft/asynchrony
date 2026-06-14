@@ -176,36 +176,6 @@ TEST(additional_bugs, simple_worker_signal_wait_interval_race)
 }
 
 
-/// @brief BUG #6, #7, #8: Lambda Capture by Reference in Member jthread
-/// Tests that the lambda capture by reference could cause use-after-free
-TEST(additional_bugs, simple_worker_lambda_capture_safety)
-{
-    std::atomic_uint processedCount {0};
-
-    // Create a worker and move it
-    siddiqsoft::simple_worker<std::string> worker1 {[&](auto&&) { processedCount++; }};
-
-    // Queue items into worker1
-    for (int i = 0; i < 5; i++) {
-        worker1.queue(std::format("worker1-{}", i));
-    }
-
-    // Move worker1 to worker2
-    siddiqsoft::simple_worker<std::string> worker2 {std::move(worker1)};
-
-    // Queue items into worker2
-    for (int i = 0; i < 5; i++) {
-        worker2.queue(std::format("worker2-{}", i));
-    }
-
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-
-    // Both workers should have processed their items
-    // If the lambda capture is unsafe, we might see crashes or incorrect behavior
-    EXPECT_EQ(10u, processedCount.load());
-}
-
-
 /// @brief BUG #9: Uninitialized workersSize in roundrobin_pool
 /// If constructor throws before workersSize is set, it remains 0
 TEST(additional_bugs, roundrobin_pool_uninitialized_workers_size)

@@ -37,6 +37,7 @@
 #define ROUNDROBIN_POOL_HPP
 
 #include <concepts>
+#include <deque>
 #include "simple_worker.hpp"
 
 
@@ -58,15 +59,12 @@ namespace siddiqsoft
         auto operator=(roundrobin_pool&) = delete;
 
 
-        /// @brief Consturcts a vector of simple_worker<T> with the given callback
+        /// @brief Consturcts a deque of simple_worker<T> with the given callback
         /// @param c Callback worker function
         roundrobin_pool(std::function<void(T&&)> c)
         {
-            // *CRITICAL*
-            // This is step is *critical* otherwise we will end up moving threads as we add elements to the vector.
-            workers.reserve(N > 0 ? N : std::thread::hardware_concurrency());
-
-            // Create as many threads as reported by the system..
+            // Create as many threads as reported by the system.
+            // std::deque does not relocate elements on growth, so non-movable types are safe.
             for (unsigned i = 0; i < ((N > 0) ? N : std::thread::hardware_concurrency()); i++) {
                 workers.emplace_back(c);
             }
@@ -113,10 +111,12 @@ namespace siddiqsoft
 #endif
 
     private:
-        /// @brief Vector of the simple_worker elements of type T
-        std::vector<simple_worker<T>> workers {};
+        /// @brief deque of the simple_worker elements of type T
+        /// std::deque supports non-movable types (elements are not relocated on growth)
+        /// and provides random access via at()
+        std::deque<simple_worker<T>> workers {};
 
-        /// @brief Tracks the size of the array workers
+        /// @brief Tracks the size of the deque workers
         uint64_t workersSize {};
 
         /// @brief Calculates the index into the workers thread using modulo and the running counter of the number of items pushed

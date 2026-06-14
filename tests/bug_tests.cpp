@@ -118,38 +118,6 @@ TEST(bug_tests, roundrobin_pool_zero_workers_edge_case)
 }
 
 
-/// @brief BUG TEST: Potential memory leak in simple_worker move constructor
-/// The move constructor doesn't move the items deque or signal, which could
-/// leave the original worker in an inconsistent state if used after move.
-TEST(bug_tests, simple_worker_move_constructor_state)
-{
-    std::atomic_uint                          processedCount {0};
-
-    siddiqsoft::simple_worker<nlohmann::json> original {[&](auto&&) { processedCount++; }};
-
-    // Queue items into original
-    for (int i = 0; i < 5; i++) {
-        original.queue({{"index", i}});
-    }
-
-    // Move to new worker
-    siddiqsoft::simple_worker<nlohmann::json> moved {std::move(original)};
-
-    // Queue into moved worker
-    for (int i = 5; i < 10; i++) {
-        moved.queue({{"index", i}});
-    }
-
-    std::this_thread::sleep_for(std::chrono::seconds(2));
-
-    // All items should be processed by the moved worker
-    EXPECT_EQ(10u, processedCount.load());
-
-    // Original worker should still be functional (though items were not moved)
-    // This is by design per the comment in the code
-}
-
-
 /// @brief BUG TEST: Race condition in periodic_worker outstandingCallback
 /// The outstandingCallback counter is incremented before the callback and
 /// decremented after. If the callback throws, the decrement still happens

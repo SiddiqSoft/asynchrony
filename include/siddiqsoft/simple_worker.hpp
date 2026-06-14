@@ -61,8 +61,8 @@ namespace siddiqsoft
     struct simple_worker
     {
     public:
-        simple_worker(simple_worker&)  = delete;
-        auto operator=(simple_worker&) = delete;
+        simple_worker(const simple_worker&)            = delete;
+        simple_worker& operator=(const simple_worker&) = delete;
 
 
         ~simple_worker()
@@ -81,15 +81,9 @@ namespace siddiqsoft
         }
 
 
-        /// @brief Move constructor
-        /// @param src Source to be moved into this object
-        simple_worker(simple_worker&& src) noexcept
-            : callback(std::move(src.callback))
-        {
-            // NOTE
-            // We do not move the items or the signal.. the use case is that we would use the move constructor to facilitate adding
-            // this object in std::vector
-        }
+        /// @brief Move constructor and assignment are disallowed to avoid transferring thread ownership
+        simple_worker(simple_worker&&)            = delete;
+        simple_worker& operator=(simple_worker&&) = delete;
 
         /// @brief Constructor requires the callback for the thread
         /// @param c The callback which accepts the type T as reference and performs action.
@@ -103,14 +97,12 @@ namespace siddiqsoft
         /// @param item This is move'd into the internal deque
         void queue(T&& item)
         {
-            {
-                std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
+            // The RunOnEnd ensures we release the signal upon completion.
+            siddiqsoft::RunOnEnd                autoReleaseSignal {[&] { signal.release(); }};
+            std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
 
-                items.emplace_back(std::move(item));
-                queueCounter.fetch_add(1, std::memory_order_release);
-            }
-            // Signal outside the lock and after adding the item.
-            signal.release();
+            items.emplace_back(std::move(item));
+            queueCounter.fetch_add(1, std::memory_order_release);
         }
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)

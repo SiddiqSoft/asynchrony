@@ -155,7 +155,7 @@ TEST(simple_worker, toJson_fields)
     EXPECT_TRUE(j.contains("threadPriority"));
     EXPECT_TRUE(j.contains("outstandingCallback"));
     EXPECT_TRUE(j.contains("waitInterval"));
-    EXPECT_EQ(0, j["threadPriority"].get<int>());
+    EXPECT_EQ(0, j["threadPriority"].template get<int>());
     EXPECT_EQ(1, j["queueCounter"].get<uint64_t>());
 }
 
@@ -327,7 +327,7 @@ TEST(simple_worker, concurrent_producer_flood)
         producers.emplace_back([&, p]() {
             startBarrier.arrive_and_wait();
             for (int i = 0; i < ITEMS_PER_PRODUCER; i++) {
-                worker.queue({{"producer", p}, {"item", i}});
+                worker.queue(nlohmann::json{{"producer", p}, {"item", i}});
             }
         });
     }
@@ -397,47 +397,4 @@ TEST(simple_worker, adl_to_json)
     EXPECT_TRUE(j.contains("queueCounter"));
     EXPECT_EQ(1u, j["queueCounter"].get<uint64_t>());
     std::cerr << "ADL to_json result: " << j.dump() << std::endl;
-}
-
-
-/// @brief Test the move constructor of simple_worker.
-/// The move constructor is used internally when building vectors of workers
-/// (e.g., in roundrobin_pool). This test exercises it directly by std::move
-/// from an lvalue, which prevents copy elision.
-TEST(simple_worker, move_constructor)
-{
-    std::atomic_uint processedCount {0};
-
-    siddiqsoft::simple_worker<nlohmann::json> original {[&](auto&& item) {
-        processedCount++;
-    }};
-
-    // Explicit std::move from lvalue — copy elision cannot apply here
-    siddiqsoft::simple_worker<nlohmann::json> worker {std::move(original)};
-
-    worker.queue({{"test", "move"}});
-    worker.queue({{"test", "move2"}});
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    EXPECT_EQ(2u, processedCount.load());
-}
-
-
-/// @brief Test the move constructor with string type to cover another template instantiation.
-TEST(simple_worker, move_constructor_string)
-{
-    std::atomic_uint processedCount {0};
-
-    siddiqsoft::simple_worker<std::string> original {[&](auto&& item) {
-        processedCount++;
-    }};
-
-    // Explicit std::move from lvalue — copy elision cannot apply here
-    siddiqsoft::simple_worker<std::string> worker {std::move(original)};
-
-    worker.queue(std::string("hello"));
-    worker.queue(std::string("world"));
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    EXPECT_EQ(2u, processedCount.load());
 }

@@ -33,6 +33,7 @@
  */
 
 #pragma once
+#include <siddiqsoft/RunOnEnd.hpp>
 #ifndef PERIODIC_WORKER_HPP
 #define PERIODIC_WORKER_HPP
 
@@ -191,6 +192,11 @@ namespace siddiqsoft
                     auto _ = signal.try_acquire_for(invokePeriod);
 
                     if (!st.stop_requested()) {
+                        auto decrementOutstandingCallback = siddiqsoft::RunOnEnd {[&] {
+                            // Decrement outstanding callback
+                            outstandingCallback.fetch_sub(1, std::memory_order_release);
+                        }};
+
                         // Increment outstanding callback with acquire semantics
                         outstandingCallback.fetch_add(1, std::memory_order_acquire);
                         try {
@@ -198,25 +204,15 @@ namespace siddiqsoft
                             callback();
                             invokeCounter.fetch_add(1, std::memory_order_release);
                         }
-                        catch (...) {
-                            // Capture the exception pointer to check if it's critical
-                            auto ep = std::current_exception();
-                            // Ensure we decrement even if callback throws
-                            outstandingCallback.fetch_sub(1, std::memory_order_release);
-                            if (isCriticalException(ep)) {
-                                // Rethrow critical exceptions to terminate the thread
-                                std::rethrow_exception(ep);
-                            }
-                            // Non-critical exceptions are silently swallowed
-                            // The worker continues processing
+                        catch (const std::exception& ex) {
+                            // We swallow exceptions from the callback to avoid thread termination and log it if needed.
+                            std::println(std::cerr, "Ignoring Exception (inner) in simple_worker callback: {}", ex.what());
                         }
-                        // Decrement outstanding callback with release semantics
-                        outstandingCallback.fetch_sub(1, std::memory_order_release);
                     }
                 }
                 catch (const std::exception& ex) {
                     // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                    std::println(std::cerr, "Ignoring Exception in simple_worker callback: {}", ex.what());
+                    std::println(std::cerr, "Ignoring Exception (outer) in simple_worker callback: {}", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};

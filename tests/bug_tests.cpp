@@ -60,18 +60,16 @@
 /// high contention from multiple producers.
 TEST(bug_tests, simple_pool_queue_counter_race)
 {
-    constexpr int PRODUCER_COUNT = 16;
-    constexpr int ITEMS_PER_PRODUCER = 500;
-    constexpr int TOTAL_ITEMS = PRODUCER_COUNT * ITEMS_PER_PRODUCER;
+    constexpr int                              PRODUCER_COUNT     = 16;
+    constexpr int                              ITEMS_PER_PRODUCER = 500;
+    constexpr int                              TOTAL_ITEMS        = PRODUCER_COUNT * ITEMS_PER_PRODUCER;
 
-    std::atomic_uint processedCount {0};
+    std::atomic_uint                           processedCount {0};
 
-    siddiqsoft::simple_pool<nlohmann::json, 8> pool {[&](auto&&) {
-        processedCount++;
-    }};
+    siddiqsoft::simple_pool<nlohmann::json, 8> pool {[&](auto&&) { processedCount++; }};
 
-    std::barrier startBarrier {PRODUCER_COUNT};
-    std::vector<std::jthread> producers;
+    std::barrier                               startBarrier {PRODUCER_COUNT};
+    std::vector<std::jthread>                  producers;
 
     for (int p = 0; p < PRODUCER_COUNT; p++) {
         producers.emplace_back([&, p]() {
@@ -85,12 +83,12 @@ TEST(bug_tests, simple_pool_queue_counter_race)
     producers.clear();
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    auto j = pool.toJson();
+    auto     j            = pool.toJson();
     uint64_t queueCounter = j["queueCounter"].get<uint64_t>();
 
     // BUG: If queueCounter is not properly synchronized, it may not equal TOTAL_ITEMS
     EXPECT_EQ(static_cast<uint64_t>(TOTAL_ITEMS), queueCounter)
-        << "Queue counter mismatch: expected " << TOTAL_ITEMS << ", got " << queueCounter;
+            << "Queue counter mismatch: expected " << TOTAL_ITEMS << ", got " << queueCounter;
     EXPECT_EQ(static_cast<unsigned>(TOTAL_ITEMS), processedCount.load());
 }
 
@@ -103,15 +101,13 @@ TEST(bug_tests, roundrobin_pool_zero_workers_edge_case)
     // This should either handle gracefully or fail with a clear error
     // Currently, if N=0 and hardware_concurrency() returns 0 (unlikely but possible),
     // the pool would have 0 workers and queue() would fail.
-    
+
     // We can't directly test N=0 since it would use hardware_concurrency(),
     // but we can test with N=1 to ensure single-worker case works
-    constexpr uint16_t POOL_SIZE = 1;
-    std::atomic_uint processedCount {0};
+    constexpr uint16_t                                     POOL_SIZE = 1;
+    std::atomic_uint                                       processedCount {0};
 
-    siddiqsoft::roundrobin_pool<nlohmann::json, POOL_SIZE> pool {[&](auto&&) {
-        processedCount++;
-    }};
+    siddiqsoft::roundrobin_pool<nlohmann::json, POOL_SIZE> pool {[&](auto&&) { processedCount++; }};
 
     for (int i = 0; i < 100; i++) {
         pool.queue({{"index", i}});
@@ -127,11 +123,9 @@ TEST(bug_tests, roundrobin_pool_zero_workers_edge_case)
 /// leave the original worker in an inconsistent state if used after move.
 TEST(bug_tests, simple_worker_move_constructor_state)
 {
-    std::atomic_uint processedCount {0};
+    std::atomic_uint                          processedCount {0};
 
-    siddiqsoft::simple_worker<nlohmann::json> original {[&](auto&&) {
-        processedCount++;
-    }};
+    siddiqsoft::simple_worker<nlohmann::json> original {[&](auto&&) { processedCount++; }};
 
     // Queue items into original
     for (int i = 0; i < 5; i++) {
@@ -162,9 +156,9 @@ TEST(bug_tests, simple_worker_move_constructor_state)
 /// due to the try-catch, but we should verify this works correctly.
 TEST(bug_tests, periodic_worker_outstanding_callback_exception)
 {
-    std::atomic_uint invokeCount {0};
-    std::atomic_uint exceptionCount {0};
-    std::atomic_uint outstandingPeak {0};
+    std::atomic_uint            invokeCount {0};
+    std::atomic_uint            exceptionCount {0};
+    std::atomic_uint            outstandingPeak {0};
 
     siddiqsoft::periodic_worker worker {[&]() {
                                             invokeCount++;
@@ -177,17 +171,17 @@ TEST(bug_tests, periodic_worker_outstanding_callback_exception)
 
     // Monitor outstanding callbacks
     for (int i = 0; i < 100; i++) {
-        auto j = worker.toJson();
+        auto     j           = worker.toJson();
         unsigned outstanding = j["outstandingCallbacks"].get<unsigned>();
         if (outstanding > outstandingPeak.load()) {
             outstandingPeak = outstanding;
+            std::println(std::cerr, "Outstanding callbacks: {}", outstanding);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 
     // outstandingCallback should never exceed 1 (only one callback at a time)
-    EXPECT_LE(outstandingPeak.load(), 1u)
-        << "Outstanding callback counter exceeded 1, indicating a race condition";
+    EXPECT_LE(outstandingPeak.load(), 1u) << "Outstanding callback counter exceeded 1, indicating a race condition";
 }
 
 
@@ -195,14 +189,18 @@ TEST(bug_tests, periodic_worker_outstanding_callback_exception)
 /// Tests for potential race conditions between clear() and checkout/checkin operations.
 TEST(bug_tests, resource_pool_concurrent_clear_checkout_race)
 {
-    struct test_resource {
+    struct test_resource
+    {
         int value;
-        test_resource(int v) : value(v) {}
+        test_resource(int v)
+            : value(v)
+        {
+        }
     };
     siddiqsoft::resource_pool<test_resource> pool {};
-    constexpr int INITIAL_SIZE = 100;
-    constexpr int THREAD_COUNT = 8;
-    constexpr int DURATION_MS = 1000;
+    constexpr int                            INITIAL_SIZE = 100;
+    constexpr int                            THREAD_COUNT = 8;
+    constexpr int                            DURATION_MS  = 1000;
 
     // Pre-populate
     for (int i = 0; i < INITIAL_SIZE; i++) {
@@ -210,9 +208,9 @@ TEST(bug_tests, resource_pool_concurrent_clear_checkout_race)
     }
 
     std::atomic_bool done {false};
-    std::atomic_int clearCount {0};
-    std::atomic_int checkoutCount {0};
-    std::atomic_int checkinCount {0};
+    std::atomic_int  clearCount {0};
+    std::atomic_int  checkoutCount {0};
+    std::atomic_int  checkinCount {0};
 
     // Thread that repeatedly clears
     std::jthread clearer([&](std::stop_token st) {
@@ -254,7 +252,7 @@ TEST(bug_tests, resource_pool_concurrent_clear_checkout_race)
 
     // Verify consistency: checkins should equal checkouts (all items returned)
     EXPECT_EQ(checkoutCount.load(), checkinCount.load())
-        << "Checkout/checkin mismatch: " << checkoutCount.load() << " vs " << checkinCount.load();
+            << "Checkout/checkin mismatch: " << checkoutCount.load() << " vs " << checkinCount.load();
     EXPECT_GT(clearCount.load(), 0);
 }
 
@@ -264,8 +262,8 @@ TEST(bug_tests, resource_pool_concurrent_clear_checkout_race)
 /// items are processed at different rates.
 TEST(bug_tests, simple_pool_queue_counter_consistency)
 {
-    std::atomic_uint processedCount {0};
-    std::atomic_bool slowMode {false};
+    std::atomic_uint                           processedCount {0};
+    std::atomic_bool                           slowMode {false};
 
     siddiqsoft::simple_pool<nlohmann::json, 4> pool {[&](auto&&) {
         if (slowMode.load()) {
@@ -280,7 +278,7 @@ TEST(bug_tests, simple_pool_queue_counter_consistency)
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    auto j1 = pool.toJson();
+    auto     j1       = pool.toJson();
     uint64_t counter1 = j1["queueCounter"].get<uint64_t>();
 
     // Phase 2: Queue more items with slow processing
@@ -290,12 +288,11 @@ TEST(bug_tests, simple_pool_queue_counter_consistency)
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    auto j2 = pool.toJson();
+    auto     j2       = pool.toJson();
     uint64_t counter2 = j2["queueCounter"].get<uint64_t>();
 
     // Counter should have increased by 50
-    EXPECT_EQ(counter1 + 50, counter2)
-        << "Queue counter did not increase correctly: " << counter1 << " -> " << counter2;
+    EXPECT_EQ(counter1 + 50, counter2) << "Queue counter did not increase correctly: " << counter1 << " -> " << counter2;
 }
 
 
@@ -304,18 +301,16 @@ TEST(bug_tests, simple_pool_queue_counter_consistency)
 /// incremented under high contention.
 TEST(bug_tests, roundrobin_pool_queue_counter_atomic)
 {
-    constexpr int PRODUCER_COUNT = 12;
-    constexpr int ITEMS_PER_PRODUCER = 300;
-    constexpr int TOTAL_ITEMS = PRODUCER_COUNT * ITEMS_PER_PRODUCER;
+    constexpr int                                  PRODUCER_COUNT     = 12;
+    constexpr int                                  ITEMS_PER_PRODUCER = 300;
+    constexpr int                                  TOTAL_ITEMS        = PRODUCER_COUNT * ITEMS_PER_PRODUCER;
 
-    std::atomic_uint processedCount {0};
+    std::atomic_uint                               processedCount {0};
 
-    siddiqsoft::roundrobin_pool<nlohmann::json, 8> pool {[&](auto&&) {
-        processedCount++;
-    }};
+    siddiqsoft::roundrobin_pool<nlohmann::json, 8> pool {[&](auto&&) { processedCount++; }};
 
-    std::barrier startBarrier {PRODUCER_COUNT};
-    std::vector<std::jthread> producers;
+    std::barrier                                   startBarrier {PRODUCER_COUNT};
+    std::vector<std::jthread>                      producers;
 
     for (int p = 0; p < PRODUCER_COUNT; p++) {
         producers.emplace_back([&, p]() {
@@ -329,11 +324,11 @@ TEST(bug_tests, roundrobin_pool_queue_counter_atomic)
     producers.clear();
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    auto j = pool.toJson();
+    auto     j            = pool.toJson();
     uint64_t queueCounter = j["queueCounter"].get<uint64_t>();
 
     EXPECT_EQ(static_cast<uint64_t>(TOTAL_ITEMS), queueCounter)
-        << "Roundrobin queue counter mismatch: expected " << TOTAL_ITEMS << ", got " << queueCounter;
+            << "Roundrobin queue counter mismatch: expected " << TOTAL_ITEMS << ", got " << queueCounter;
     EXPECT_EQ(static_cast<unsigned>(TOTAL_ITEMS), processedCount.load());
 }
 
@@ -343,10 +338,10 @@ TEST(bug_tests, roundrobin_pool_queue_counter_atomic)
 /// from the queue and subsequent items are processed.
 TEST(bug_tests, simple_worker_exception_doesnt_lose_items)
 {
-    std::atomic_uint processedCount {0};
-    std::atomic_uint exceptionCount {0};
-    std::set<int> processedIndices;
-    std::mutex mtx;
+    std::atomic_uint                          processedCount {0};
+    std::atomic_uint                          exceptionCount {0};
+    std::set<int>                             processedIndices;
+    std::mutex                                mtx;
 
     siddiqsoft::simple_worker<nlohmann::json> worker {[&](auto&& item) {
         int idx = item["index"].template get<int>();
@@ -361,7 +356,7 @@ TEST(bug_tests, simple_worker_exception_doesnt_lose_items)
         processedCount++;
     }};
 
-    constexpr int ITEM_COUNT = 50;
+    constexpr int                             ITEM_COUNT = 50;
     for (int i = 0; i < ITEM_COUNT; i++) {
         worker.queue({{"index", i}});
     }
@@ -378,8 +373,7 @@ TEST(bug_tests, simple_worker_exception_doesnt_lose_items)
         std::lock_guard<std::mutex> lk(mtx);
         for (int i = 0; i < ITEM_COUNT; i++) {
             if (i % 5 != 0) {
-                EXPECT_TRUE(processedIndices.count(i))
-                    << "Item " << i << " was not processed";
+                EXPECT_TRUE(processedIndices.count(i)) << "Item " << i << " was not processed";
             }
         }
     }
@@ -391,10 +385,10 @@ TEST(bug_tests, simple_worker_exception_doesnt_lose_items)
 /// to process items.
 TEST(bug_tests, simple_pool_exception_doesnt_block_other_workers)
 {
-    std::atomic_uint processedCount {0};
-    std::atomic_uint exceptionCount {0};
-    std::set<int> processedIndices;
-    std::mutex mtx;
+    std::atomic_uint                           processedCount {0};
+    std::atomic_uint                           exceptionCount {0};
+    std::set<int>                              processedIndices;
+    std::mutex                                 mtx;
 
     siddiqsoft::simple_pool<nlohmann::json, 4> pool {[&](auto&& item) {
         int idx = item["index"].template get<int>();
@@ -409,7 +403,7 @@ TEST(bug_tests, simple_pool_exception_doesnt_block_other_workers)
         processedCount++;
     }};
 
-    constexpr int ITEM_COUNT = 100;
+    constexpr int                              ITEM_COUNT = 100;
     for (int i = 0; i < ITEM_COUNT; i++) {
         pool.queue({{"index", i}});
     }
@@ -433,14 +427,12 @@ TEST(bug_tests, simple_pool_exception_doesnt_block_other_workers)
 /// wrapping or losing count.
 TEST(bug_tests, simple_pool_queue_counter_large_volume)
 {
-    std::atomic_uint processedCount {0};
+    std::atomic_uint                           processedCount {0};
 
-    siddiqsoft::simple_pool<nlohmann::json, 4> pool {[&](auto&&) {
-        processedCount++;
-    }};
+    siddiqsoft::simple_pool<nlohmann::json, 4> pool {[&](auto&&) { processedCount++; }};
 
-    constexpr int BATCH_SIZE = 1000;
-    constexpr int BATCHES = 5;
+    constexpr int                              BATCH_SIZE = 1000;
+    constexpr int                              BATCHES    = 5;
 
     for (int b = 0; b < BATCHES; b++) {
         for (int i = 0; i < BATCH_SIZE; i++) {
@@ -448,12 +440,11 @@ TEST(bug_tests, simple_pool_queue_counter_large_volume)
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        auto j = pool.toJson();
-        uint64_t counter = j["queueCounter"].get<uint64_t>();
+        auto     j        = pool.toJson();
+        uint64_t counter  = j["queueCounter"].get<uint64_t>();
         uint64_t expected = static_cast<uint64_t>((b + 1) * BATCH_SIZE);
 
-        EXPECT_EQ(expected, counter)
-            << "After batch " << b << ": expected " << expected << ", got " << counter;
+        EXPECT_EQ(expected, counter) << "After batch " << b << ": expected " << expected << ", got " << counter;
     }
 
     std::this_thread::sleep_for(std::chrono::seconds(2));
@@ -466,13 +457,13 @@ TEST(bug_tests, simple_pool_queue_counter_large_volume)
 /// even when the system is under load.
 TEST(bug_tests, periodic_worker_invocation_consistency)
 {
-    std::atomic_uint invokeCount {0};
-    std::atomic_uint minInterval {UINT_MAX};
-    std::atomic_uint maxInterval {0};
-    std::atomic_uint64_t lastInvokeTime {0};
+    std::atomic_uint            invokeCount {0};
+    std::atomic_uint            minInterval {UINT_MAX};
+    std::atomic_uint            maxInterval {0};
+    std::atomic_uint64_t        lastInvokeTime {0};
 
     siddiqsoft::periodic_worker worker {[&]() {
-                                            auto now = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+                                            auto now  = std::chrono::high_resolution_clock::now().time_since_epoch().count();
                                             auto last = lastInvokeTime.exchange(now);
                                             if (last != 0) {
                                                 auto interval = static_cast<uint32_t>((now - last) / 1000000); // Convert to ms
@@ -494,10 +485,8 @@ TEST(bug_tests, periodic_worker_invocation_consistency)
 
     // Intervals should be roughly around 50ms (allow 20-100ms tolerance for CI)
     if (invokeCount.load() > 1) {
-        EXPECT_LE(minInterval.load(), 100u)
-            << "Min interval too large: " << minInterval.load() << "ms";
-        EXPECT_GE(maxInterval.load(), 20u)
-            << "Max interval too small: " << maxInterval.load() << "ms";
+        EXPECT_LE(minInterval.load(), 100u) << "Min interval too large: " << minInterval.load() << "ms";
+        EXPECT_GE(maxInterval.load(), 20u) << "Max interval too small: " << maxInterval.load() << "ms";
     }
 }
 
@@ -506,24 +495,28 @@ TEST(bug_tests, periodic_worker_invocation_consistency)
 /// Tests that all resources are properly accounted for even under high contention.
 TEST(bug_tests, resource_pool_no_resource_leak)
 {
-    constexpr int POOL_SIZE = 10;
-    constexpr int THREAD_COUNT = 8;
+    constexpr int POOL_SIZE      = 10;
+    constexpr int THREAD_COUNT   = 8;
     constexpr int OPS_PER_THREAD = 200;
 
-    struct test_resource {
+    struct test_resource
+    {
         int value;
-        test_resource(int v) : value(v) {}
+        test_resource(int v)
+            : value(v)
+        {
+        }
     };
-    
+
     siddiqsoft::resource_pool<test_resource> pool {};
     for (int i = 0; i < POOL_SIZE; i++) {
         pool.checkin(test_resource(i));
     }
 
-    std::atomic_int successCount {0};
-    std::atomic_int failCount {0};
+    std::atomic_int           successCount {0};
+    std::atomic_int           failCount {0};
 
-    std::barrier startBarrier {THREAD_COUNT};
+    std::barrier              startBarrier {THREAD_COUNT};
     std::vector<std::jthread> threads;
 
     for (int t = 0; t < THREAD_COUNT; t++) {
@@ -547,7 +540,7 @@ TEST(bug_tests, resource_pool_no_resource_leak)
 
     // All resources should be back in the pool
     EXPECT_EQ(static_cast<size_t>(POOL_SIZE), pool.size())
-        << "Resource leak detected: expected " << POOL_SIZE << " resources, got " << pool.size();
+            << "Resource leak detected: expected " << POOL_SIZE << " resources, got " << pool.size();
 
     // Total operations should equal successes + failures
     EXPECT_EQ(THREAD_COUNT * OPS_PER_THREAD, successCount.load() + failCount.load());

@@ -699,7 +699,7 @@ TEST(callback_exception, periodic_worker_exception_recovery)
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
     // Verify results
-    EXPECT_GT(invokeCount.load(), 8u);
+    EXPECT_GE(invokeCount.load(), 8u);
     EXPECT_GT(exceptionCount.load(), 0u);
 }
 

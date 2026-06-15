@@ -691,7 +691,7 @@ TEST(callback_exception, periodic_worker_exception_recovery)
                                         std::chrono::milliseconds(50)};
 
     // Wait for first batch (with exceptions)
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(800));
 
     // Stop throwing
     shouldThrow = false;

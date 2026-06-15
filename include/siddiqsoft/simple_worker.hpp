@@ -93,21 +93,22 @@ namespace siddiqsoft
         /// or respect the stop_token
         void forceCleanupTerminate(const std::source_location& sl = std::source_location::current())
         {
-            try {
-                // Notify the thread to stop.. and wait for a bit.. and then instead of joining we should just let the jthread
-                // destroy. Ask thread to shutdown and if joinable.. join.
-                processor.request_stop();
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::call_once(flag_forceCleanupTerminate, [&]() {
+                try {
+                    // Notify the thread to stop.. and wait for a bit.. and then instead of joining we should just let the jthread
+                    // destroy. Ask thread to shutdown and if joinable.. join.
+                    processor.request_stop();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 #if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
-                auto nativeHandle = processor.native_handle();
-                std::println(std::cerr,
-                             "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
-                             "ending! from: {}:{}",
-                             
-                             sl.file_name(),
-                             sl.line());
-                pthread_cancel(nativeHandle);
-                processor.detach();
+                    auto nativeHandle = processor.native_handle();
+                    std::println(std::cerr,
+                                 "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
+                                 "ending! from: {}:{}",
+
+                                 sl.file_name(),
+                                 sl.line());
+                    pthread_cancel(nativeHandle);
+                    processor.detach();
 #elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
                 auto nativeHandle = processor.native_handle();
                 std::println(std::cerr,
@@ -119,12 +120,11 @@ namespace siddiqsoft
                 TerminateThread(nativeHandle, 0);
                 processor.detach();
 #endif
-            }
-            catch (const std::exception& ex) {
-                std::println(std::cerr,
-                             "forceCleanupTerminate - Exception while shutting down worker: {}",
-                             ex.what());
-            }
+                }
+                catch (const std::exception& ex) {
+                    std::println(std::cerr, "forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
+                }
+            });
         }
 
         /// @brief Move constructor and assignment are disallowed to avoid transferring thread ownership
@@ -170,6 +170,8 @@ namespace siddiqsoft
 #endif
 
     private:
+        std::once_flag flag_forceCleanupTerminate {};
+
         /// @brief Check the outstanding callback
         std::atomic_uint outstandingCallback {0};
 

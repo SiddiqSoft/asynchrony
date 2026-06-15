@@ -315,3 +315,140 @@ TEST(periodic_worker, outstanding_callback_tracking)
     j = worker.toJson();
     EXPECT_LE(j["outstandingCallbacks"].get<unsigned>(), 1u);
 }
+
+
+/// @brief Test forceCleanupTerminate with a normal callback that respects stop_token.
+/// This should cleanly terminate the worker thread.
+TEST(periodic_worker, forceCleanupTerminate_normal_callback)
+{
+    std::atomic_uint invokeCount {0};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() {
+                                                invokeCount++;
+                                                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                                            },
+                                            std::chrono::milliseconds(50)};
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        // Call forceCleanupTerminate to forcefully shut down the worker
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    // Verify that at least some invocations occurred before termination
+    EXPECT_GT(invokeCount.load(), 0u);
+}
+
+
+/// @brief Test forceCleanupTerminate with a callback that ignores stop_token.
+/// This tests the scenario where the callback doesn't respect the stop_token,
+/// and forceCleanupTerminate must forcefully terminate the thread.
+TEST(periodic_worker, forceCleanupTerminate_unresponsive_callback)
+{
+    std::atomic_uint invokeCount {0};
+    std::atomic_bool callbackStarted {false};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() {
+                                                callbackStarted = true;
+                                                invokeCount++;
+                                                // Callback that ignores stop_token and sleeps for a long time
+                                                std::this_thread::sleep_for(std::chrono::seconds(10));
+                                            },
+                                            std::chrono::milliseconds(50)};
+
+        // Wait for callback to start
+        while (!callbackStarted.load()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        // At this point, the callback is sleeping for 10 seconds
+        // forceCleanupTerminate should forcefully terminate it
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    // Verify that the callback was at least started
+    EXPECT_GT(invokeCount.load(), 0u);
+}
+
+
+/// @brief Test forceCleanupTerminate with a very short interval.
+/// Verifies that the method can forcefully terminate even with rapid invocations.
+TEST(periodic_worker, forceCleanupTerminate_rapid_invocations)
+{
+    std::atomic_uint invokeCount {0};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() {
+                                                invokeCount++;
+                                            },
+                                            std::chrono::milliseconds(5)};
+
+        // Let it run for a bit
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // Force terminate while it's actively invoking
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    // Verify that many invocations occurred before termination
+    EXPECT_GT(invokeCount.load(), 5u);
+}
+
+
+/// @brief Test that forceCleanupTerminate can be called multiple times safely.
+/// This ensures the method is idempotent and doesn't cause issues on repeated calls.
+TEST(periodic_worker, forceCleanupTerminate_multiple_calls)
+{
+    std::atomic_uint invokeCount {0};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() {
+                                                invokeCount++;
+                                            },
+                                            std::chrono::milliseconds(50)};
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // Call forceCleanupTerminate multiple times
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+            worker.forceCleanupTerminate();
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    EXPECT_GT(invokeCount.load(), 0u);
+}
+
+
+/// @brief Test forceCleanupTerminate with a named worker.
+/// Verifies that the method works correctly with named workers and logs appropriately.
+TEST(periodic_worker, forceCleanupTerminate_named_worker)
+{
+    std::atomic_uint invokeCount {0};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() {
+                                                invokeCount++;
+                                            },
+                                            std::chrono::milliseconds(50),
+                                            "test-force-cleanup-worker"};
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // Force terminate the named worker
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    EXPECT_GT(invokeCount.load(), 0u);
+}

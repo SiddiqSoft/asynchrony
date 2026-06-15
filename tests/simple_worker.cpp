@@ -398,3 +398,126 @@ TEST(simple_worker, adl_to_json)
     EXPECT_EQ(1u, j["queueCounter"].get<uint64_t>());
     std::cerr << "ADL to_json result: " << j.dump() << std::endl;
 }
+
+
+/// @brief Test forceCleanupTerminate with a normal callback that respects stop_token.
+/// This should cleanly terminate the worker thread.
+TEST(simple_worker, forceCleanupTerminate_normal_callback)
+{
+    std::atomic_uint processedCount {0};
+
+    {
+        siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) {
+            processedCount++;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }};
+
+        worker.queue(std::string("item1"));
+        worker.queue(std::string("item2"));
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // Call forceCleanupTerminate to forcefully shut down the worker
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    // Verify that at least some items were processed before termination
+    EXPECT_GT(processedCount.load(), 0u);
+}
+
+
+/// @brief Test forceCleanupTerminate with a callback that ignores stop_token.
+/// This tests the scenario where the callback doesn't respect the stop_token,
+/// and forceCleanupTerminate must forcefully terminate the thread.
+TEST(simple_worker, forceCleanupTerminate_unresponsive_callback)
+{
+    std::atomic_uint processedCount {0};
+    std::atomic_bool callbackStarted {false};
+
+    {
+        siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) {
+            callbackStarted = true;
+            processedCount++;
+            // Callback that ignores stop_token and sleeps for a long time
+            std::this_thread::sleep_for(std::chrono::seconds(10));
+        }};
+
+        worker.queue(std::string("blocking_item"));
+
+        // Wait for callback to start
+        while (!callbackStarted.load()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        // At this point, the callback is sleeping for 10 seconds
+        // forceCleanupTerminate should forcefully terminate it
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    // Verify that the callback was at least started
+    EXPECT_GT(processedCount.load(), 0u);
+}
+
+
+/// @brief Test forceCleanupTerminate with multiple queued items.
+/// Verifies that the method can forcefully terminate even with pending work.
+TEST(simple_worker, forceCleanupTerminate_with_pending_items)
+{
+    std::atomic_uint processedCount {0};
+    constexpr unsigned ITEM_COUNT = 100;
+
+    {
+        siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) {
+            processedCount++;
+            // Slow callback to ensure items remain pending
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }};
+
+        // Queue many items
+        for (unsigned i = 0; i < ITEM_COUNT; i++) {
+            worker.queue(std::format("item-{}", i));
+        }
+
+        // Give it a moment to start processing
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // Force terminate while items are still pending
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    // Verify that some items were processed but not all (due to forced termination)
+    EXPECT_GT(processedCount.load(), 0u);
+    EXPECT_LT(processedCount.load(), ITEM_COUNT);
+}
+
+
+/// @brief Test that forceCleanupTerminate can be called multiple times safely.
+/// This ensures the method is idempotent and doesn't cause issues on repeated calls.
+TEST(simple_worker, forceCleanupTerminate_multiple_calls)
+{
+    std::atomic_uint processedCount {0};
+
+    {
+        siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) {
+            processedCount++;
+        }};
+
+        worker.queue(std::string("item1"));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+        // Call forceCleanupTerminate multiple times
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+            worker.forceCleanupTerminate();
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    EXPECT_GT(processedCount.load(), 0u);
+}

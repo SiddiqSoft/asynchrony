@@ -77,7 +77,6 @@ namespace siddiqsoft
             }
         }
 
-
         /// @brief Contructs a threadpool with N threads with the given callback/worker function
         /// @param c The worker function.
         simple_pool(std::function<void(T&&)> c)

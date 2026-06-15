@@ -49,6 +49,13 @@
 #include <exception>
 #include <source_location>
 
+#if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+#include <pthread.h>
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+#include <windows.h>
+#include <processthreadsapi.h>
+#endif
+
 #include "siddiqsoft/RunOnEnd.hpp"
 #include "private/common.hpp"
 

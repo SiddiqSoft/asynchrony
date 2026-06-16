@@ -601,7 +601,7 @@ TEST(callback_lockup, periodic_worker_callback_lockup)
     EXPECT_GT(invokeCount.load(), 2u);
 }
 
-#if defined (DEV_TESTING)
+#if defined(DEV_TESTING)
 /// @brief Test periodic_worker with callback that locks up indefinitely
 /// Verifies that destructor can still clean up
 TEST(callback_lockup, periodic_worker_indefinite_lockup_cleanup)
@@ -663,7 +663,14 @@ TEST(callback_exception, periodic_worker_exception)
                                         std::chrono::milliseconds(50)};
 
     // Wait for multiple invocations
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(800));
+
+    std::println(std::cerr,
+                 "{} - invokeCount:{}.. and div by 3: {} - exceptionCount:{}",
+                 __func__,
+                 invokeCount.load(),
+                 invokeCount.load() / 3,
+                 exceptionCount.load());
 
     // Verify results
     EXPECT_GT(invokeCount.load(), 5u);

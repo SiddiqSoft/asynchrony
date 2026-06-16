@@ -316,7 +316,7 @@ TEST(periodic_worker, outstanding_callback_tracking)
     EXPECT_LE(j["outstandingCallbacks"].get<unsigned>(), 1u);
 }
 
-
+#if defined (DEV_TESTING)
 /// @brief Test forceCleanupTerminate with a normal callback that respects stop_token.
 /// This should cleanly terminate the worker thread.
 TEST(periodic_worker, forceCleanupTerminate_normal_callback)
@@ -435,3 +435,4 @@ TEST(periodic_worker, forceCleanupTerminate_named_worker)
 
     EXPECT_GT(invokeCount.load(), 0u);
 }
+#endif

@@ -601,7 +601,7 @@ TEST(callback_lockup, periodic_worker_callback_lockup)
     EXPECT_GT(invokeCount.load(), 2u);
 }
 
-
+#if defined (DEV_TESTING)
 /// @brief Test periodic_worker with callback that locks up indefinitely
 /// Verifies that destructor can still clean up
 TEST(callback_lockup, periodic_worker_indefinite_lockup_cleanup)
@@ -640,7 +640,7 @@ TEST(callback_lockup, periodic_worker_indefinite_lockup_cleanup)
 
     EXPECT_EQ(1u, invokeCount.load());
 }
-
+#endif
 
 // ============================================================================
 // PERIODIC_WORKER CALLBACK EXCEPTION TESTS

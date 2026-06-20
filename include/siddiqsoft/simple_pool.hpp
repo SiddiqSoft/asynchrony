@@ -40,6 +40,7 @@
 #include <optional>
 #include <latch>
 #include <exception>
+#include <atomic>
 #include "siddiqsoft/RunOnEnd.hpp"
 
 namespace siddiqsoft
@@ -61,12 +62,12 @@ namespace siddiqsoft
 
 
         /// @brief Destructor.
-        /// @remarks We need to make sure that the signal wait interval is reduced to 1ms to allow our thread (which are waiting on
-        /// the signal) can be stopped.
+        /// @remarks We need to make sure that the signal wait interval is reduced to 0ms to allow our threads (which are waiting on
+        /// the signal) to be stopped. FIX: Use atomic store with release semantics to safely modify signalWaitInterval.
         ~simple_pool()
         {
             // Reduce the wait interval to ensure that the threads waiting on the signal abort
-            signalWaitInterval = std::chrono::milliseconds(0);
+            signalWaitInterval.store(std::chrono::milliseconds(0), std::memory_order_release);
             // Compared to skipping the following code, we save at least about 100ms
             // of idle time waiting for the threads to be signalled by default.
             for (auto& t : workers) {
@@ -98,7 +99,8 @@ namespace siddiqsoft
                             // The getNextItem performs the wait on the signal and if it expires, returns empty.
                             // If there is an item, it will get that item (minimizing move) and performs the pop
                             // and returns the item so we can invoke the callback outside the lock.
-                            if (auto item = getNextItem(signalWaitInterval); item.has_value() && !st.stop_requested() && callback) {
+                            // FIX: Load signalWaitInterval atomically with acquire semantics
+                            if (auto item = getNextItem(signalWaitInterval.load(std::memory_order_acquire)); item.has_value() && !st.stop_requested() && callback) {
                                 // Delegate to the callback outside the lock
                                 callback(std::move(*item));
                             }
@@ -138,7 +140,7 @@ namespace siddiqsoft
                                    {"workersSize", workers.size()},
                                    {"dequeSize", items.size()},
                                    {"queueCounter", queueCounter.load(std::memory_order_acquire)},
-                                   {"waitInterval", signalWaitInterval.count()}};
+                                   {"waitInterval", signalWaitInterval.load(std::memory_order_acquire).count()}};
         }
 #endif
 
@@ -156,16 +158,16 @@ namespace siddiqsoft
         std::counting_semaphore<> signal {0};
         std::deque<T>             items {};
         std::shared_mutex         items_mutex;
-        /// @brief This is the interval we wait on the signal. It starts off with 500ms and when the thread is to shutdown, it is
-        /// set to 1ms.
-        std::chrono::milliseconds signalWaitInterval {1500};
+        /// @brief This is the interval we wait on the signal. It starts off with 1500ms and when the thread is to shutdown, it is
+        /// set to 0ms. FIX: Made atomic to prevent data race between destructor and worker threads.
+        std::atomic<std::chrono::milliseconds> signalWaitInterval {std::chrono::milliseconds(1500)};
 
 
         /// @brief Performs an acquire on the semaphore and if successful,
         /// attempts to lock to pull the item from the top of the deque.
         /// @param delta Amount of milliseconds to wait on the semaphore
         /// @return An optional which may contain the item or empty (most of the time it'll be empty)
-        std::optional<T> getNextItem(std::chrono::milliseconds& delta)
+        std::optional<T> getNextItem(std::chrono::milliseconds delta)
         {
             if (signal.try_acquire_for(delta)) {
                 // Guard against empty signals which are terminating indicator
@@ -194,4 +196,4 @@ namespace siddiqsoft
 #endif
 
 } // namespace siddiqsoft
-#endif // !BASIC_WORKER_HPP
+#endif // !SIMPLE_POOL_HPP

@@ -48,6 +48,7 @@
 #include <stop_token>
 #include <exception>
 #include <source_location>
+#include <atomic>
 
 #if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
 #include <pthread.h>
@@ -77,7 +78,8 @@ namespace siddiqsoft
         {
             // This is critical step since we wait on the semaphore for a long time (keeps threads suspended) and if we do not
             // decrease this interval then the shutdown will be quite delayed.
-            signalWaitInterval = std::chrono::milliseconds(0);
+            // FIX: Use atomic store with release semantics to safely modify signalWaitInterval from destructor
+            signalWaitInterval.store(std::chrono::milliseconds(0), std::memory_order_release);
             // Empty signal to get our thread to wake up
             signal.release();
             try {
@@ -165,7 +167,7 @@ namespace siddiqsoft
                     {"queueCounter", queueCounter.load(std::memory_order_acquire)},
                     {"threadPriority", Pri},
                     {"outstandingCallback", outstandingCallback.load()},
-                    {"waitInterval", signalWaitInterval.count()}};
+                    {"waitInterval", signalWaitInterval.load(std::memory_order_acquire).count()}};
         }
 #endif
 
@@ -188,9 +190,9 @@ namespace siddiqsoft
         std::counting_semaphore<> signal {0};
 
         /// @brief This is the interval we wait on the signal.
-        /// It starts off with 500ms and when the thread is to shutdown, it is
-        /// set to 1ms.
-        std::chrono::milliseconds signalWaitInterval {1500};
+        /// It starts off with 1500ms and when the thread is to shutdown, it is
+        /// set to 0ms. FIX: Made atomic to prevent data race between destructor and processor thread.
+        std::atomic<std::chrono::milliseconds> signalWaitInterval {std::chrono::milliseconds(1500)};
 
         /// @brief The callback is invoked whenever there is an item in the queue
         std::function<void(T&&)> callback;
@@ -213,7 +215,8 @@ namespace siddiqsoft
                     // If there is an item, it will get that item (minimizing move) and performs the pop
                     // and returns the item so we can invoke the callback outside the lock.
                     // We must ensure that the callback is nonempty!
-                    if (auto item = getNextItem(signalWaitInterval); item && !st.stop_requested() && callback) {
+                    // FIX: Load signalWaitInterval atomically with acquire semantics
+                    if (auto item = getNextItem(signalWaitInterval.load(std::memory_order_acquire)); item && !st.stop_requested() && callback) {
                         // Delegate to the callback outside the lock
                         callback(std::move(*item));
                     }
@@ -229,7 +232,7 @@ namespace siddiqsoft
         /// attempts to lock to pull the item from the top of the deque.
         /// @param delta Amount of milliseconds to wait on the semaphore
         /// @return An optional which may contain the item or empty (most of the time it'll be empty)
-        std::optional<T> getNextItem(std::chrono::milliseconds& delta)
+        std::optional<T> getNextItem(std::chrono::milliseconds delta)
         {
             if (signal.try_acquire_for(delta)) {
                 // Guard against empty signals which are terminating indicator
@@ -262,4 +265,4 @@ namespace siddiqsoft
 #endif
 
 } // namespace siddiqsoft
-#endif // !BASIC_WORKER_HPP
+#endif // !SIMPLE_WORKER_HPP

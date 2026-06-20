@@ -38,6 +38,7 @@
 #define PERIODIC_WORKER_HPP
 
 
+#include <iostream>
 #include <functional>
 #include <memory>
 #include <thread>
@@ -49,6 +50,7 @@
 #include <utility>
 #include <exception>
 #include <source_location>
+#include <atomic>
 
 #if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
 #include <pthread.h>
@@ -98,7 +100,8 @@ namespace siddiqsoft
 
             // This is critical step since we wait on the semaphore for a long time (keeps threads suspended) and if we do not
             // decrease this interval then the shutdown will be quite delayed.
-            invokePeriod = std::chrono::milliseconds(0);
+            // FIX: Use atomic store with release semantics to safely modify invokePeriod from destructor
+            invokePeriod.store(std::chrono::microseconds(0), std::memory_order_release);
             // Empty signal to get our thread to wake up
             signal.release();
 
@@ -189,7 +192,7 @@ namespace siddiqsoft
                     {"outstandingCallbacks", outstandingCallback.load(std::memory_order_acquire)},
                     {"invokeCounter"s, invokeCounter.load(std::memory_order_acquire)},
                     {"threadPriority"s, Pri},
-                    {"waitInterval"s, invokePeriod.count()}};
+                    {"waitInterval"s, invokePeriod.load(std::memory_order_acquire).count()}};
         }
 #endif
 
@@ -205,10 +208,9 @@ namespace siddiqsoft
         std::atomic_uint64_t invokeCounter {0};
         /// @brief Semaphore with initial max of 128 items (backlog)
         std::counting_semaphore<1> signal {0};
-        /// @brief This is the interval we wait on the signal. It starts off with 500ms and when the thread is to shutdown, it is
-        /// set to 1ms.
-        /// Initialize to a sensible default (1500ms) to avoid confusion about zero initialization
-        std::chrono::microseconds invokePeriod {std::chrono::milliseconds(1500)};
+        /// @brief This is the interval we wait on the signal. It starts off with 1500ms and when the thread is to shutdown, it is
+        /// set to 0ms. FIX: Made atomic to prevent data race between destructor and processor thread.
+        std::atomic<std::chrono::microseconds> invokePeriod {std::chrono::milliseconds(1500)};
         /// @brief The callback is invoked whenever there is an item in the queue
         std::function<void()> callback;
         /// @brief Processor thread
@@ -228,7 +230,8 @@ namespace siddiqsoft
                     // This will wait until our period and return.
                     // We do not care about the return from try_acquire_for..
                     // We're using it as an efficient "wait" facility for period.
-                    auto _ = signal.try_acquire_for(invokePeriod);
+                    // FIX: Load invokePeriod atomically with acquire semantics
+                    auto _ = signal.try_acquire_for(invokePeriod.load(std::memory_order_acquire));
 
                     if (!st.stop_requested()) {
                         auto decrementOutstandingCallback = siddiqsoft::RunOnEnd {[&] {
@@ -236,8 +239,8 @@ namespace siddiqsoft
                             outstandingCallback.fetch_sub(1, std::memory_order_release);
                         }};
 
-                        // Increment outstanding callback with acquire semantics
-                        outstandingCallback.fetch_add(1, std::memory_order_acquire);
+                        // Increment outstanding callback with release semantics (FIX: was acquire, should be release)
+                        outstandingCallback.fetch_add(1, std::memory_order_release);
                         try {
                             // Delegate to the callback outside the lock
                             if (callback) callback();
@@ -270,4 +273,4 @@ namespace siddiqsoft
 #endif
 
 } // namespace siddiqsoft
-#endif
+#endif // PERIODIC_WORKER_HPP

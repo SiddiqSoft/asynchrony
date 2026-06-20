@@ -70,6 +70,8 @@ namespace siddiqsoft
         requires((Pri >= -10) && (Pri <= 10))
     struct periodic_worker
     {
+        static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
+
     public:
         // Not copy-able
         periodic_worker(periodic_worker&) = delete;

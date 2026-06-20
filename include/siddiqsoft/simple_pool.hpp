@@ -55,6 +55,8 @@ namespace siddiqsoft
         requires std::is_move_constructible_v<T>
     struct simple_pool
     {
+        static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
+
         simple_pool(simple_pool&&)            = delete;
         simple_pool& operator=(simple_pool&&) = delete;
         simple_pool(simple_pool&)             = delete;
@@ -66,8 +68,6 @@ namespace siddiqsoft
         /// the signal) to be stopped. FIX: Use atomic store with release semantics to safely modify signalWaitInterval.
         ~simple_pool()
         {
-            // Reduce the wait interval to ensure that the threads waiting on the signal abort
-            signalWaitInterval.store(std::chrono::milliseconds(0), std::memory_order_release);
             // Compared to skipping the following code, we save at least about 100ms
             // of idle time waiting for the threads to be signalled by default.
             for (auto& t : workers) {
@@ -100,7 +100,7 @@ namespace siddiqsoft
                             // If there is an item, it will get that item (minimizing move) and performs the pop
                             // and returns the item so we can invoke the callback outside the lock.
                             // FIX: Load signalWaitInterval atomically with acquire semantics
-                            if (auto item = getNextItem(signalWaitInterval.load(std::memory_order_acquire)); item.has_value() && !st.stop_requested() && callback) {
+                            if (auto item = getNextItem(); item.has_value() && !st.stop_requested() && callback) {
                                 // Delegate to the callback outside the lock
                                 callback(std::move(*item));
                             }
@@ -140,7 +140,7 @@ namespace siddiqsoft
                                    {"workersSize", workers.size()},
                                    {"dequeSize", items.size()},
                                    {"queueCounter", queueCounter.load(std::memory_order_acquire)},
-                                   {"waitInterval", signalWaitInterval.load(std::memory_order_acquire).count()}};
+                                   {"waitInterval", DEFAULT_WAIT_FOR_NEXT_ITEM_MS.count()}};
         }
 #endif
 
@@ -158,16 +158,12 @@ namespace siddiqsoft
         std::counting_semaphore<> signal {0};
         std::deque<T>             items {};
         std::shared_mutex         items_mutex;
-        /// @brief This is the interval we wait on the signal. It starts off with 1500ms and when the thread is to shutdown, it is
-        /// set to 0ms. FIX: Made atomic to prevent data race between destructor and worker threads.
-        std::atomic<std::chrono::milliseconds> signalWaitInterval {std::chrono::milliseconds(1500)};
-
 
         /// @brief Performs an acquire on the semaphore and if successful,
         /// attempts to lock to pull the item from the top of the deque.
         /// @param delta Amount of milliseconds to wait on the semaphore
         /// @return An optional which may contain the item or empty (most of the time it'll be empty)
-        std::optional<T> getNextItem(std::chrono::milliseconds delta)
+        std::optional<T> getNextItem(const std::chrono::milliseconds& delta = DEFAULT_WAIT_FOR_NEXT_ITEM_MS)
         {
             if (signal.try_acquire_for(delta)) {
                 // Guard against empty signals which are terminating indicator

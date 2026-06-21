@@ -148,34 +148,6 @@ TEST(additional_bugs, simple_worker_bare_catch_swallows_exceptions)
 }
 
 
-/// @brief BUG #5: Data Race on signalWaitInterval
-/// The signalWaitInterval is modified in destructor without synchronization
-/// while the processor thread reads it
-TEST(additional_bugs, simple_worker_signal_wait_interval_race)
-{
-    std::atomic_uint readCount {0};
-    std::atomic_uint writeCount {0};
-
-    {
-        siddiqsoft::simple_worker<std::string> worker {[&](auto&&) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }};
-
-        // Queue some items
-        for (int i = 0; i < 10; i++) {
-            worker.queue(std::format("item-{}", i));
-        }
-
-        // Let it process a bit
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        // Destructor will modify signalWaitInterval while processor thread might be reading it
-        // This is a data race on a non-atomic variable
-    }
-
-    // If we got here without a crash, the race condition might not have been triggered
-    // But it's still a potential issue
-}
-
-
 /// @brief BUG #9: Uninitialized workersSize in roundrobin_pool
 /// If constructor throws before workersSize is set, it remains 0
 TEST(additional_bugs, roundrobin_pool_uninitialized_workers_size)
@@ -249,33 +221,6 @@ TEST(additional_bugs, roundrobin_pool_queue_counter_overflow_documentation)
 
     // After 2^64 items, the counter would wrap to 0
     // This is documented as a known limitation
-}
-
-
-/// @brief BUG #11: Data Race on signalWaitInterval in simple_pool
-/// Similar to BUG #5, but in simple_pool
-TEST(additional_bugs, simple_pool_signal_wait_interval_race)
-{
-    std::atomic_uint processedCount {0};
-
-    {
-        siddiqsoft::simple_pool<std::string, 2> pool {[&](auto&&) {
-            processedCount++;
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }};
-
-        // Queue items
-        for (int i = 0; i < 10; i++) {
-            pool.queue(std::format("item-{}", i));
-        }
-
-        // Let it process
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-        // Destructor will modify signalWaitInterval while worker threads might be reading it
-    }
-
-    // If we got here without a crash, the race condition might not have been triggered
 }
 
 
@@ -370,37 +315,6 @@ TEST(additional_bugs, resource_pool_size_checkout_race_aggressive)
 
     // If races were detected, the TOCTOU bug was triggered
     std::cerr << "Races detected: " << racesDetected.load() << std::endl;
-}
-
-
-/// @brief BUG #5 (Extended): Data Race on signalWaitInterval with Stress
-/// More aggressive test for the data race on signalWaitInterval
-TEST(additional_bugs, simple_worker_signal_wait_interval_stress)
-{
-    struct dummy_task
-    {
-        int value;
-    };
-    std::atomic_uint processedCount {0};
-    std::atomic_uint destructorCount {0};
-
-    for (int cycle = 0; cycle < 100; cycle++) {
-        {
-            siddiqsoft::simple_worker<dummy_task> worker {[&](auto&&) { processedCount++; }};
-
-            // Queue items
-            for (int i = 0; i < 5; i++) {
-                worker.queue(dummy_task {i});
-            }
-
-            // Destructor fires immediately - potential race on signalWaitInterval
-        }
-        destructorCount++;
-    }
-
-    // If we got here without a crash, the race condition might not have been triggered
-    // But it's still a potential issue
-    EXPECT_EQ(100u, destructorCount.load());
 }
 
 

@@ -65,7 +65,7 @@ namespace siddiqsoft
 
         /// @brief Destructor.
         /// @remarks We need to make sure that the signal wait interval is reduced to 0ms to allow our threads (which are waiting on
-        /// the signal) to be stopped. FIX: Use atomic store with release semantics to safely modify signalWaitInterval.
+        /// the signal) to be stopped.
         ~simple_pool()
         {
             // Compared to skipping the following code, we save at least about 100ms
@@ -99,7 +99,6 @@ namespace siddiqsoft
                             // The getNextItem performs the wait on the signal and if it expires, returns empty.
                             // If there is an item, it will get that item (minimizing move) and performs the pop
                             // and returns the item so we can invoke the callback outside the lock.
-                            // FIX: Load signalWaitInterval atomically with acquire semantics
                             if (auto item = getNextItem(); item.has_value() && !st.stop_requested() && callback) {
                                 // Delegate to the callback outside the lock
                                 callback(std::move(*item));

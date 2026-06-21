@@ -158,10 +158,18 @@ namespace siddiqsoft
         /// @param  this object
         /// @note The use of signal.max() is causing an issue where winmindef.h is defining the `max` as a macro and thus we end up
         /// with compiler error when the client application includes any of the windows headers! Disabled for now.
+        /// @note FIX: Acquire shared lock to prevent data race on items deque when multiple threads call toJson() concurrently
         nlohmann::json toJson() const
         {
+            // Acquire shared lock to safely read items.size()
+            // Multiple readers (toJson calls) can hold the lock simultaneously
+            // Writers (queue/getNextItem) will wait for all readers to release
+            std::shared_lock<std::shared_mutex> readLock(items_mutex);
+            auto itemsSize = items.size();
+            readLock.unlock();
+
             return {{"_typver", "siddiqsoft.asynchrony-lib.simple_worker/0.10"},
-                    {"dequeSize", items.size()},
+                    {"itemsSize", itemsSize},
                     //{"semaphoreMax", signal.max()}, // conflicts with windows headers :-(
                     {"queueCounter", queueCounter.load(std::memory_order_acquire)},
                     {"threadPriority", Pri},
@@ -183,7 +191,7 @@ namespace siddiqsoft
         std::deque<T> items {};
 
         /// @brief Mutex to protect the items
-        std::shared_mutex items_mutex {};
+        mutable std::shared_mutex items_mutex {};
 
         /// @brief Semaphore with default max signals.
         std::counting_semaphore<> signal {0};
@@ -209,7 +217,6 @@ namespace siddiqsoft
                     // If there is an item, it will get that item (minimizing move) and performs the pop
                     // and returns the item so we can invoke the callback outside the lock.
                     // We must ensure that the callback is nonempty!
-                    // FIX: Load signalWaitInterval atomically with acquire semantics
                     if (auto item = getNextItem(); item && !st.stop_requested() && callback) {
                         // Delegate to the callback outside the lock
                         callback(std::move(*item));

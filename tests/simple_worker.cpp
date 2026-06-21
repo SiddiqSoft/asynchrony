@@ -148,7 +148,7 @@ TEST(simple_worker, toJson_fields)
 
     auto j = worker.toJson();
     EXPECT_TRUE(j.contains("_typver"));
-    EXPECT_TRUE(j.contains("dequeSize"));
+    EXPECT_TRUE(j.contains("itemsSize"));
     EXPECT_TRUE(j.contains("queueCounter"));
     EXPECT_TRUE(j.contains("threadPriority"));
     EXPECT_TRUE(j.contains("outstandingCallback"));

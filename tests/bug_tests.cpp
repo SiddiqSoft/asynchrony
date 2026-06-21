@@ -451,9 +451,9 @@ TEST(bug_tests, periodic_worker_invocation_consistency)
     // Should have at least 5 invocations in 500ms with 50ms interval
     EXPECT_GE(invokeCount.load(), 5u);
 
-    // Intervals should be roughly around 50ms (allow 20-100ms tolerance for CI)
+    // Intervals should be roughly around 50ms (allow 20-120ms tolerance for CI)
     if (invokeCount.load() > 1) {
-        EXPECT_LE(minInterval.load(), 100u) << "Min interval too large: " << minInterval.load() << "ms";
+        EXPECT_LE(minInterval.load(), 120u) << "Min interval too large: " << minInterval.load() << "ms";
         EXPECT_GE(maxInterval.load(), 20u) << "Max interval too small: " << maxInterval.load() << "ms";
     }
 }

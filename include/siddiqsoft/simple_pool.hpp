@@ -39,6 +39,8 @@
 #include "simple_worker.hpp"
 #include <optional>
 #include <latch>
+#include <exception>
+#include <atomic>
 #include "siddiqsoft/RunOnEnd.hpp"
 
 namespace siddiqsoft
@@ -53,6 +55,8 @@ namespace siddiqsoft
         requires std::is_move_constructible_v<T>
     struct simple_pool
     {
+        static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
+
         simple_pool(simple_pool&&)            = delete;
         simple_pool& operator=(simple_pool&&) = delete;
         simple_pool(simple_pool&)             = delete;
@@ -60,12 +64,10 @@ namespace siddiqsoft
 
 
         /// @brief Destructor.
-        /// @remarks We need to make sure that the signal wait interval is reduced to 1ms to allow our thread (which are waiting on
-        /// the signal) can be stopped.
+        /// @remarks We need to make sure that the signal wait interval is reduced to 0ms to allow our threads (which are waiting on
+        /// the signal) to be stopped.
         ~simple_pool()
         {
-            // Reduce the wait interval to ensure that the threads waiting on the signal abort
-            signalWaitInterval = std::chrono::milliseconds(0);
             // Compared to skipping the following code, we save at least about 100ms
             // of idle time waiting for the threads to be signalled by default.
             for (auto& t : workers) {
@@ -75,7 +77,6 @@ namespace siddiqsoft
                 if (t.request_stop() && t.joinable()) t.join();
             }
         }
-
 
         /// @brief Contructs a threadpool with N threads with the given callback/worker function
         /// @param c The worker function.
@@ -98,12 +99,14 @@ namespace siddiqsoft
                             // The getNextItem performs the wait on the signal and if it expires, returns empty.
                             // If there is an item, it will get that item (minimizing move) and performs the pop
                             // and returns the item so we can invoke the callback outside the lock.
-                            if (auto item = getNextItem(signalWaitInterval); item.has_value() && !st.stop_requested()) {
+                            if (auto item = getNextItem(); item.has_value() && !st.stop_requested() && callback) {
                                 // Delegate to the callback outside the lock
                                 callback(std::move(*item));
                             }
                         }
-                        catch (...) {
+                        catch (const std::exception& ex) {
+                            // We swallow exceptions from the callback to avoid thread termination and log it if needed.
+                            std::println(std::cerr, "Ignoring Exception in simple_worker callback: {}", ex.what());
                         }
                     } // while ..continue until we're asked to stop
                 });
@@ -118,8 +121,8 @@ namespace siddiqsoft
                 std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
 
                 items.emplace_back(std::move(item));
-                // Move queueCounter increment inside the lock to ensure thread-safe updates
-                ++queueCounter;
+                // Use atomic fetch_add with release semantics to ensure thread-safe updates
+                queueCounter.fetch_add(1, std::memory_order_release);
             }
             signal.release();
         }
@@ -135,8 +138,8 @@ namespace siddiqsoft
             return nlohmann::json {{"_typver", "siddiqsoft.asynchrony-lib.simple_pool/0.10"},
                                    {"workersSize", workers.size()},
                                    {"dequeSize", items.size()},
-                                   {"queueCounter", queueCounter.load()},
-                                   {"waitInterval", signalWaitInterval.count()}};
+                                   {"queueCounter", queueCounter.load(std::memory_order_acquire)},
+                                   {"waitInterval", DEFAULT_WAIT_FOR_NEXT_ITEM_MS.count()}};
         }
 #endif
 
@@ -154,16 +157,12 @@ namespace siddiqsoft
         std::counting_semaphore<> signal {0};
         std::deque<T>             items {};
         std::shared_mutex         items_mutex;
-        /// @brief This is the interval we wait on the signal. It starts off with 500ms and when the thread is to shutdown, it is
-        /// set to 1ms.
-        std::chrono::milliseconds signalWaitInterval {1500};
-
 
         /// @brief Performs an acquire on the semaphore and if successful,
         /// attempts to lock to pull the item from the top of the deque.
         /// @param delta Amount of milliseconds to wait on the semaphore
         /// @return An optional which may contain the item or empty (most of the time it'll be empty)
-        std::optional<T> getNextItem(std::chrono::milliseconds& delta)
+        std::optional<T> getNextItem(const std::chrono::milliseconds& delta = DEFAULT_WAIT_FOR_NEXT_ITEM_MS)
         {
             if (signal.try_acquire_for(delta)) {
                 // Guard against empty signals which are terminating indicator
@@ -192,4 +191,4 @@ namespace siddiqsoft
 #endif
 
 } // namespace siddiqsoft
-#endif // !BASIC_WORKER_HPP
+#endif // !SIMPLE_POOL_HPP

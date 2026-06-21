@@ -6,7 +6,7 @@
 #   - GenProcessInfo_BUILD_TESTS=ON
 #   - CI_BUILDID must be set to the gitversion
 # 
-cmake_minimum_required(VERSION 3.29)
+cmake_minimum_required(VERSION 3.31)
 
 # Version detection must precede project() declaration
 # Figures out ${CURRENT_PROJECT_VERSION} and brings in CPM module
@@ -41,6 +41,12 @@ target_include_directories(${PROJECT_NAME}
 
 # Compile features and options
 target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_23)
+
+# Install natvis file for Visual Studio debugger visualization
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/SiddiqSoft.asynchrony.natvis
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}
+        COMPONENT natvis
+        OPTIONAL)
 
 # ____________________________________
 # Dependencies

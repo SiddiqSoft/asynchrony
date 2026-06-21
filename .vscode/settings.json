@@ -1,0 +1,5 @@
+{
+    "editor.fontFamily": "'IosevkaTermSlab Nerd Font Mono','Latin Modern Mono Light','VictorMono NFM Medium','Iosevka Light','Monoid Nerd Font Mono','FiraCode Nerd Font Mono'",
+    "editor.fontSize": 16,
+    "files.autoSave": "afterDelay"
+}

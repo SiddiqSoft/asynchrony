@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+  <!-- simple_worker visualization -->
+  <Type Name="siddiqsoft::simple_worker&lt;*,*&gt;">
+    <DisplayString>simple_worker&lt;{*(($T1*)this)}&gt; [Queue: {items.size()} items, Total queued: {queueCounter}]</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Queue Size">items.size()</Item>
+      <Item Name="Total Queued">queueCounter</Item>
+      <Item Name="Outstanding Callbacks">outstandingCallback</Item>
+      <Item Name="Thread Priority">Pri</Item>
+      <Item Name="Signal Wait Interval (ms)">signalWaitInterval.count()</Item>
+      <ArrayItems>
+        <Size>items.size()</Size>
+        <ValuePointer>items._Myhead()->_Next</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- simple_pool visualization -->
+  <Type Name="siddiqsoft::simple_pool&lt;*,*&gt;">
+    <DisplayString>simple_pool&lt;{*(($T1*)this)}&gt; [Workers: {workers.size()}, Queue: {items.size()} items, Total queued: {queueCounter}]</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Number of Workers">workers.size()</Item>
+      <Item Name="Queue Size">items.size()</Item>
+      <Item Name="Total Queued">queueCounter</Item>
+      <Item Name="Signal Wait Interval (ms)">signalWaitInterval.count()</Item>
+      <Item Name="Workers">workers</Item>
+      <Item Name="Pending Items">items</Item>
+    </Expand>
+  </Type>
+
+  <!-- periodic_worker visualization -->
+  <Type Name="siddiqsoft::periodic_worker&lt;*&gt;">
+    <DisplayString>periodic_worker [Name: {threadName}, Invoked: {invokeCounter}, Outstanding: {outstandingCallback}]</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Thread Name">threadName</Item>
+      <Item Name="Invoke Counter">invokeCounter</Item>
+      <Item Name="Outstanding Callbacks">outstandingCallback</Item>
+      <Item Name="Thread Priority">Pri</Item>
+      <Item Name="Invoke Period (µs)">invokePeriod.count()</Item>
+    </Expand>
+  </Type>
+
+  <!-- resource_pool visualization -->
+  <Type Name="siddiqsoft::resource_pool&lt;*&gt;">
+    <DisplayString>resource_pool&lt;{*(($T1*)this)}&gt; [Available: {_pool.size()} resources]</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Pool Size">_pool.size()</Item>
+      <ArrayItems>
+        <Size>_pool.size()</Size>
+        <ValuePointer>_pool._Myhead()->_Next</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- roundrobin_pool visualization -->
+  <Type Name="siddiqsoft::roundrobin_pool&lt;*,*&gt;">
+    <DisplayString>roundrobin_pool&lt;{*(($T1*)this)}&gt; [Workers: {workersSize}, Total queued: {queueCounter}]</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Number of Workers">workersSize</Item>
+      <Item Name="Total Queued">queueCounter</Item>
+      <Item Name="Workers">workers</Item>
+    </Expand>
+  </Type>
+
+  <!-- std::deque visualization helper for queue contents -->
+  <Type Name="std::deque&lt;*&gt;">
+    <DisplayString>deque [size: {size()}]</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Size">size()</Item>
+      <ArrayItems>
+        <Size>size()</Size>
+        <ValuePointer>_Myhead()->_Next</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <!-- std::jthread visualization helper -->
+  <Type Name="std::jthread">
+    <DisplayString>jthread [id: {_Thr._Id}]</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Thread ID">_Thr._Id</Item>
+      <Item Name="Joinable">_Thr._Id != 0</Item>
+    </Expand>
+  </Type>
+
+  <!-- std::counting_semaphore visualization helper -->
+  <Type Name="std::counting_semaphore&lt;*&gt;">
+    <DisplayString>counting_semaphore</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Type">counting_semaphore</Item>
+    </Expand>
+  </Type>
+
+  <!-- std::shared_mutex visualization helper -->
+  <Type Name="std::shared_mutex">
+    <DisplayString>shared_mutex</DisplayString>
+    <Expand HideRawView="true">
+      <Item Name="Type">shared_mutex</Item>
+    </Expand>
+  </Type>
+
+  <!-- std::chrono::milliseconds visualization helper -->
+  <Type Name="std::chrono::duration&lt;*,std::milli&gt;">
+    <DisplayString>{count()} ms</DisplayString>
+  </Type>
+
+  <!-- std::chrono::microseconds visualization helper -->
+  <Type Name="std::chrono::duration&lt;*,std::micro&gt;">
+    <DisplayString>{count()} µs</DisplayString>
+  </Type>
+
+</AutoVisualizer>

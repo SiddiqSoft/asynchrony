@@ -61,7 +61,7 @@ namespace siddiqsoft
     {
     private:
         std::deque<T>        _pool {};
-        std::recursive_mutex _poolLock {};
+        std::mutex           _poolLock {};  // FIX: Changed from recursive_mutex to mutex (no recursive locking needed)
 
     public:
         resource_pool()                               = default;
@@ -75,25 +75,27 @@ namespace siddiqsoft
             clear();
         }
 
+        /// @brief Clear all items from the pool
+        /// FIX: Removed unnecessary empty check - clear() is safe on empty deque
         void clear()
         {
-            if (std::lock_guard<std::recursive_mutex> l(_poolLock); !_pool.empty()) {
-                _pool.clear();
-            }
+            std::lock_guard<std::mutex> l(_poolLock);
+            _pool.clear();
         }
 
+        /// @brief Get the current size of the pool
+        /// FIX: Removed unnecessary empty check - return size unconditionally
+        /// This prevents TOCTOU (Time-of-Check-Time-of-Use) race condition
         auto size()
         {
-            if (std::lock_guard<std::recursive_mutex> l(_poolLock); !_pool.empty()) {
-                return _pool.size();
-            }
-
-            return size_t(0);
+            std::lock_guard<std::mutex> l(_poolLock);
+            return _pool.size();
         }
 
         [[nodiscard]] T checkout() /* throw() */
         {
-            if (std::lock_guard<std::recursive_mutex> l(_poolLock); !_pool.empty()) {
+            std::lock_guard<std::mutex> l(_poolLock);
+            if (!_pool.empty()) {
                 RunOnEnd roe([&]() { _pool.pop_front(); });
                 return std::move(_pool.front());
             }
@@ -108,9 +110,8 @@ namespace siddiqsoft
          */
         void checkin(T&& rsrc)
         {
-            if (std::lock_guard<std::recursive_mutex> l(_poolLock); true) {
-                _pool.push_back(std::move(rsrc));
-            }
+            std::lock_guard<std::mutex> l(_poolLock);
+            _pool.push_back(std::move(rsrc));
         }
     };
 } // namespace siddiqsoft

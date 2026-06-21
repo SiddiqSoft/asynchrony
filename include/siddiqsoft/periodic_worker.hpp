@@ -33,10 +33,12 @@
  */
 
 #pragma once
+#include <siddiqsoft/RunOnEnd.hpp>
 #ifndef PERIODIC_WORKER_HPP
 #define PERIODIC_WORKER_HPP
 
 
+#include <iostream>
 #include <functional>
 #include <memory>
 #include <thread>
@@ -46,7 +48,18 @@
 #include <semaphore>
 #include <stop_token>
 #include <utility>
+#include <exception>
+#include <source_location>
+#include <atomic>
 
+#if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+#include <pthread.h>
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+#include <windows.h>
+#include <processthreadsapi.h>
+#endif
+
+#include "private/common.hpp"
 
 namespace siddiqsoft
 {
@@ -57,9 +70,13 @@ namespace siddiqsoft
         requires((Pri >= -10) && (Pri <= 10))
     struct periodic_worker
     {
+        static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
+
     public:
-        periodic_worker(periodic_worker&)  = delete;
-        auto& operator=(periodic_worker&)  = delete;
+        // Not copy-able
+        periodic_worker(periodic_worker&) = delete;
+        auto& operator=(periodic_worker&) = delete;
+        // Not move-able
         periodic_worker(periodic_worker&&) = delete;
         auto& operator=(periodic_worker&&) = delete;
 
@@ -67,30 +84,94 @@ namespace siddiqsoft
         /// @brief Destructor
         /// Cancel the semaphore by first resetting the interval to zero.
         /// Signal the semaphore follow that by requesting thread to stop.
-        /// This is slightly better than allowing the default destructors to kick in. If we do not reduce the interval time and
+        /// This is slightly better than allowing the default destructors to kick in
+        /// If we do not reduce the interval time and
         /// signal a release then the timeout might be quite large!
+        /// If the callback hangs and does not properly check for the stop_token
+        /// then we end up with a locked periodic_worker without a neat way
+        /// to terminate.
         ~periodic_worker()
         {
+#if defined(DEBUG) || defined(_DEBUG)
+            std::println(std::cerr,
+                         "Shutting down periodic worker [{}] with outstanding callbacks [{}] and total invoke count [{}]\n",
+                         threadName,
+                         outstandingCallback.load(std::memory_order_acquire),
+                         invokeCounter.load(std::memory_order_acquire));
+#endif
+
             // This is critical step since we wait on the semaphore for a long time (keeps threads suspended) and if we do not
             // decrease this interval then the shutdown will be quite delayed.
-            invokePeriod = std::chrono::milliseconds(0);
+            // FIX: Use atomic store with release semantics to safely modify invokePeriod from destructor
+            invokePeriod.store(std::chrono::microseconds(0), std::memory_order_release);
             // Empty signal to get our thread to wake up
             signal.release();
+
+#if defined(DEBUG) || defined(_DEBUG)
+            std::println(std::cerr, "Signaled shutdown for periodic worker [{}], waiting for thread to join...\n", threadName);
+#endif
+
             try {
-                // Ask thread to shutdown and if joinable.. join.
-                if (processor.request_stop() && processor.joinable()) processor.join();
+                // Notify the thread to stop.. and wait for a bit.. and then instead of joining we should just let the jthread
+                // destroy. Ask thread to shutdown and if joinable.. join.
+                processor.request_stop();
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                // if (processor.joinable()) processor.join();
             }
-            catch (const std::exception&) {
+            catch (const std::exception& ex) {
+                std::println(std::cerr, "Exception while shutting down periodic worker [{}]: {}", threadName, ex.what());
             }
+
+#if defined(DEBUG) || defined(_DEBUG)
+            std::println(std::cerr, "End of destructor for periodic worker [{}], waiting for thread to join...\n", threadName);
+#endif
         }
 
+        /// @brief This method is to be used by the user when they shutdown their application.
+        /// This is best used for cases when the callback cannot be guaranteed to be "clean"
+        /// or respect the stop_token
+        void forceCleanupTerminate(const std::source_location& sl = std::source_location::current())
+        {
+            std::call_once(flag_forceCleanupTerminate, [&]() {
+                try {
+                    // Notify the thread to stop.. and wait for a bit.. and then instead of joining we should just let the jthread
+                    // destroy. Ask thread to shutdown and if joinable.. join.
+                    processor.request_stop();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+#if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+                    auto nativeHandle = processor.native_handle();
+                    std::println(std::cerr,
+                                 "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
+                                 "ending! from: {}:{}",
+
+                                 sl.file_name(),
+                                 sl.line());
+                    pthread_cancel(nativeHandle);
+                    processor.detach();
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+                auto nativeHandle = processor.native_handle();
+                std::println(std::cerr,
+                             "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
+                             "ending! from: {}:{}",
+                             
+                             sl.file_name(),
+                             sl.line());
+                TerminateThread(nativeHandle, 0);
+                processor.detach();
+#endif
+                }
+                catch (const std::exception& ex) {
+                    std::println(std::cerr, "forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
+                }
+            });
+        }
 
         /// @brief Constructor requires the callback for the thread
         /// @param c The callback which accepts the type T as reference and performs action.
         /// @param interval The interval between each invocation
         periodic_worker(std::function<void()>     c,
                         std::chrono::microseconds interval,
-                        std::string         name = {"anonymous-periodic-worker"})
+                        std::string               name = {"anonymous-periodic-worker"})
             : callback(std::move(c))
             , invokePeriod(interval)
             , threadName(std::move(name))
@@ -110,16 +191,18 @@ namespace siddiqsoft
 
             return {{"_typver"s, "siddiqsoft.asynchrony-lib.periodic_worker/0.10"s},
                     {"threadName", threadName},
-                    {"outstandingCallbacks", outstandingCallback.load()},
-                    {"invokeCounter"s, invokeCounter.load()},
+                    {"outstandingCallbacks", outstandingCallback.load(std::memory_order_acquire)},
+                    {"invokeCounter"s, invokeCounter.load(std::memory_order_acquire)},
                     {"threadPriority"s, Pri},
-                    {"waitInterval"s, invokePeriod.count()}};
+                    {"waitInterval"s, invokePeriod.load(std::memory_order_acquire).count()}};
         }
 #endif
 
     private:
+        std::once_flag flag_forceCleanupTerminate {};
+
         /// @brief Tracks the outstanding callback invocations so we can ensure that they are completed
-        ///        neatly prior to pool shutdown.
+        ///        neatly prior to pool shutdown. Uses acquire/release semantics for proper synchronization.
         std::atomic_uint outstandingCallback {0};
         /// @brief Internal name of the worker thread (when supported the thread name displays in the debugger)
         std::string threadName {"anonymous-periodic-worker"};
@@ -127,10 +210,9 @@ namespace siddiqsoft
         std::atomic_uint64_t invokeCounter {0};
         /// @brief Semaphore with initial max of 128 items (backlog)
         std::counting_semaphore<1> signal {0};
-        /// @brief This is the interval we wait on the signal. It starts off with 500ms and when the thread is to shutdown, it is
-        /// set to 1ms.
-        /// Initialize to a sensible default (1500ms) to avoid confusion about zero initialization
-        std::chrono::microseconds invokePeriod {std::chrono::milliseconds(1500)};
+        /// @brief This is the interval we wait on the signal. It starts off with 1500ms and when the thread is to shutdown, it is
+        /// set to 0ms. FIX: Made atomic to prevent data race between destructor and processor thread.
+        std::atomic<std::chrono::microseconds> invokePeriod {std::chrono::milliseconds(1500)};
         /// @brief The callback is invoked whenever there is an item in the queue
         std::function<void()> callback;
         /// @brief Processor thread
@@ -150,17 +232,31 @@ namespace siddiqsoft
                     // This will wait until our period and return.
                     // We do not care about the return from try_acquire_for..
                     // We're using it as an efficient "wait" facility for period.
-                    auto _ = signal.try_acquire_for(invokePeriod);
+                    // FIX: Load invokePeriod atomically with acquire semantics
+                    auto _ = signal.try_acquire_for(invokePeriod.load(std::memory_order_acquire));
 
                     if (!st.stop_requested()) {
-                        // Delegate to the callback outside the lock
-                        ++outstandingCallback;
-                        callback();
-                        invokeCounter++;
-                        --outstandingCallback;
+                        auto decrementOutstandingCallback = siddiqsoft::RunOnEnd {[&] {
+                            // Decrement outstanding callback
+                            outstandingCallback.fetch_sub(1, std::memory_order_release);
+                        }};
+
+                        // Increment outstanding callback with release semantics (FIX: was acquire, should be release)
+                        outstandingCallback.fetch_add(1, std::memory_order_release);
+                        try {
+                            // Delegate to the callback outside the lock
+                            if (callback) callback();
+                            invokeCounter.fetch_add(1, std::memory_order_release);
+                        }
+                        catch (const std::exception& ex) {
+                            // We swallow exceptions from the callback to avoid thread termination and log it if needed.
+                            std::println(std::cerr, "Ignoring Exception (inner) in simple_worker callback: {}", ex.what());
+                        }
                     }
                 }
-                catch (...) {
+                catch (const std::exception& ex) {
+                    // We swallow exceptions from the callback to avoid thread termination and log it if needed.
+                    std::println(std::cerr, "Ignoring Exception (outer) in simple_worker callback: {}", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};
@@ -179,4 +275,4 @@ namespace siddiqsoft
 #endif
 
 } // namespace siddiqsoft
-#endif
+#endif // PERIODIC_WORKER_HPP

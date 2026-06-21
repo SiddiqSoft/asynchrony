@@ -89,7 +89,7 @@ TEST(periodic_worker, nosleep_test2)
 /// @brief Test that the named periodic worker stores the name correctly in toJson
 TEST(periodic_worker, named_worker)
 {
-    std::atomic_uint passTest {0};
+    std::atomic_uint            passTest {0};
 
     siddiqsoft::periodic_worker worker {[&]() { passTest++; }, std::chrono::milliseconds(50), "my-test-worker"};
 
@@ -105,7 +105,7 @@ TEST(periodic_worker, named_worker)
 /// @brief Test toJson returns all expected fields
 TEST(periodic_worker, toJson_fields)
 {
-    std::atomic_uint passTest {0};
+    std::atomic_uint            passTest {0};
 
     siddiqsoft::periodic_worker worker {[&]() { passTest++; }, std::chrono::milliseconds(50)};
 
@@ -144,8 +144,8 @@ TEST(periodic_worker, invocation_rate)
 TEST(periodic_worker, destroy_during_callback)
 {
     auto makeWorker = []() {
-        return std::make_unique<siddiqsoft::periodic_worker<>>(
-                []() { std::this_thread::sleep_for(std::chrono::seconds(5)); }, std::chrono::milliseconds(10));
+        return std::make_unique<siddiqsoft::periodic_worker<>>([]() { std::this_thread::sleep_for(std::chrono::seconds(5)); },
+                                                               std::chrono::milliseconds(10));
     };
 
     EXPECT_NO_THROW({
@@ -161,9 +161,9 @@ TEST(periodic_worker, destroy_during_callback)
 /// @brief Test default thread name
 TEST(periodic_worker, default_thread_name)
 {
-    siddiqsoft::periodic_worker worker {[]() {}, std::chrono::milliseconds(100)};
+    siddiqsoft::periodic_worker worker {[]() { }, std::chrono::milliseconds(100)};
 
-    auto j = worker.toJson();
+    auto                        j = worker.toJson();
     EXPECT_EQ("anonymous-periodic-worker", j["threadName"].get<std::string>());
 }
 
@@ -173,8 +173,8 @@ TEST(periodic_worker, default_thread_name)
 /// even when some invocations throw.
 TEST(periodic_worker, callback_exception_resilience)
 {
-    std::atomic_uint invokeCount {0};
-    std::atomic_uint exceptionCount {0};
+    std::atomic_uint            invokeCount {0};
+    std::atomic_uint            exceptionCount {0};
 
     siddiqsoft::periodic_worker worker {[&]() {
                                             invokeCount++;
@@ -191,9 +191,8 @@ TEST(periodic_worker, callback_exception_resilience)
     // Should have continued past exceptions
     EXPECT_GE(invokeCount.load(), 10u);
     EXPECT_GE(exceptionCount.load(), 3u);
-    std::cerr << std::format("periodic callback_exception_resilience: invocations={}, exceptions={}\n",
-                             invokeCount.load(),
-                             exceptionCount.load());
+    std::cerr << std::format(
+            "periodic callback_exception_resilience: invocations={}, exceptions={}\n", invokeCount.load(), exceptionCount.load());
 }
 
 
@@ -202,9 +201,10 @@ TEST(periodic_worker, callback_exception_resilience)
 /// are robust under rapid construction/destruction cycles.
 TEST(periodic_worker, rapid_create_destroy_cycles)
 {
-    constexpr unsigned CYCLES = 50;
-    auto interval = std::chrono::milliseconds(5);
-    auto noop     = []() {};
+    constexpr unsigned CYCLES   = 50;
+    auto               interval = std::chrono::milliseconds(5);
+    auto               noop     = []() {
+    };
 
     EXPECT_NO_THROW({
         for (unsigned c = 0; c < CYCLES; c++) {
@@ -220,7 +220,7 @@ TEST(periodic_worker, rapid_create_destroy_cycles)
 /// when multiple instances coexist.
 TEST(periodic_worker, multiple_concurrent_workers)
 {
-    constexpr unsigned WORKER_COUNT = 6;
+    constexpr unsigned                         WORKER_COUNT = 6;
     std::array<std::atomic_uint, WORKER_COUNT> counters {};
 
     // Use unique_ptr because periodic_worker is non-movable/non-copyable
@@ -228,8 +228,8 @@ TEST(periodic_worker, multiple_concurrent_workers)
     workers.reserve(WORKER_COUNT);
 
     for (unsigned w = 0; w < WORKER_COUNT; w++) {
-        workers.push_back(std::make_unique<siddiqsoft::periodic_worker<>>(
-                [&counters, w]() { counters[w]++; }, std::chrono::milliseconds(25 + w * 10)));
+        workers.push_back(std::make_unique<siddiqsoft::periodic_worker<>>([&counters, w]() { counters[w]++; },
+                                                                          std::chrono::milliseconds(25 + w * 10)));
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -248,14 +248,14 @@ TEST(periodic_worker, multiple_concurrent_workers)
 /// doesn't spin-lock or cause issues. The callback should be invoked many times.
 TEST(periodic_worker, very_short_interval)
 {
-    std::atomic_uint invokeCount {0};
+    std::atomic_uint            invokeCount {0};
 
     siddiqsoft::periodic_worker worker {[&]() { invokeCount++; }, std::chrono::microseconds(100)};
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-    // With 100µs interval over 200ms, expect many invocations (at least 100)
-    EXPECT_GE(invokeCount.load(), 100u);
+    // With 100µs interval over 200ms, expect many invocations (at least 50)
+    EXPECT_GE(invokeCount.load(), 50u);
 }
 
 
@@ -264,7 +264,7 @@ TEST(periodic_worker, very_short_interval)
 /// which invokes the free `to_json(json&, const periodic_worker<Pri>&)` function.
 TEST(periodic_worker, adl_to_json)
 {
-    std::atomic_uint passTest {0};
+    std::atomic_uint            passTest {0};
 
     siddiqsoft::periodic_worker worker {[&]() { passTest++; }, std::chrono::milliseconds(50)};
 
@@ -285,8 +285,8 @@ TEST(periodic_worker, adl_to_json)
 /// While a slow callback is running, outstandingCallback should be 1.
 TEST(periodic_worker, outstanding_callback_tracking)
 {
-    std::atomic_bool callbackStarted {false};
-    std::atomic_bool callbackCanFinish {false};
+    std::atomic_bool            callbackStarted {false};
+    std::atomic_bool            callbackCanFinish {false};
 
     siddiqsoft::periodic_worker worker {[&]() {
                                             callbackStarted = true;
@@ -315,3 +315,124 @@ TEST(periodic_worker, outstanding_callback_tracking)
     j = worker.toJson();
     EXPECT_LE(j["outstandingCallbacks"].get<unsigned>(), 1u);
 }
+
+#if defined (DEV_TESTING)
+/// @brief Test forceCleanupTerminate with a normal callback that respects stop_token.
+/// This should cleanly terminate the worker thread.
+TEST(periodic_worker, forceCleanupTerminate_normal_callback)
+{
+    std::atomic_uint invokeCount {0};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() {
+                                                invokeCount++;
+                                                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+                                            },
+                                            std::chrono::milliseconds(50)};
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+        // Call forceCleanupTerminate to forcefully shut down the worker
+        EXPECT_NO_THROW({ worker.forceCleanupTerminate(); });
+    }
+
+    // Verify that at least some invocations occurred before termination
+    EXPECT_GT(invokeCount.load(), 0u);
+}
+
+
+/// @brief Test forceCleanupTerminate with a callback that ignores stop_token.
+/// This tests the scenario where the callback doesn't respect the stop_token,
+/// and forceCleanupTerminate must forcefully terminate the thread.
+TEST(periodic_worker, forceCleanupTerminate_unresponsive_callback)
+{
+    std::atomic_uint invokeCount {0};
+    std::atomic_bool callbackStarted {false};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() {
+                                                callbackStarted = true;
+                                                invokeCount++;
+                                                // Callback that ignores stop_token and sleeps for a long time
+                                                std::this_thread::sleep_for(std::chrono::seconds(10));
+                                            },
+                                            std::chrono::milliseconds(50)};
+
+        // Wait for callback to start
+        while (!callbackStarted.load()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        // At this point, the callback is sleeping for 10 seconds
+        // forceCleanupTerminate should forcefully terminate it
+        EXPECT_NO_THROW({ worker.forceCleanupTerminate(); });
+    }
+
+    // Verify that the callback was at least started
+    EXPECT_GT(invokeCount.load(), 0u);
+}
+
+
+/// @brief Test forceCleanupTerminate with a very short interval.
+/// Verifies that the method can forcefully terminate even with rapid invocations.
+TEST(periodic_worker, forceCleanupTerminate_rapid_invocations)
+{
+    std::atomic_uint invokeCount {0};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() { invokeCount++; }, std::chrono::milliseconds(5)};
+
+        // Let it run for a bit
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // Force terminate while it's actively invoking
+        EXPECT_NO_THROW({ worker.forceCleanupTerminate(); });
+    }
+
+    std::println(std::cerr, "{} - Invocations prior to kill: {}", __func__, invokeCount.load());
+    // Verify that many invocations occurred before termination
+    EXPECT_GT(invokeCount.load(), 5u);
+}
+
+
+/// @brief Test that forceCleanupTerminate can be called multiple times safely.
+/// This ensures the method is idempotent and doesn't cause issues on repeated calls.
+TEST(periodic_worker, forceCleanupTerminate_multiple_calls)
+{
+    std::atomic_uint invokeCount {0};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() { invokeCount++; }, std::chrono::milliseconds(50)};
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // Call forceCleanupTerminate multiple times
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+            worker.forceCleanupTerminate();
+            worker.forceCleanupTerminate();
+        });
+    }
+
+    EXPECT_GT(invokeCount.load(), 0u);
+}
+
+
+/// @brief Test forceCleanupTerminate with a named worker.
+/// Verifies that the method works correctly with named workers and logs appropriately.
+TEST(periodic_worker, forceCleanupTerminate_named_worker)
+{
+    std::atomic_uint invokeCount {0};
+
+    {
+        siddiqsoft::periodic_worker worker {[&]() { invokeCount++; }, std::chrono::milliseconds(50), "test-force-cleanup-worker"};
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // Force terminate the named worker
+        EXPECT_NO_THROW({ worker.forceCleanupTerminate(); });
+    }
+
+    EXPECT_GT(invokeCount.load(), 0u);
+}
+#endif

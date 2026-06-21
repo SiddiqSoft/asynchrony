@@ -33,10 +33,12 @@
  */
 
 #pragma once
+#include <chrono>
 #ifndef SIMPLE_WORKER_HPP
 #define SIMPLE_WORKER_HPP
 
 
+#include <iostream>
 #include <functional>
 #include <memory>
 #include <thread>
@@ -45,9 +47,19 @@
 #include <deque>
 #include <semaphore>
 #include <stop_token>
+#include <exception>
+#include <source_location>
+#include <atomic>
+
+#if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+#include <pthread.h>
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+#include <windows.h>
+#include <processthreadsapi.h>
+#endif
 
 #include "siddiqsoft/RunOnEnd.hpp"
-
+#include "private/common.hpp"
 
 namespace siddiqsoft
 {
@@ -58,16 +70,15 @@ namespace siddiqsoft
         requires((Pri >= -10) && (Pri <= 10)) && std::move_constructible<T>
     struct simple_worker
     {
+        static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
+
     public:
-        simple_worker(simple_worker&)  = delete;
-        auto operator=(simple_worker&) = delete;
+        simple_worker(const simple_worker&)            = delete;
+        simple_worker& operator=(const simple_worker&) = delete;
 
 
         ~simple_worker()
         {
-            // This is critical step since we wait on the semaphore for a long time (keeps threads suspended) and if we do not
-            // decrease this interval then the shutdown will be quite delayed.
-            signalWaitInterval = std::chrono::milliseconds(0);
             // Empty signal to get our thread to wake up
             signal.release();
             try {
@@ -78,16 +89,48 @@ namespace siddiqsoft
             }
         }
 
-
-        /// @brief Move constructor
-        /// @param src Source to be moved into this object
-        simple_worker(simple_worker&& src) noexcept
-            : callback(std::move(src.callback))
+        /// @brief This method is to be used by the user when they shutdown their application.
+        /// This is best used for cases when the callback cannot be guaranteed to be "clean"
+        /// or respect the stop_token
+        void forceCleanupTerminate(const std::source_location& sl = std::source_location::current())
         {
-            // NOTE
-            // We do not move the items or the signal.. the use case is that we would use the move constructor to facilitate adding
-            // this object in std::vector
+            std::call_once(flag_forceCleanupTerminate, [&]() {
+                try {
+                    // Notify the thread to stop.. and wait for a bit.. and then instead of joining we should just let the jthread
+                    // destroy. Ask thread to shutdown and if joinable.. join.
+                    processor.request_stop();
+                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+#if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
+                    auto nativeHandle = processor.native_handle();
+                    std::println(std::cerr,
+                                 "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
+                                 "ending! from: {}:{}",
+
+                                 sl.file_name(),
+                                 sl.line());
+                    pthread_cancel(nativeHandle);
+                    processor.detach();
+#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
+                auto nativeHandle = processor.native_handle();
+                std::println(std::cerr,
+                             "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
+                             "ending! from: {}:{}",
+                             
+                             sl.file_name(),
+                             sl.line());
+                TerminateThread(nativeHandle, 0);
+                processor.detach();
+#endif
+                }
+                catch (const std::exception& ex) {
+                    std::println(std::cerr, "forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
+                }
+            });
         }
+
+        /// @brief Move constructor and assignment are disallowed to avoid transferring thread ownership
+        simple_worker(simple_worker&&)            = delete;
+        simple_worker& operator=(simple_worker&&) = delete;
 
         /// @brief Constructor requires the callback for the thread
         /// @param c The callback which accepts the type T as reference and performs action.
@@ -101,14 +144,12 @@ namespace siddiqsoft
         /// @param item This is move'd into the internal deque
         void queue(T&& item)
         {
-            {
-                std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
+            // The RunOnEnd ensures we release the signal upon completion.
+            siddiqsoft::RunOnEnd                autoReleaseSignal {[&] { signal.release(); }};
+            std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
 
-                items.emplace_back(std::move(item));
-                queueCounter++;
-            }
-            // Signal outside the lock and after adding the item.
-            signal.release();
+            items.emplace_back(std::move(item));
+            queueCounter.fetch_add(1, std::memory_order_release);
         }
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)
@@ -117,34 +158,47 @@ namespace siddiqsoft
         /// @param  this object
         /// @note The use of signal.max() is causing an issue where winmindef.h is defining the `max` as a macro and thus we end up
         /// with compiler error when the client application includes any of the windows headers! Disabled for now.
+        /// @note FIX: Acquire shared lock to prevent data race on items deque when multiple threads call toJson() concurrently
         nlohmann::json toJson() const
         {
+            // Acquire shared lock to safely read items.size()
+            // Multiple readers (toJson calls) can hold the lock simultaneously
+            // Writers (queue/getNextItem) will wait for all readers to release
+            std::shared_lock<std::shared_mutex> readLock(items_mutex);
+            auto itemsSize = items.size();
+            readLock.unlock();
+
             return {{"_typver", "siddiqsoft.asynchrony-lib.simple_worker/0.10"},
-                    {"dequeSize", items.size()},
+                    {"itemsSize", itemsSize},
                     //{"semaphoreMax", signal.max()}, // conflicts with windows headers :-(
-                    {"queueCounter", queueCounter.load()},
+                    {"queueCounter", queueCounter.load(std::memory_order_acquire)},
                     {"threadPriority", Pri},
                     {"outstandingCallback", outstandingCallback.load()},
-                    {"waitInterval", signalWaitInterval.count()}};
+                    {"waitInterval", DEFAULT_WAIT_FOR_NEXT_ITEM_MS.count()}};
         }
 #endif
 
     private:
+        std::once_flag flag_forceCleanupTerminate {};
+
         /// @brief Check the outstanding callback
         std::atomic_uint outstandingCallback {0};
+
         /// @brief Track number of times we've got items added into our queue
         std::atomic_uint64_t queueCounter {0};
+
         /// @brief The internal queue for this worker.
         std::deque<T> items {};
+
         /// @brief Mutex to protect the items
-        std::shared_mutex items_mutex {};
+        mutable std::shared_mutex items_mutex {};
+
         /// @brief Semaphore with default max signals.
         std::counting_semaphore<> signal {0};
-        /// @brief This is the interval we wait on the signal. It starts off with 500ms and when the thread is to shutdown, it is
-        /// set to 1ms.
-        std::chrono::milliseconds signalWaitInterval {1500};
+
         /// @brief The callback is invoked whenever there is an item in the queue
         std::function<void(T&&)> callback;
+
         /// @brief Processor thread
         /// The driver runs forever until signalled to stop
         /// Tries to get next item ready in the queue (for max 500ms cycle)
@@ -162,12 +216,15 @@ namespace siddiqsoft
                     // The getNextItem performs the wait on the signal and if it expires, returns empty.
                     // If there is an item, it will get that item (minimizing move) and performs the pop
                     // and returns the item so we can invoke the callback outside the lock.
-                    if (auto item = getNextItem(signalWaitInterval); item && !st.stop_requested()) {
+                    // We must ensure that the callback is nonempty!
+                    if (auto item = getNextItem(); item && !st.stop_requested() && callback) {
                         // Delegate to the callback outside the lock
                         callback(std::move(*item));
                     }
                 }
-                catch (...) {
+                catch (const std::exception& ex) {
+                    // We swallow exceptions from the callback to avoid thread termination and log it if needed.
+                    std::println(std::cerr, "Ignoring Exception in simple_worker callback: {}", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};
@@ -176,7 +233,7 @@ namespace siddiqsoft
         /// attempts to lock to pull the item from the top of the deque.
         /// @param delta Amount of milliseconds to wait on the semaphore
         /// @return An optional which may contain the item or empty (most of the time it'll be empty)
-        std::optional<T> getNextItem(std::chrono::milliseconds& delta)
+        std::optional<T> getNextItem(const std::chrono::milliseconds& delta = DEFAULT_WAIT_FOR_NEXT_ITEM_MS)
         {
             if (signal.try_acquire_for(delta)) {
                 // Guard against empty signals which are terminating indicator
@@ -209,4 +266,4 @@ namespace siddiqsoft
 #endif
 
 } // namespace siddiqsoft
-#endif // !BASIC_WORKER_HPP
+#endif // !SIMPLE_WORKER_HPP

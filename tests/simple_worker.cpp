@@ -97,11 +97,11 @@ TEST(simple_worker, test3)
         {
         }
 
-        nonCopyableObject(nonCopyableObject&) = delete;
+        nonCopyableObject(nonCopyableObject&)            = delete;
         nonCopyableObject& operator=(nonCopyableObject&) = delete;
 
         // Move constructors
-        nonCopyableObject(nonCopyableObject&&) = default;
+        nonCopyableObject(nonCopyableObject&&)            = default;
         nonCopyableObject& operator=(nonCopyableObject&&) = default;
     };
 
@@ -124,9 +124,7 @@ TEST(simple_worker, multiple_items)
     constexpr unsigned                        ITEM_COUNT = 50;
     std::atomic_uint                          processedCount {0};
 
-    siddiqsoft::simple_worker<nlohmann::json> worker {[&](auto&& item) {
-        processedCount++;
-    }};
+    siddiqsoft::simple_worker<nlohmann::json> worker {[&](auto&& item) { processedCount++; }};
 
     for (unsigned i = 0; i < ITEM_COUNT; i++) {
         worker.queue({{"index", i}});
@@ -143,19 +141,19 @@ TEST(simple_worker, multiple_items)
 /// @brief Test that toJson returns expected fields
 TEST(simple_worker, toJson_fields)
 {
-    siddiqsoft::simple_worker<nlohmann::json> worker {[](auto&&) {}};
+    siddiqsoft::simple_worker<nlohmann::json> worker {[](auto&&) { }};
 
     worker.queue({{"test", true}});
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     auto j = worker.toJson();
     EXPECT_TRUE(j.contains("_typver"));
-    EXPECT_TRUE(j.contains("dequeSize"));
+    EXPECT_TRUE(j.contains("itemsSize"));
     EXPECT_TRUE(j.contains("queueCounter"));
     EXPECT_TRUE(j.contains("threadPriority"));
     EXPECT_TRUE(j.contains("outstandingCallback"));
     EXPECT_TRUE(j.contains("waitInterval"));
-    EXPECT_EQ(0, j["threadPriority"].get<int>());
+    EXPECT_EQ(0, j["threadPriority"].template get<int>());
     EXPECT_EQ(1, j["queueCounter"].get<uint64_t>());
 }
 
@@ -231,9 +229,9 @@ TEST(simple_worker, destroy_with_pending_items)
 /// The worker thread catches all exceptions internally; subsequent items must still be processed.
 TEST(simple_worker, callback_exception_resilience)
 {
-    constexpr unsigned ITEM_COUNT = 20;
-    std::atomic_uint   processedCount {0};
-    std::atomic_uint   exceptionCount {0};
+    constexpr unsigned                        ITEM_COUNT = 20;
+    std::atomic_uint                          processedCount {0};
+    std::atomic_uint                          exceptionCount {0};
 
     siddiqsoft::simple_worker<nlohmann::json> worker {[&](auto&& item) {
         unsigned idx = item["index"].template get<unsigned>();
@@ -266,7 +264,7 @@ TEST(simple_worker, rapid_create_destroy_cycles)
 
     EXPECT_NO_THROW({
         for (unsigned c = 0; c < CYCLES; c++) {
-            siddiqsoft::simple_worker<std::string> worker {[](auto&&) {}};
+            siddiqsoft::simple_worker<std::string> worker {[](auto&&) { }};
             worker.queue(std::string("ping"));
             // Immediate destruction — no sleep
         }
@@ -280,14 +278,14 @@ TEST(simple_worker, rapid_create_destroy_cycles)
 /// re-entrant queuing should not deadlock.
 TEST(simple_worker, reentrant_queue_from_callback)
 {
-    std::atomic_uint processedCount {0};
+    std::atomic_uint   processedCount {0};
     constexpr unsigned INITIAL_ITEMS = 5;
     // Each initial item spawns one child => total = INITIAL_ITEMS + INITIAL_ITEMS = 10
-    constexpr unsigned EXPECTED_TOTAL = INITIAL_ITEMS * 2;
+    constexpr unsigned                         EXPECTED_TOTAL = INITIAL_ITEMS * 2;
 
-    siddiqsoft::simple_worker<nlohmann::json>* workerPtr = nullptr;
+    siddiqsoft::simple_worker<nlohmann::json>* workerPtr      = nullptr;
 
-    siddiqsoft::simple_worker<nlohmann::json> worker {[&](auto&& item) {
+    siddiqsoft::simple_worker<nlohmann::json>  worker {[&](auto&& item) {
         processedCount++;
         // If this is a "parent" item, queue a "child" item from within the callback
         if (item.contains("spawn") && item["spawn"].template get<bool>()) {
@@ -310,24 +308,22 @@ TEST(simple_worker, reentrant_queue_from_callback)
 /// maximizing contention on the internal mutex and semaphore.
 TEST(simple_worker, concurrent_producer_flood)
 {
-    constexpr int  PRODUCER_COUNT    = 8;
-    constexpr int  ITEMS_PER_PRODUCER = 100;
-    constexpr int  TOTAL_ITEMS       = PRODUCER_COUNT * ITEMS_PER_PRODUCER;
-    std::atomic_uint processedCount {0};
+    constexpr int                             PRODUCER_COUNT     = 8;
+    constexpr int                             ITEMS_PER_PRODUCER = 100;
+    constexpr int                             TOTAL_ITEMS        = PRODUCER_COUNT * ITEMS_PER_PRODUCER;
+    std::atomic_uint                          processedCount {0};
 
-    siddiqsoft::simple_worker<nlohmann::json> worker {[&](auto&&) {
-        processedCount++;
-    }};
+    siddiqsoft::simple_worker<nlohmann::json> worker {[&](auto&&) { processedCount++; }};
 
-    std::barrier              startBarrier {PRODUCER_COUNT};
-    std::vector<std::jthread> producers;
+    std::barrier                              startBarrier {PRODUCER_COUNT};
+    std::vector<std::jthread>                 producers;
     producers.reserve(PRODUCER_COUNT);
 
     for (int p = 0; p < PRODUCER_COUNT; p++) {
         producers.emplace_back([&, p]() {
             startBarrier.arrive_and_wait();
             for (int i = 0; i < ITEMS_PER_PRODUCER; i++) {
-                worker.queue({{"producer", p}, {"item", i}});
+                worker.queue(nlohmann::json {{"producer", p}, {"item", i}});
             }
         });
     }
@@ -350,9 +346,7 @@ TEST(simple_worker, burst_queue_then_destroy)
     std::atomic_uint   processedCount {0};
 
     EXPECT_NO_THROW({
-        siddiqsoft::simple_worker<std::string> worker {[&](auto&&) {
-            processedCount++;
-        }};
+        siddiqsoft::simple_worker<std::string> worker {[&](auto&&) { processedCount++; }};
 
         for (unsigned i = 0; i < BURST_SIZE; i++) {
             worker.queue(std::format("burst-{}", i));
@@ -370,9 +364,8 @@ TEST(simple_worker, burst_queue_then_destroy)
 TEST(simple_worker, idle_worker_clean_shutdown)
 {
     EXPECT_NO_THROW({
-        siddiqsoft::simple_worker<std::string> worker {[](auto&&) {
-            FAIL() << "Callback should never be invoked on an idle worker";
-        }};
+        siddiqsoft::simple_worker<std::string> worker {
+                [](auto&&) { FAIL() << "Callback should never be invoked on an idle worker"; }};
         // Let it sit idle for a bit
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
         // Destructor fires — should not hang
@@ -385,7 +378,7 @@ TEST(simple_worker, idle_worker_clean_shutdown)
 /// which invokes the free `to_json(json&, const simple_worker<T>&)` function.
 TEST(simple_worker, adl_to_json)
 {
-    siddiqsoft::simple_worker<nlohmann::json> worker {[](auto&&) {}};
+    siddiqsoft::simple_worker<nlohmann::json> worker {[](auto&&) { }};
 
     worker.queue({{"test", "adl"}});
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -399,45 +392,125 @@ TEST(simple_worker, adl_to_json)
     std::cerr << "ADL to_json result: " << j.dump() << std::endl;
 }
 
-
-/// @brief Test the move constructor of simple_worker.
-/// The move constructor is used internally when building vectors of workers
-/// (e.g., in roundrobin_pool). This test exercises it directly by std::move
-/// from an lvalue, which prevents copy elision.
-TEST(simple_worker, move_constructor)
+// If we enable this test for CI, it is guaranteed to throw ASAN on Linux
+#if defined (DEV_TESTING)
+/// @brief Test forceCleanupTerminate with a normal callback that respects stop_token.
+/// This should cleanly terminate the worker thread.
+TEST(simple_worker, forceCleanupTerminate_normal_callback)
 {
     std::atomic_uint processedCount {0};
 
-    siddiqsoft::simple_worker<nlohmann::json> original {[&](auto&& item) {
-        processedCount++;
-    }};
+    try {
+        siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) {
+            processedCount++;
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }};
 
-    // Explicit std::move from lvalue — copy elision cannot apply here
-    siddiqsoft::simple_worker<nlohmann::json> worker {std::move(original)};
+        worker.queue(std::string("item1"));
+        worker.queue(std::string("item2"));
 
-    worker.queue({{"test", "move"}});
-    worker.queue({{"test", "move2"}});
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    EXPECT_EQ(2u, processedCount.load());
+        // Call forceCleanupTerminate to forcefully shut down the worker
+        EXPECT_NO_THROW({ worker.forceCleanupTerminate(); });
+    }
+    catch (...) {
+    }
+
+    // Verify that at least some items were processed before termination
+    EXPECT_GT(processedCount.load(), 0u);
+}
+
+/// @brief Test forceCleanupTerminate with a callback that ignores stop_token.
+/// This tests the scenario where the callback doesn't respect the stop_token,
+/// and forceCleanupTerminate must forcefully terminate the thread.
+TEST(simple_worker, forceCleanupTerminate_unresponsive_callback)
+{
+    std::atomic_uint processedCount {0};
+    std::atomic_bool callbackStarted {false};
+
+    try {
+        siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) {
+            callbackStarted = true;
+            processedCount++;
+            // Callback that ignores stop_token and sleeps for a long time
+            std::this_thread::sleep_for(std::chrono::seconds(10));
+        }};
+
+        worker.queue(std::string("blocking_item"));
+
+        // Wait for callback to start
+        while (!callbackStarted.load()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+
+        // At this point, the callback is sleeping for 10 seconds
+        // forceCleanupTerminate should forcefully terminate it
+        EXPECT_NO_THROW({ worker.forceCleanupTerminate(); });
+    }
+    catch (...) {
+    }
+
+    // Verify that the callback was at least started
+    EXPECT_GT(processedCount.load(), 0u);
 }
 
 
-/// @brief Test the move constructor with string type to cover another template instantiation.
-TEST(simple_worker, move_constructor_string)
+/// @brief Test forceCleanupTerminate with multiple queued items.
+/// Verifies that the method can forcefully terminate even with pending work.
+TEST(simple_worker, forceCleanupTerminate_with_pending_items)
+{
+    std::atomic_uint   processedCount {0};
+    constexpr unsigned ITEM_COUNT = 100;
+
+    {
+        siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) {
+            processedCount++;
+            // Slow callback to ensure items remain pending
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }};
+
+        // Queue many items
+        for (unsigned i = 0; i < ITEM_COUNT; i++) {
+            worker.queue(std::format("item-{}", i));
+        }
+
+        // Give it a moment to start processing
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        // Force terminate while items are still pending
+        EXPECT_NO_THROW({ worker.forceCleanupTerminate(); });
+    }
+
+    // Verify that some items were processed but not all (due to forced termination)
+    EXPECT_GT(processedCount.load(), 0u);
+    EXPECT_LT(processedCount.load(), ITEM_COUNT);
+}
+
+
+/// @brief Test that forceCleanupTerminate can be called multiple times safely.
+/// This ensures the method is idempotent and doesn't cause issues on repeated calls.
+TEST(simple_worker, forceCleanupTerminate_multiple_calls)
 {
     std::atomic_uint processedCount {0};
 
-    siddiqsoft::simple_worker<std::string> original {[&](auto&& item) {
-        processedCount++;
-    }};
+    try {
+        siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) { processedCount++; }};
 
-    // Explicit std::move from lvalue — copy elision cannot apply here
-    siddiqsoft::simple_worker<std::string> worker {std::move(original)};
+        worker.queue(std::string("item1"));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
-    worker.queue(std::string("hello"));
-    worker.queue(std::string("world"));
+        // Call forceCleanupTerminate multiple times
+        EXPECT_NO_THROW({
+            worker.forceCleanupTerminate();
+            worker.forceCleanupTerminate();
+            worker.forceCleanupTerminate();
+        });
+    }
+    catch (...) {
+    }
 
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    EXPECT_EQ(2u, processedCount.load());
+    std::println(std::cerr, "{} - Post test the processCount: {}", __func__, processedCount.load());
+    EXPECT_GT(processedCount.load(), 0u);
 }
+#endif

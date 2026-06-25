@@ -19,12 +19,6 @@ project(asynchrony
         HOMEPAGE_URL    "%%myurl%%"
         DESCRIPTION     "Classes to allow you to build asynchrony in your applications using standard C++ jthread, semaphore, deque")
 
-# Set C++ standard globally
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 # Build options
 option(${PROJECT_NAME}_BUILD_TESTS "Build tests for ${PROJECT_NAME}" OFF)
 option(CI_BUILDID "Build ID for CI builds" "0.0.0")
@@ -40,7 +34,7 @@ target_include_directories(${PROJECT_NAME}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 # Compile features and options
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_23)
+target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_${CMAKE_CXX_STANDARD})
 
 # Install natvis file for Visual Studio debugger visualization
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/SiddiqSoft.asynchrony.natvis

@@ -44,7 +44,7 @@
 #include <vector>
 #include <mutex>
 #include <set>
-#include <limits.h>
+#include <climits>
 
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/simple_worker.hpp"
@@ -53,6 +53,7 @@
 #include "../include/siddiqsoft/periodic_worker.hpp"
 #include "../include/siddiqsoft/resource_pool.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 /// @brief BUG TEST: Race condition in queueCounter increment
 /// The queueCounter should be incremented atomically and consistently.
@@ -513,3 +514,4 @@ TEST(bug_tests, resource_pool_no_resource_leak)
     // Total operations should equal successes + failures
     EXPECT_EQ(THREAD_COUNT * OPS_PER_THREAD, successCount.load() + failCount.load());
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

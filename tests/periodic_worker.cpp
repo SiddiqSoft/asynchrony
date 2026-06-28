@@ -47,6 +47,7 @@
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/periodic_worker.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 TEST(periodic_worker, test1)
 {
@@ -436,3 +437,5 @@ TEST(periodic_worker, forceCleanupTerminate_named_worker)
     EXPECT_GT(invokeCount.load(), 0u);
 }
 #endif
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

@@ -27,6 +27,7 @@
 #include "../include/siddiqsoft/resource_pool.hpp"
 #include "../include/siddiqsoft/roundrobin_pool.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 /// @brief DATA RACE #1: simple_worker toJson() reads items.size() without lock
 /// Concurrent queue() modifies deque while toJson() reads size
@@ -412,3 +413,4 @@ TEST(DataRaceDetection, simple_pool_destruction_race)
 
     std::cerr << std::format("simple_pool destruction: total_processed={}\n", total_processed.load());
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

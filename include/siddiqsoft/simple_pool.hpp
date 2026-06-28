@@ -33,7 +33,6 @@
  */
 
 #pragma once
-#include <utility>
 #ifndef SIMPLE_POOL_HPP
 #define SIMPLE_POOL_HPP
 
@@ -42,8 +41,10 @@
 #include <latch>
 #include <exception>
 #include <atomic>
+#include <utility>
 
 #include "siddiqsoft/RWLEnvelope.hpp"
+#include "siddiqsoft/WaitableQueue.hpp"
 #include "siddiqsoft/RunOnEnd.hpp"
 
 namespace siddiqsoft
@@ -122,8 +123,8 @@ namespace siddiqsoft
         {
             // With this interface, we can peform a perfect forward of the r-value from the caller into the
             // items internal container without the complexity of lambda capture forwards.
-            items.mutate([](auto& data, T&& datum) noexcept -> void { data.emplace_back(std::move(datum)); },
-                         std::forward<T>(item));
+            items.emplace(std::forward<T>(item));
+
             // Use atomic fetch_add with release semantics to ensure thread-safe updates
             queueCounter.fetch_add(1, std::memory_order_release);
             signal.release();
@@ -136,16 +137,12 @@ namespace siddiqsoft
         /// @note The use of signal.max() is causing an issue where winmindef.h is defining the `max` as a macro and thus we end up
         /// with compiler error when the client application includes any of the windows headers! Disabled for now.
         /// @note FIX: Acquire shared lock to prevent data race on items deque when multiple threads call toJson() concurrently
-        nlohmann::json toJson() const
+        auto toJson() const -> nlohmann::json const
         {
-            // Acquire shared lock to safely read items.size()
-            // Multiple readers (toJson calls) can hold the lock simultaneously
-            // Writers (queue/getNextItem) will wait for all readers to release
-            auto dequeSize = items.observe([](auto& data) noexcept -> size_t { return data.size(); });
-
+            const auto sz = items.size();
             return nlohmann::json {{"_typver", "siddiqsoft.asynchrony-lib.simple_pool/0.10"},
                                    {"workersSize", workers.size()},
-                                   {"dequeSize", dequeSize},
+                                   {"dequeSize", sz},
                                    {"queueCounter", queueCounter.load(std::memory_order_acquire)},
                                    {"waitInterval", DEFAULT_WAIT_FOR_NEXT_ITEM_MS.count()}};
         }
@@ -160,10 +157,11 @@ namespace siddiqsoft
 #endif
 
     private:
-        std::vector<std::jthread>              workers {};
-        std::function<void(T&&)>               callback;
-        std::counting_semaphore<>              signal {0};
-        siddiqsoft::RWLEnvelope<std::deque<T>> items {};
+        std::vector<std::jthread> workers {};
+        std::function<void(T&&)>  callback;
+        std::counting_semaphore<> signal {0};
+        // siddiqsoft::RWLEnvelope<std::deque<T>> items {};
+        siddiqsoft::WaitableQueue<T> items {};
 
         /// @brief Performs an acquire on the semaphore and if successful,
         /// attempts to lock to pull the item from the top of the deque.
@@ -171,20 +169,7 @@ namespace siddiqsoft
         /// @return An optional which may contain the item or empty (most of the time it'll be empty)
         std::optional<T> getNextItem(const std::chrono::milliseconds& delta = DEFAULT_WAIT_FOR_NEXT_ITEM_MS)
         {
-            if (signal.try_acquire_for(delta)) {
-                // Obtains a lock on the items and performs the lambda tasks inside the lock!
-                return items.mutate([](auto& data) noexcept -> T&& {
-                    // The item to return..
-                    auto&& item = data.front();
-                    // Pop from the front of the deque..
-                    data.pop_front();
-                    // Return..
-                    return std::move(item);
-                });
-            }
-
-            // Fall-through empty
-            return {};
+            return items.tryWaitItem(delta);
         }
     };
 
@@ -194,7 +179,7 @@ namespace siddiqsoft
     /// @param dest destination json object
     /// @param src source object
     template <typename T, uint16_t N = 0>
-    static void to_json(nlohmann::json& dest, const siddiqsoft::simple_pool<T, N>& src)
+    static auto to_json(nlohmann::json& dest, const siddiqsoft::simple_pool<T, N>& src) -> void const
     {
         dest = src.toJson();
     }

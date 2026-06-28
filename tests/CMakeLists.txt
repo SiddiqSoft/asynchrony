@@ -108,6 +108,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
             nlohmann_json::nlohmann_json
             RunOnEnd::RunOnEnd
             RWLEnvelope::RWLEnvelope
+            RWLContainer::RWLContainer
             GTest::gtest_main)
 
     include(GoogleTest)

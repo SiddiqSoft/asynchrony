@@ -103,11 +103,11 @@ namespace siddiqsoft
 #if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
                     auto nativeHandle = processor.native_handle();
                     std::cerr << std::format(
-                                 "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
-                                 "ending! from: {}:{}",
+                            "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
+                            "ending! from: {}:{}",
 
-                                 sl.file_name(),
-                                 sl.line());
+                            sl.file_name(),
+                            sl.line());
                     pthread_cancel(nativeHandle);
                     processor.detach();
 #elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
@@ -165,7 +165,7 @@ namespace siddiqsoft
             // Multiple readers (toJson calls) can hold the lock simultaneously
             // Writers (queue/getNextItem) will wait for all readers to release
             std::shared_lock<std::shared_mutex> readLock(items_mutex);
-            auto itemsSize = items.size();
+            auto                                itemsSize = items.size();
             readLock.unlock();
 
             return {{"_typver", "siddiqsoft.asynchrony-lib.simple_worker/0.10"},
@@ -219,12 +219,18 @@ namespace siddiqsoft
                     // We must ensure that the callback is nonempty!
                     if (auto item = getNextItem(); item && !st.stop_requested() && callback) {
                         // Delegate to the callback outside the lock
-                        callback(std::move(*item));
+                        try {
+                            callback(std::move(*item));
+                        }
+                        catch (const std::exception& ex) {
+                            // We swallow exceptions from the callback to avoid thread termination and log it if needed.
+                            std::cerr << std::format("Ignoring Exception in simple_worker callback: {} - inner\n", ex.what());
+                        }
                     }
                 }
                 catch (const std::exception& ex) {
                     // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                    std::cerr << std::format("Ignoring Exception in simple_worker callback: {}", ex.what());
+                    std::cerr << std::format("Ignoring Exception in simple_worker callback: {} - outter\n", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};

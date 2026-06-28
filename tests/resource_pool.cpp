@@ -47,6 +47,7 @@
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/resource_pool.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 TEST(resource_pool, T_int)
 {
@@ -544,3 +545,5 @@ TEST(resource_pool, concurrent_unique_ptr)
     EXPECT_EQ(static_cast<size_t>(POOL_SIZE), rp.size());
     EXPECT_GT(totalCheckouts.load(), 0);
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

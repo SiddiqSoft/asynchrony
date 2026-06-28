@@ -45,6 +45,8 @@
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/simple_pool.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
+
 TEST(simple_pool, test1)
 {
     std::atomic_uint                        passTest {0};
@@ -468,3 +470,4 @@ TEST(simple_pool, reentrant_queue_from_callback)
     std::this_thread::sleep_for(std::chrono::seconds(2));
     EXPECT_EQ(EXPECTED_TOTAL, processedCount.load());
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

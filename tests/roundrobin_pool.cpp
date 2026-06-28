@@ -45,6 +45,7 @@
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/roundrobin_pool.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 TEST(roundrobin_pool, test1)
 {
@@ -409,3 +410,5 @@ TEST(roundrobin_pool, reentrant_queue_from_callback)
     std::this_thread::sleep_for(std::chrono::seconds(2));
     EXPECT_EQ(EXPECTED_TOTAL, processedCount.load());
 }
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

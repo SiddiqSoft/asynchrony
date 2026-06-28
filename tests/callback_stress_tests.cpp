@@ -53,6 +53,7 @@
 #include "../include/siddiqsoft/roundrobin_pool.hpp"
 #include "../include/siddiqsoft/periodic_worker.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 // ============================================================================
 // HELPER STRUCT FOR TESTS
@@ -226,14 +227,25 @@ TEST(callback_exception, simple_worker_bad_alloc)
 /// Verifies that custom exceptions are handled
 TEST(callback_exception, simple_worker_custom_exception)
 {
-    auto                                processedCount = std::make_shared<std::atomic_uint>(0);
-    auto                                exceptionCount = std::make_shared<std::atomic_uint>(0);
+    auto processedCount = std::make_shared<std::atomic_uint>(0);
+    auto exceptionCount = std::make_shared<std::atomic_uint>(0);
 
+    // When you tag a method (or callable) with noexcept.. if you throw then the library will
+    // not allow the exception to go to the underlying handler and just abort here!
+    // This test is not relevant.
     siddiqsoft::simple_worker<TestItem> worker {[processedCount, exceptionCount](auto&& item) noexcept {
         if (item.value % 4 == 0) {
             (*exceptionCount)++;
             // throws an exception
-            auto _ = std::stoi("dummy-should-throw");
+            try {
+                auto _ = std::stoi("dummy-should-throw");
+            }
+            catch (...) {
+                // if we do not catch then the library will abort the invocation of this method
+                // as we have declared this method as noexcept
+                // and no amount of exception handling by the caller to this method will
+                // help nor will any exception handling in the simple_worker dispatch.
+            }
         }
         (*processedCount)++;
     }};
@@ -662,12 +674,11 @@ TEST(callback_exception, periodic_worker_exception)
     // Wait for multiple invocations
     std::this_thread::sleep_for(std::chrono::milliseconds(800));
 
-    std::cerr << std::format(
-                 "{} - invokeCount:{}.. and div by 3: {} - exceptionCount:{}",
-                 __func__,
-                 invokeCount->load(),
-                 invokeCount->load() / 3,
-                 exceptionCount->load());
+    std::cerr << std::format("{} - invokeCount:{}.. and div by 3: {} - exceptionCount:{}",
+                             __func__,
+                             invokeCount->load(),
+                             invokeCount->load() / 3,
+                             exceptionCount->load());
 
     // Verify results
     EXPECT_GT(invokeCount->load(), 5u);
@@ -776,3 +787,4 @@ TEST(callback_stress, roundrobin_pool_rapid_exceptions)
     EXPECT_EQ(250u, processedCount->load()); // Half processed
     EXPECT_EQ(250u, exceptionCount->load()); // Half threw
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

@@ -47,7 +47,7 @@
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/simple_worker.hpp"
 
-
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 TEST(simple_worker, test1)
 {
     bool                                      passTest {false};
@@ -514,3 +514,5 @@ TEST(simple_worker, forceCleanupTerminate_multiple_calls)
     EXPECT_GT(processedCount.load(), 0u);
 }
 #endif
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

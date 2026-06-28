@@ -102,7 +102,7 @@ namespace siddiqsoft
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 #if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
                     auto nativeHandle = processor.native_handle();
-                    std::println(std::cerr,
+                    std::cerr << std::format(
                                  "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
                                  "ending! from: {}:{}",
 
@@ -112,7 +112,7 @@ namespace siddiqsoft
                     processor.detach();
 #elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
                 auto nativeHandle = processor.native_handle();
-                std::println(std::cerr,
+                std::cerr << std::format(
                              "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
                              "ending! from: {}:{}",
                              
@@ -123,7 +123,7 @@ namespace siddiqsoft
 #endif
                 }
                 catch (const std::exception& ex) {
-                    std::println(std::cerr, "forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
+                    std::cerr << std::format("forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
                 }
             });
         }
@@ -224,7 +224,7 @@ namespace siddiqsoft
                 }
                 catch (const std::exception& ex) {
                     // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                    std::println(std::cerr, "Ignoring Exception in simple_worker callback: {}", ex.what());
+                    std::cerr << std::format("Ignoring Exception in simple_worker callback: {}", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};

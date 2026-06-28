@@ -107,6 +107,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
     target_link_libraries(${TESTPROJ} PRIVATE
             nlohmann_json::nlohmann_json
             RunOnEnd::RunOnEnd
+            RWLEnvelope::RWLEnvelope
             GTest::gtest_main)
 
     include(GoogleTest)

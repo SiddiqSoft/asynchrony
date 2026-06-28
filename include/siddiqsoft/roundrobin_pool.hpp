@@ -122,12 +122,12 @@ namespace siddiqsoft
         /// @brief Calculates the index into the workers thread using modulo and the running counter of the number of items pushed
         /// into the queue.
         /// @return size_t index into the workers array
-        /// Atomic fetch_add for thread-safe increment, remove constexpr qualifier,
-        /// and cast to size_t to avoid type mismatch on 32-bit systems
+        /// FIX: Changed from memory_order_relaxed to memory_order_acquire to ensure consistent round-robin distribution
+        /// and proper synchronization with queue() which uses memory_order_release
         size_t nextWorkerIndex()
         {
             if (workersSize == 0) return 0;
-            return static_cast<size_t>(queueCounter.load(std::memory_order_relaxed) % workersSize);
+            return static_cast<size_t>(queueCounter.load(std::memory_order_acquire) % workersSize);
         }
     };
 

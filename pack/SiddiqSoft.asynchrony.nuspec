@@ -41,6 +41,6 @@
 		<file src="SiddiqSoft.asynchrony.targets" target="build\native" />
 
 		<!-- Natvis file for Visual Studio debugger visualization -->
-		<file src="..\SiddiqSoft.asynchrony.natvis" target="build\native" />
+		<file src="..\pack\SiddiqSoft.asynchrony.natvis" target="build\native" />
 	</files>
 </package>

@@ -510,7 +510,7 @@ TEST(simple_worker, forceCleanupTerminate_multiple_calls)
     catch (...) {
     }
 
-    std::println(std::cerr, "{} - Post test the processCount: {}", __func__, processedCount.load());
+    std::cerr << std::format("{} - Post test the processCount: {}", __func__, processedCount.load());
     EXPECT_GT(processedCount.load(), 0u);
 }
 #endif

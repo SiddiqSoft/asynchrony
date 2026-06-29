@@ -7,7 +7,6 @@ asynchrony : Asynchrony support library
 ![](https://img.shields.io/nuget/v/SiddiqSoft.asynchrony)
 ![](https://img.shields.io/github/v/tag/SiddiqSoft/asynchrony)
 ![](https://img.shields.io/azure-devops/tests/siddiqsoft/siddiqsoft/17)
-<!--![](https://img.shields.io/azure-devops/coverage/siddiqsoft/siddiqsoft/17)-->
 <!-- end badges -->
 
 ## Documentation

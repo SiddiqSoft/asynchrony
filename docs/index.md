@@ -2,10 +2,10 @@ asynchrony : Asynchrony support library
 ---------------------------------------
 
 <!-- badges -->
-[![CodeQL](https://github.com/SiddiqSoft/asynchrony-lib/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/SiddiqSoft/asynchrony-lib/actions/workflows/codeql-analysis.yml)
-[![Build Status](https://dev.azure.com/siddiqsoft/siddiqsoft/_apis/build/status/SiddiqSoft.asynchrony-lib?branchName=main)](https://dev.azure.com/siddiqsoft/siddiqsoft/_build/latest?definitionId=17&branchName=main)
-![](https://img.shields.io/nuget/v/SiddiqSoft.asynchrony-lib)
-![](https://img.shields.io/github/v/tag/SiddiqSoft/asynchrony-lib)
+[![CodeQL](https://github.com/SiddiqSoft/asynchrony/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/SiddiqSoft/asynchrony/actions/workflows/github-code-scanning/codeql)
+[![Build Status](https://dev.azure.com/siddiqsoft/siddiqsoft/_apis/build/status/SiddiqSoft.asynchrony?branchName=main)](https://dev.azure.com/siddiqsoft/siddiqsoft/_build/latest?definitionId=17&branchName=main)
+![](https://img.shields.io/nuget/v/SiddiqSoft.asynchrony)
+![](https://img.shields.io/github/v/tag/SiddiqSoft/asynchrony)
 ![](https://img.shields.io/azure-devops/tests/siddiqsoft/siddiqsoft/17)
 <!--![](https://img.shields.io/azure-devops/coverage/siddiqsoft/siddiqsoft/17)-->
 <!-- end badges -->

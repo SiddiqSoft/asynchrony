@@ -165,8 +165,8 @@ namespace siddiqsoft
         auto toJson() const -> nlohmann::json
         {
             auto itemsSize        = items.size();
-            auto itemsQueued      = const_cast<simple_worker*>(this)->items.addCounter();
-            auto itemsPopped      = const_cast<simple_worker*>(this)->items.removeCounter();
+            auto itemsQueued      = items.addCounter();
+            auto itemsPopped      = items.removeCounter();
             auto itemsOutstanding = itemsQueued - itemsPopped;
 
             return {{"_typver", "siddiqsoft.asynchrony-lib.simple_worker/0.10"},

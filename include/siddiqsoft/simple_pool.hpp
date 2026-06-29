@@ -136,7 +136,7 @@ namespace siddiqsoft
         /// @note The use of signal.max() is causing an issue where winmindef.h is defining the `max` as a macro and thus we end up
         /// with compiler error when the client application includes any of the windows headers! Disabled for now.
         /// @note FIX: Acquire shared lock to prevent data race on items deque when multiple threads call toJson() concurrently
-        auto toJson() const -> nlohmann::json const
+        auto toJson() const -> nlohmann::json
         {
             const auto sz = items.size();
             return nlohmann::json {{"_typver", "siddiqsoft.asynchrony-lib.simple_pool/0.10"},

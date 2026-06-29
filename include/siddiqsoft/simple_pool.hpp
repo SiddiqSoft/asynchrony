@@ -43,7 +43,6 @@
 #include <atomic>
 #include <utility>
 
-#include "siddiqsoft/RWLEnvelope.hpp"
 #include "siddiqsoft/WaitableQueue.hpp"
 #include "siddiqsoft/RunOnEnd.hpp"
 

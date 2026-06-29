@@ -319,7 +319,7 @@ TEST(bug_tests, simple_worker_exception_doesnt_lose_items)
             throw std::runtime_error("test exception");
         }
         {
-            std::lock_guard<std::mutex> lk(mtx);
+            std::scoped_lock<std::mutex> lk(mtx);
             processedIndices.insert(idx);
         }
         processedCount++;
@@ -339,7 +339,7 @@ TEST(bug_tests, simple_worker_exception_doesnt_lose_items)
 
     // Verify no items were lost
     {
-        std::lock_guard<std::mutex> lk(mtx);
+        std::scoped_lock<std::mutex> lk(mtx);
         for (int i = 0; i < ITEM_COUNT; i++) {
             if (i % 5 != 0) {
                 EXPECT_TRUE(processedIndices.count(i)) << "Item " << i << " was not processed";
@@ -366,7 +366,7 @@ TEST(bug_tests, simple_pool_exception_doesnt_block_other_workers)
             throw std::runtime_error("test exception");
         }
         {
-            std::lock_guard<std::mutex> lk(mtx);
+            std::scoped_lock<std::mutex> lk(mtx);
             processedIndices.insert(idx);
         }
         processedCount++;
@@ -385,7 +385,7 @@ TEST(bug_tests, simple_pool_exception_doesnt_block_other_workers)
     EXPECT_EQ(85u, processedCount.load());
 
     {
-        std::lock_guard<std::mutex> lk(mtx);
+        std::scoped_lock<std::mutex> lk(mtx);
         EXPECT_EQ(85u, processedIndices.size());
     }
 }

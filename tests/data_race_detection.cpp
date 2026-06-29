@@ -199,7 +199,7 @@ TEST(DataRaceDetection, simple_worker_queue_extraction_race)
 
     siddiqsoft::simple_worker<int> worker {[&](auto&& item) {
         {
-            std::lock_guard<std::mutex> lock(processed_mutex);
+            std::scoped_lock<std::mutex> lock(processed_mutex);
             processed_items.push_back(item);
         }
         items_processed++;
@@ -223,7 +223,7 @@ TEST(DataRaceDetection, simple_worker_queue_extraction_race)
         int last_seen = -1;
         while (!done.load()) {
             {
-                std::lock_guard<std::mutex> lock(processed_mutex);
+                std::scoped_lock<std::mutex> lock(processed_mutex);
                 if (!processed_items.empty()) {
                     int current = processed_items.back();
                     if (current != last_seen + 1 && last_seen >= 0) {

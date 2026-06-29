@@ -1,1 +1,16 @@
+# GitHub Pages Configuration
 theme: jekyll-theme-cayman
+
+# Site metadata
+title: asynchrony
+description: Add asynchrony to your C++ applications using standard C++23
+url: https://siddiqsoft.github.io/asynchrony
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# Exclude from build
+exclude:
+  - Doxyfile
+  - docs/doxygen

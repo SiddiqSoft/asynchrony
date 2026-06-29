@@ -172,9 +172,9 @@ TEST(resource_pool, T_checkin_checkout_vector_string)
         EXPECT_EQ(1, rp.size());
 
         auto item2 = rp.checkout();
-        item2.push_back("1");
-        item2.push_back("2");
-        item2.push_back("3");
+        item2.emplace_back("1");
+        item2.emplace_back("2");
+        item2.emplace_back("3");
         EXPECT_EQ(0, rp.size());
         EXPECT_EQ(6, item2.size());
 

@@ -191,7 +191,7 @@ TEST(simple_worker, string_type)
     std::mutex                             mtx;
 
     siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) {
-        std::lock_guard<std::mutex> lk(mtx);
+        std::scoped_lock<std::mutex> lk(mtx);
         lastValue = item;
         processedCount++;
     }};
@@ -202,7 +202,7 @@ TEST(simple_worker, string_type)
     std::this_thread::sleep_for(std::chrono::seconds(1));
     EXPECT_EQ(2u, processedCount.load());
     {
-        std::lock_guard<std::mutex> lk(mtx);
+        std::scoped_lock<std::mutex> lk(mtx);
         EXPECT_EQ("world", lastValue);
     }
 }

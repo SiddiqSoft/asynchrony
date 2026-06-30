@@ -18,8 +18,3 @@ author:
 # Build settings
 markdown: kramdown
 highlighter: rouge
-
-# Exclude from build
-exclude:
-  - Doxyfile
-  - docs/doxygen

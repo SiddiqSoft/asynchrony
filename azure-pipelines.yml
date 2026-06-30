@@ -221,7 +221,7 @@ stages:
   - stage: Documentation
     displayName: Documentation
     dependsOn: []
-    condition: and(eq(${{ variables.DeployPages }}, true), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
+    condition: or(eq(${{ variables.DeployPages }}, true), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
     jobs:
       - template: .azure/az-deploy-pages.yml
         parameters:

@@ -26,21 +26,21 @@
  *
  * @section compiler_setup Compiler Setup
  *
- * #### Visual Studio 2022
+ * #### Visual Studio 2019 or later
  *
- * - Set C++ Language Standard to `/std:c++latest`
+ * - Set C++ Language Standard to `/std:c++20` or `/std:c++latest`
  * - No additional flags required
  *
- * #### GCC 14+
+ * #### GCC 10+
  *
  * ```bash
- * g++ -std=c++23 -pthread your_file.cpp
+ * g++ -std=c++20 -pthread your_file.cpp
  * ```
  *
- * #### Clang 18+
+ * #### Clang 10+
  *
  * ```bash
- * clang++ -std=c++23 -fexperimental-library -pthread your_file.cpp
+ * clang++ -std=c++20 -fexperimental-library -pthread your_file.cpp
  * ```
  *
  * @section first_program Your First Program
@@ -50,6 +50,7 @@
  * ```cpp
  * #include <iostream>
  * #include <chrono>
+ * #include <format>
  * #include "siddiqsoft/simple_worker.hpp"
  *
  * struct PrintTask {
@@ -115,29 +116,48 @@
  * };
  * ```
  *
+ * ### Pattern 4: Resource Pool
+ *
+ * Manage a pool of reusable resources:
+ *
+ * ```cpp
+ * siddiqsoft::resource_pool<Connection> connPool;
+ * 
+ * auto conn = connPool.checkout();
+ * conn.execute("SELECT * FROM users");
+ * connPool.checkin(std::move(conn));
+ * ```
+ *
  * @section troubleshooting Troubleshooting
  *
  * ### Compilation Errors
  *
  * **Error**: `'jthread' is not a member of 'std'`
- * - **Solution**: Ensure you're using C++23 or later. Update your compiler flags.
+ * - **Solution**: Ensure you're using C++20 or later. Update your compiler flags to `-std=c++20` or `/std:c++20`.
  *
  * **Error**: `undefined reference to pthread_*`
  * - **Solution**: Link against pthread library: `-pthread` flag or `target_link_libraries(... pthread)`
+ *
+ * **Error**: `'stop_token' is not a member of 'std'`
+ * - **Solution**: Ensure your compiler supports C++20. Update to GCC 10+, MSVC 16.11+, or Clang 10+.
  *
  * ### Runtime Issues
  *
  * **Issue**: Tasks not executing
  * - **Solution**: Ensure the worker/pool object is not destroyed before tasks complete
- * - **Solution**: Check that the callback function is valid and doesn't throw exceptions
+ * - **Solution**: Check that the callback function is valid and doesn't throw uncaught exceptions
  *
  * **Issue**: High CPU usage
- * - **Solution**: Increase the wait timeout in the worker configuration
  * - **Solution**: Reduce the number of threads in the pool
+ * - **Solution**: Increase the wait timeout in the worker configuration
+ *
+ * **Issue**: Deadlock or hanging
+ * - **Solution**: Ensure callbacks don't block indefinitely
+ * - **Solution**: Avoid circular dependencies between workers
  *
  * @section next_steps Next Steps
  *
  * - Read the @ref usage_guide for detailed usage examples
- * - Check the @ref api_reference for complete API documentation
+ * - Check the @ref quick_reference for API quick lookup
  * - Explore the @ref examples for more complex scenarios
  */

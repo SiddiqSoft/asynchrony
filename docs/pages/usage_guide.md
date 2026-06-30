@@ -58,7 +58,7 @@
  *
  * @subsection sw_exception Exception Handling
  *
- * Exceptions in the callback are caught and logged:
+ * Exceptions in the callback are caught and logged to stderr:
  *
  * ```cpp
  * siddiqsoft::simple_worker<Task> worker{
@@ -71,6 +71,18 @@
  *         }
  *     }
  * };
+ * ```
+ *
+ * @subsection sw_lifetime Lifetime Management
+ *
+ * The worker will wait for the queue to empty before shutting down:
+ *
+ * ```cpp
+ * {
+ *     siddiqsoft::simple_worker<Task> worker{callback};
+ *     worker.queue(task1);
+ *     worker.queue(task2);
+ * }  // Destructor waits for queue to empty before returning
  * ```
  *
  * @section simple_pool Simple Pool
@@ -145,6 +157,13 @@
  * }
  * ```
  *
+ * @subsection rrp_custom_threads Custom Thread Count
+ *
+ * ```cpp
+ * // Create a round-robin pool with exactly 8 threads
+ * siddiqsoft::roundrobin_pool<WorkItem, 8> pool{callback};
+ * ```
+ *
  * @subsection rrp_vs_simple Round-Robin vs Simple Pool
  *
  * | Aspect | Simple Pool | Round-Robin Pool |
@@ -184,6 +203,17 @@
  * siddiqsoft::periodic_worker<5> timer{callback, interval};
  * ```
  *
+ * @subsection pw_named Named Periodic Worker
+ *
+ * ```cpp
+ * // Named periodic worker (useful for debugging)
+ * siddiqsoft::periodic_worker<> timer{
+ *     callback,
+ *     std::chrono::milliseconds(1000),
+ *     "my-timer"
+ * };
+ * ```
+ *
  * @section resource_pool Resource Pool
  *
  * Manage a pool of reusable resources (e.g., database connections).
@@ -210,6 +240,24 @@
  *
  *     return 0;
  * }
+ * ```
+ *
+ * @subsection rp_methods Resource Pool Methods
+ *
+ * ```cpp
+ * siddiqsoft::resource_pool<T> pool;
+ *
+ * // Get current pool size
+ * auto size = pool.size();
+ *
+ * // Checkout a resource (throws if empty)
+ * auto resource = pool.checkout();
+ *
+ * // Return a resource to the pool
+ * pool.checkin(std::move(resource));
+ *
+ * // Clear all resources
+ * pool.clear();
  * ```
  *
  * @section best_practices Best Practices
@@ -273,4 +321,15 @@
  * auto json = worker.toJson();
  * std::cout << json.dump(2) << std::endl;
  * ```
+ *
+ * The JSON output includes:
+ * - `_typver`: Library version identifier
+ * - `itemsSize`: Current queue size
+ * - `queueCounter`: Total items queued
+ * - `itemsQueued`: Total items added
+ * - `itemsPopped`: Total items processed
+ * - `itemsOutstanding`: Items still in queue
+ * - `threadPriority`: Thread priority level
+ * - `outstandingCallback`: Callbacks currently executing
+ * - `waitInterval`: Wait timeout in milliseconds
  */

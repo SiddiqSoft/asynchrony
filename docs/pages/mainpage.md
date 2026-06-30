@@ -3,8 +3,8 @@
  *
  * @section intro Introduction
  *
- * The **asynchrony** library provides a set of modern C++23 utilities for building asynchronous and multi-threaded applications.
- * It leverages standard library features like `std::jthread`, `std::semaphore`, `std::deque`, and `std::barrier` to provide
+ * The **asynchrony** library provides a set of modern C++20 utilities for building asynchronous and multi-threaded applications.
+ * It leverages standard library features like `std::jthread`, `std::semaphore`, `std::deque`, and `std::concepts` to provide
  * clean, efficient abstractions for common asynchronous patterns.
  *
  * @section features Key Features
@@ -14,17 +14,17 @@
  * - **Round-Robin Pool**: Minimize contention with per-thread queues
  * - **Periodic Worker**: Execute functions at regular intervals
  * - **Resource Pool**: Manage a pool of reusable resources
- * - **Modern C++23**: Uses only standard library features (no external dependencies for core functionality)
+ * - **Modern C++20**: Uses only standard library features (no external dependencies for core functionality)
  * - **Type-Safe**: Leverages C++ concepts for compile-time type checking
  * - **Exception Safe**: Handles exceptions gracefully without thread termination
  *
  * @section requirements Requirements
  *
- * - **C++23 Support**: Requires `std::jthread` and `std::stop_token`
+ * - **C++20 Support**: Requires `std::jthread` and `std::stop_token`
  * - **Compiler Support**:
- *   - GCC 14+
- *   - MSVC 17+ (Visual Studio 2022)
- *   - Clang 18+ (with `-fexperimental-library` flag)
+ *   - GCC 10+
+ *   - MSVC 16.11+ (Visual Studio 2019 or later)
+ *   - Clang 10+ (with `-fexperimental-library` flag)
  * - **Platform Support**: Windows, Linux, macOS
  *
  * @section components Main Components

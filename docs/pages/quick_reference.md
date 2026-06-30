@@ -59,6 +59,15 @@
  * };
  * ```
  *
+ * @subsection qr_pattern_resource Resource Pool
+ *
+ * ```cpp
+ * siddiqsoft::resource_pool<Resource> pool;
+ * auto res = pool.checkout();
+ * // use resource
+ * pool.checkin(std::move(res));
+ * ```
+ *
  * @section qr_template_params Template Parameters
  *
  * ### simple_worker<T, Pri>
@@ -77,7 +86,7 @@
  * - `Pri`: Thread priority (-10 to +10, default 0)
  *
  * ### resource_pool<T>
- * - `T`: Resource type
+ * - `T`: Resource type (must be move-constructible)
  *
  * @section qr_methods Common Methods
  *
@@ -91,33 +100,48 @@
  * Get JSON representation (requires nlohmann/json)
  * ```cpp
  * auto json = worker.toJson();
+ * std::cout << json.dump(2) << std::endl;
  * ```
  *
  * ### checkout() / checkin()
  * Resource pool operations
  * ```cpp
- * auto resource = pool.checkout();
+ * auto resource = pool.checkout();  // throws if empty
  * // use resource
  * pool.checkin(std::move(resource));
  * ```
  *
+ * ### size()
+ * Get current pool size
+ * ```cpp
+ * auto sz = pool.size();
+ * ```
+ *
+ * ### clear()
+ * Clear all resources from pool
+ * ```cpp
+ * pool.clear();
+ * ```
+ *
  * @section qr_requirements Requirements
  *
- * - **C++23** or later
- * - **Compiler**: GCC 14+, MSVC 17+, Clang 18+
+ * - **C++20** or later
+ * - **Compiler**: GCC 10+, MSVC 16.11+, Clang 10+
  * - **Platform**: Windows, Linux, macOS
  * - **Dependencies**: None (header-only for core functionality)
+ * - **Optional**: nlohmann/json for JSON serialization
  *
  * @section qr_compilation Compilation
  *
  * **GCC/Clang:**
  * ```bash
- * g++ -std=c++23 -pthread your_file.cpp
+ * g++ -std=c++20 -pthread your_file.cpp
+ * clang++ -std=c++20 -fexperimental-library -pthread your_file.cpp
  * ```
  *
  * **MSVC:**
  * ```bash
- * cl /std:c++latest your_file.cpp
+ * cl /std:c++20 your_file.cpp
  * ```
  *
  * **CMake:**
@@ -130,20 +154,23 @@
  * 1. **Keep callbacks lightweight** - Avoid blocking operations
  * 2. **Use move semantics** - Always move items into the queue
  * 3. **Handle exceptions** - Catch exceptions in callbacks
- * 4. **Monitor queue depth** - Check for bottlenecks
+ * 4. **Monitor queue depth** - Check for bottlenecks using toJson()
  * 5. **Choose right pool type** - Use roundrobin for variable-duration tasks
  * 6. **Lifetime management** - Keep worker/pool alive while queuing
  * 7. **Thread priority** - Use carefully, may affect system performance
+ * 8. **Resource pool capacity** - Set to match thread pool size for optimal performance
  *
  * @section qr_troubleshooting Common Issues
  *
  * | Issue | Solution |
  * |-------|----------|
- * | Compilation error: `jthread not found` | Use C++23 or later |
+ * | Compilation error: `jthread not found` | Use C++20 or later |
  * | Tasks not executing | Ensure worker/pool is not destroyed |
  * | High CPU usage | Increase wait timeout or reduce threads |
  * | Deadlock | Avoid circular dependencies in callbacks |
  * | Memory leak | Ensure proper RAII cleanup |
+ * | `checkout()` throws | Pool is empty, add resources first |
+ * | Clang compilation fails | Add `-fexperimental-library` flag |
  *
  * @section qr_performance Performance Tips
  *
@@ -152,6 +179,7 @@
  * - **Batch small tasks**: Reduce overhead
  * - **Use roundrobin**: For variable-duration tasks
  * - **Monitor metrics**: Use toJson() to track queue depth
+ * - **Avoid blocking**: Keep callbacks fast and non-blocking
  *
  * @section qr_examples Quick Examples
  *
@@ -180,5 +208,31 @@
  *     std::chrono::seconds(1)
  * };
  * std::this_thread::sleep_for(std::chrono::seconds(10));
+ * ```
+ *
+ * ### Example 4: Resource Management
+ * ```cpp
+ * siddiqsoft::resource_pool<Connection> pool;
+ * auto conn = pool.checkout();
+ * conn.query("SELECT * FROM users");
+ * pool.checkin(std::move(conn));
+ * ```
+ *
+ * @section qr_json_output JSON Output Format
+ *
+ * When calling `toJson()` on workers, the output includes:
+ *
+ * ```json
+ * {
+ *   "_typver": "siddiqsoft.asynchrony-lib.simple_worker/0.10",
+ *   "itemsSize": 5,
+ *   "queueCounter": 100,
+ *   "itemsQueued": 100,
+ *   "itemsPopped": 95,
+ *   "itemsOutstanding": 5,
+ *   "threadPriority": 0,
+ *   "outstandingCallback": 1,
+ *   "waitInterval": 1500
+ * }
  * ```
  */

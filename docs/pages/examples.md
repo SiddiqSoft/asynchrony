@@ -90,7 +90,8 @@
  *
  * ```cpp
  * #include "siddiqsoft/roundrobin_pool.hpp"
- * #include <fstream>\n *
+ * #include <fstream>
+ *
  * struct FileTask {
  *     std::string filename;
  *     std::string operation;  // "read", "write", "process"
@@ -139,7 +140,8 @@
  *             std::cout << "System check at: " << std::ctime(&time);
  *             // Perform monitoring tasks
  *         },
- *         std::chrono::seconds(10)  // Every 10 seconds
+ *         std::chrono::seconds(10),  // Every 10 seconds
+ *         "system-monitor"
  *     };
  *
  *     // Keep the program running
@@ -169,13 +171,13 @@
  *         [](auto&& event) {
  *             switch (event.type) {
  *                 case EventType::USER_LOGIN:
- *                     std::cout << "User " << event.userId << " logged in\\n";
+ *                     std::cout << "User " << event.userId << " logged in\n";
  *                     break;
  *                 case EventType::USER_LOGOUT:
- *                     std::cout << "User " << event.userId << " logged out\\n";
+ *                     std::cout << "User " << event.userId << " logged out\n";
  *                     break;
  *                 case EventType::DATA_UPDATE:
- *                     std::cout << "Data updated: " << event.data << "\\n";
+ *                     std::cout << "Data updated: " << event.data << "\n";
  *                     break;
  *             }
  *         }
@@ -218,7 +220,7 @@
  *     siddiqsoft::simple_pool<DataItem> consumers{
  *         [](auto&& item) {
  *             // Process item
- *             std::cout << "Processing item " << item.id << "\\n";
+ *             std::cout << "Processing item " << item.id << "\n";
  *         }
  *     };
  *
@@ -233,6 +235,80 @@
  *
  *     producer.join();
  *     std::this_thread::sleep_for(std::chrono::seconds(2));
+ *     return 0;
+ * }
+ * ```
+ *
+ * @section ex_priority_workers Priority-Based Workers
+ *
+ * Use different priority levels for different types of work:
+ *
+ * ```cpp
+ * #include "siddiqsoft/simple_worker.hpp"
+ *
+ * struct Task {
+ *     std::string name;
+ *     int priority;
+ * };
+ *
+ * int main() {
+ *     // High priority worker for critical tasks
+ *     siddiqsoft::simple_worker<Task, 5> criticalWorker{
+ *         [](auto&& task) {
+ *             std::cout << "Critical: " << task.name << std::endl;
+ *         }
+ *     };
+ *
+ *     // Normal priority worker for regular tasks
+ *     siddiqsoft::simple_worker<Task, 0> normalWorker{
+ *         [](auto&& task) {
+ *             std::cout << "Normal: " << task.name << std::endl;
+ *         }
+ *     };
+ *
+ *     // Low priority worker for background tasks
+ *     siddiqsoft::simple_worker<Task, -5> backgroundWorker{
+ *         [](auto&& task) {
+ *             std::cout << "Background: " << task.name << std::endl;
+ *         }
+ *     };
+ *
+ *     criticalWorker.queue(Task{"urgent", 5});
+ *     normalWorker.queue(Task{"normal", 0});
+ *     backgroundWorker.queue(Task{"background", -5});
+ *
+ *     std::this_thread::sleep_for(std::chrono::seconds(1));
+ *     return 0;
+ * }
+ * ```
+ *
+ * @section ex_json_monitoring JSON-Based Monitoring
+ *
+ * Monitor worker state using JSON serialization:
+ *
+ * ```cpp
+ * #include "siddiqsoft/simple_pool.hpp"
+ * #include <nlohmann/json.hpp>
+ *
+ * int main() {
+ *     siddiqsoft::simple_pool<int> pool{
+ *         [](auto&& item) {
+ *             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+ *         }
+ *     };
+ *
+ *     // Queue some work
+ *     for (int i = 0; i < 50; ++i) {
+ *         pool.queue(i);
+ *     }
+ *
+ *     // Monitor pool state
+ *     for (int i = 0; i < 5; ++i) {
+ *         auto state = pool.toJson();
+ *         std::cout << "Pool state: " << state.dump(2) << std::endl;
+ *         std::this_thread::sleep_for(std::chrono::milliseconds(500));
+ *     }
+ *
  *     return 0;
  * }
  * ```

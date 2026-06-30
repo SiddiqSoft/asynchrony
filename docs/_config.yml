@@ -5,8 +5,15 @@ plugins:
 
 # Site metadata
 title: asynchrony
-description: Add asynchrony to your C++ applications using standard C++23
+description: Add asynchrony to your C++ applications using standard C++20
 url: https://siddiqsoft.github.io/asynchrony
+
+# Logo and branding
+logo: /assets/logo.png
+author:
+  name: Siddiq Software LLC
+  email: siddiqsoft@outlook.com
+  gravatar: https://gravatar.com/siddiqsoft
 
 # Build settings
 markdown: kramdown

@@ -2,7 +2,7 @@
 
 # Project related configuration options
 PROJECT_NAME           = "asynchrony"
-PROJECT_NUMBER         = 0.10
+PROJECT_NUMBER         = 0.0.0
 PROJECT_BRIEF          = "Add asynchrony to your C++ applications using standard C++20"
 PROJECT_LOGO           = ./pack/Siddiq-Software-Avatar.png
 

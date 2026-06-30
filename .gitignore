@@ -28,6 +28,7 @@ lib/
 **/tests/results/**
 **/*.profraw
 **/.DS_Store
+Doxyfile.bak
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

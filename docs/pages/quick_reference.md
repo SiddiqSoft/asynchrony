@@ -1,238 +1,238 @@
-/**
- * @page quick_reference Quick Reference
- *
- * @section qr_components Components at a Glance
- *
- * | Component | Use Case | Threads | Queue Type |
- * |-----------|----------|---------|-----------|
- * | `simple_worker` | Single async task | 1 | Shared |
- * | `simple_pool` | Parallel processing | N | Shared |
- * | `roundrobin_pool` | Load balancing | N | Per-thread |
- * | `periodic_worker` | Scheduled tasks | 1 | N/A |
- * | `resource_pool` | Resource management | N/A | N/A |
- *
- * @section qr_includes Include Files
- *
- * ```cpp
- * #include "siddiqsoft/simple_worker.hpp"      // Single-threaded worker
- * #include "siddiqsoft/simple_pool.hpp"        // Multi-threaded pool
- * #include "siddiqsoft/roundrobin_pool.hpp"    // Round-robin pool
- * #include "siddiqsoft/periodic_worker.hpp"    // Periodic executor
- * #include "siddiqsoft/resource_pool.hpp"      // Resource pool
- * ```
- *
- * @section qr_basic_patterns Basic Patterns
- *
- * @subsection qr_pattern_worker Single Worker
- *
- * ```cpp
- * siddiqsoft::simple_worker<Task> worker{
- *     [](auto&& task) { task.execute(); }
- * };
- * worker.queue(std::move(task));
- * ```
- *
- * @subsection qr_pattern_pool Thread Pool
- *
- * ```cpp
- * siddiqsoft::simple_pool<Task> pool{
- *     [](auto&& task) { task.execute(); }
- * };
- * for (auto& t : tasks) pool.queue(std::move(t));
- * ```
- *
- * @subsection qr_pattern_roundrobin Round-Robin Pool
- *
- * ```cpp
- * siddiqsoft::roundrobin_pool<Task> pool{
- *     [](auto&& task) { task.execute(); }
- * };
- * for (auto& t : tasks) pool.queue(std::move(t));
- * ```
- *
- * @subsection qr_pattern_periodic Periodic Task
- *
- * ```cpp
- * siddiqsoft::periodic_worker<> timer{
- *     []() { /* do something */ },
- *     std::chrono::milliseconds(1000)
- * };
- * ```
- *
- * @subsection qr_pattern_resource Resource Pool
- *
- * ```cpp
- * siddiqsoft::resource_pool<Resource> pool;
- * auto res = pool.checkout();
- * // use resource
- * pool.checkin(std::move(res));
- * ```
- *
- * @section qr_template_params Template Parameters
- *
- * ### simple_worker<T, Pri>
- * - `T`: Data type (must be move-constructible)
- * - `Pri`: Thread priority (-10 to +10, default 0)
- *
- * ### simple_pool<T, N>
- * - `T`: Data type (must be move-constructible)
- * - `N`: Number of threads (0 = hardware_concurrency)
- *
- * ### roundrobin_pool<T, N>
- * - `T`: Data type (must be move-constructible)
- * - `N`: Number of threads (0 = hardware_concurrency)
- *
- * ### periodic_worker<Pri>
- * - `Pri`: Thread priority (-10 to +10, default 0)
- *
- * ### resource_pool<T>
- * - `T`: Resource type (must be move-constructible)
- *
- * @section qr_methods Common Methods
- *
- * ### queue(T&& item)
- * Queue an item for processing
- * ```cpp
- * worker.queue(std::move(item));
- * ```
- *
- * ### toJson()
- * Get JSON representation (requires nlohmann/json)
- * ```cpp
- * auto json = worker.toJson();
- * std::cout << json.dump(2) << std::endl;
- * ```
- *
- * ### checkout() / checkin()
- * Resource pool operations
- * ```cpp
- * auto resource = pool.checkout();  // throws if empty
- * // use resource
- * pool.checkin(std::move(resource));
- * ```
- *
- * ### size()
- * Get current pool size
- * ```cpp
- * auto sz = pool.size();
- * ```
- *
- * ### clear()
- * Clear all resources from pool
- * ```cpp
- * pool.clear();
- * ```
- *
- * @section qr_requirements Requirements
- *
- * - **C++20** or later
- * - **Compiler**: GCC 10+, MSVC 16.11+, Clang 10+
- * - **Platform**: Windows, Linux, macOS
- * - **Dependencies**: None (header-only for core functionality)
- * - **Optional**: nlohmann/json for JSON serialization
- *
- * @section qr_compilation Compilation
- *
- * **GCC/Clang:**
- * ```bash
- * g++ -std=c++20 -pthread your_file.cpp
- * clang++ -std=c++20 -fexperimental-library -pthread your_file.cpp
- * ```
- *
- * **MSVC:**
- * ```bash
- * cl /std:c++20 your_file.cpp
- * ```
- *
- * **CMake:**
- * ```cmake
- * target_link_libraries(your_target PRIVATE asynchrony::asynchrony)
- * ```
- *
- * @section qr_tips Tips & Tricks
- *
- * 1. **Keep callbacks lightweight** - Avoid blocking operations
- * 2. **Use move semantics** - Always move items into the queue
- * 3. **Handle exceptions** - Catch exceptions in callbacks
- * 4. **Monitor queue depth** - Check for bottlenecks using toJson()
- * 5. **Choose right pool type** - Use roundrobin for variable-duration tasks
- * 6. **Lifetime management** - Keep worker/pool alive while queuing
- * 7. **Thread priority** - Use carefully, may affect system performance
- * 8. **Resource pool capacity** - Set to match thread pool size for optimal performance
- *
- * @section qr_troubleshooting Common Issues
- *
- * | Issue | Solution |
- * |-------|----------|
- * | Compilation error: `jthread not found` | Use C++20 or later |
- * | Tasks not executing | Ensure worker/pool is not destroyed |
- * | High CPU usage | Increase wait timeout or reduce threads |
- * | Deadlock | Avoid circular dependencies in callbacks |
- * | Memory leak | Ensure proper RAII cleanup |
- * | `checkout()` throws | Pool is empty, add resources first |
- * | Clang compilation fails | Add `-fexperimental-library` flag |
- *
- * @section qr_performance Performance Tips
- *
- * - **CPU-bound tasks**: Use threads = hardware_concurrency()
- * - **I/O-bound tasks**: Use threads > hardware_concurrency()
- * - **Batch small tasks**: Reduce overhead
- * - **Use roundrobin**: For variable-duration tasks
- * - **Monitor metrics**: Use toJson() to track queue depth
- * - **Avoid blocking**: Keep callbacks fast and non-blocking
- *
- * @section qr_examples Quick Examples
- *
- * ### Example 1: Simple Async Task
- * ```cpp
- * siddiqsoft::simple_worker<std::string> worker{
- *     [](auto&& msg) { std::cout << msg << std::endl; }
- * };
- * worker.queue("Hello, World!");
- * std::this_thread::sleep_for(std::chrono::milliseconds(100));
- * ```
- *
- * ### Example 2: Parallel Processing
- * ```cpp
- * siddiqsoft::simple_pool<int> pool{
- *     [](auto&& num) { std::cout << num * 2 << std::endl; }
- * };
- * for (int i = 0; i < 100; ++i) pool.queue(i);
- * std::this_thread::sleep_for(std::chrono::seconds(1));
- * ```
- *
- * ### Example 3: Periodic Monitoring
- * ```cpp
- * siddiqsoft::periodic_worker<> monitor{
- *     []() { std::cout << "Tick!" << std::endl; },
- *     std::chrono::seconds(1)
- * };
- * std::this_thread::sleep_for(std::chrono::seconds(10));
- * ```
- *
- * ### Example 4: Resource Management
- * ```cpp
- * siddiqsoft::resource_pool<Connection> pool;
- * auto conn = pool.checkout();
- * conn.query("SELECT * FROM users");
- * pool.checkin(std::move(conn));
- * ```
- *
- * @section qr_json_output JSON Output Format
- *
- * When calling `toJson()` on workers, the output includes:
- *
- * ```json
- * {
- *   "_typver": "siddiqsoft.asynchrony-lib.simple_worker/0.10",
- *   "itemsSize": 5,
- *   "queueCounter": 100,
- *   "itemsQueued": 100,
- *   "itemsPopped": 95,
- *   "itemsOutstanding": 5,
- *   "threadPriority": 0,
- *   "outstandingCallback": 1,
- *   "waitInterval": 1500
- * }
- * ```
- */
+
+@page quick_reference Quick Reference
+
+@section qr_components Components at a Glance
+
+| Component | Use Case | Threads | Queue Type |
+|-----------|----------|---------|-----------|
+| `simple_worker` | Single async task | 1 | Shared |
+| `simple_pool` | Parallel processing | N | Shared |
+| `roundrobin_pool` | Load balancing | N | Per-thread |
+| `periodic_worker` | Scheduled tasks | 1 | N/A |
+| `resource_pool` | Resource management | N/A | N/A |
+
+@section qr_includes Include Files
+
+```cpp
+#include "siddiqsoft/simple_worker.hpp"      // Single-threaded worker
+#include "siddiqsoft/simple_pool.hpp"        // Multi-threaded pool
+#include "siddiqsoft/roundrobin_pool.hpp"    // Round-robin pool
+#include "siddiqsoft/periodic_worker.hpp"    // Periodic executor
+#include "siddiqsoft/resource_pool.hpp"      // Resource pool
+```
+
+@section qr_basic_patterns Basic Patterns
+
+@subsection qr_pattern_worker Single Worker
+
+```cpp
+siddiqsoft::simple_worker<Task> worker{
+    [](auto&& task) { task.execute(); }
+};
+worker.queue(std::move(task));
+```
+
+@subsection qr_pattern_pool Thread Pool
+
+```cpp
+siddiqsoft::simple_pool<Task> pool{
+    [](auto&& task) { task.execute(); }
+};
+for (auto& t : tasks) pool.queue(std::move(t));
+```
+
+@subsection qr_pattern_roundrobin Round-Robin Pool
+
+```cpp
+siddiqsoft::roundrobin_pool<Task> pool{
+    [](auto&& task) { task.execute(); }
+};
+for (auto& t : tasks) pool.queue(std::move(t));
+```
+
+@subsection qr_pattern_periodic Periodic Task
+
+```cpp
+siddiqsoft::periodic_worker<> timer{
+    []() { /* do something */ },
+    std::chrono::milliseconds(1000)
+};
+```
+
+@subsection qr_pattern_resource Resource Pool
+
+```cpp
+siddiqsoft::resource_pool<Resource> pool;
+auto res = pool.checkout();
+// use resource
+pool.checkin(std::move(res));
+```
+
+@section qr_template_params Template Parameters
+
+### simple_worker<T, Pri>
+- `T`: Data type (must be move-constructible)
+- `Pri`: Thread priority (-10 to +10, default 0)
+
+### simple_pool<T, N>
+- `T`: Data type (must be move-constructible)
+- `N`: Number of threads (0 = hardware_concurrency)
+
+### roundrobin_pool<T, N>
+- `T`: Data type (must be move-constructible)
+- `N`: Number of threads (0 = hardware_concurrency)
+
+### periodic_worker<Pri>
+- `Pri`: Thread priority (-10 to +10, default 0)
+
+### resource_pool<T>
+- `T`: Resource type (must be move-constructible)
+
+@section qr_methods Common Methods
+
+### queue(T&& item)
+Queue an item for processing
+```cpp
+worker.queue(std::move(item));
+```
+
+### toJson()
+Get JSON representation (requires nlohmann/json)
+```cpp
+auto json = worker.toJson();
+std::cout << json.dump(2) << std::endl;
+```
+
+### checkout() / checkin()
+Resource pool operations
+```cpp
+auto resource = pool.checkout();  // throws if empty
+// use resource
+pool.checkin(std::move(resource));
+```
+
+### size()
+Get current pool size
+```cpp
+auto sz = pool.size();
+```
+
+### clear()
+Clear all resources from pool
+```cpp
+pool.clear();
+```
+
+@section qr_requirements Requirements
+
+- **C++20** or later
+- **Compiler**: GCC 10+, MSVC 16.11+, Clang 10+
+- **Platform**: Windows, Linux, macOS
+- **Dependencies**: None (header-only for core functionality)
+- **Optional**: nlohmann/json for JSON serialization
+
+@section qr_compilation Compilation
+
+**GCC/Clang:**
+```bash
+g++ -std=c++20 -pthread your_file.cpp
+clang++ -std=c++20 -fexperimental-library -pthread your_file.cpp
+```
+
+**MSVC:**
+```bash
+cl /std:c++20 your_file.cpp
+```
+
+**CMake:**
+```cmake
+target_link_libraries(your_target PRIVATE asynchrony::asynchrony)
+```
+
+@section qr_tips Tips & Tricks
+
+1. **Keep callbacks lightweight** - Avoid blocking operations
+2. **Use move semantics** - Always move items into the queue
+3. **Handle exceptions** - Catch exceptions in callbacks
+4. **Monitor queue depth** - Check for bottlenecks using toJson()
+5. **Choose right pool type** - Use roundrobin for variable-duration tasks
+6. **Lifetime management** - Keep worker/pool alive while queuing
+7. **Thread priority** - Use carefully, may affect system performance
+8. **Resource pool capacity** - Set to match thread pool size for optimal performance
+
+@section qr_troubleshooting Common Issues
+
+| Issue | Solution |
+|-------|----------|
+| Compilation error: `jthread not found` | Use C++20 or later |
+| Tasks not executing | Ensure worker/pool is not destroyed |
+| High CPU usage | Increase wait timeout or reduce threads |
+| Deadlock | Avoid circular dependencies in callbacks |
+| Memory leak | Ensure proper RAII cleanup |
+| `checkout()` throws | Pool is empty, add resources first |
+| Clang compilation fails | Add `-fexperimental-library` flag |
+
+@section qr_performance Performance Tips
+
+- **CPU-bound tasks**: Use threads = hardware_concurrency()
+- **I/O-bound tasks**: Use threads > hardware_concurrency()
+- **Batch small tasks**: Reduce overhead
+- **Use roundrobin**: For variable-duration tasks
+- **Monitor metrics**: Use toJson() to track queue depth
+- **Avoid blocking**: Keep callbacks fast and non-blocking
+
+@section qr_examples Quick Examples
+
+### Example 1: Simple Async Task
+```cpp
+siddiqsoft::simple_worker<std::string> worker{
+    [](auto&& msg) { std::cout << msg << std::endl; }
+};
+worker.queue("Hello, World!");
+std::this_thread::sleep_for(std::chrono::milliseconds(100));
+```
+
+### Example 2: Parallel Processing
+```cpp
+siddiqsoft::simple_pool<int> pool{
+    [](auto&& num) { std::cout << num * 2 << std::endl; }
+};
+for (int i = 0; i < 100; ++i) pool.queue(i);
+std::this_thread::sleep_for(std::chrono::seconds(1));
+```
+
+### Example 3: Periodic Monitoring
+```cpp
+siddiqsoft::periodic_worker<> monitor{
+    []() { std::cout << "Tick!" << std::endl; },
+    std::chrono::seconds(1)
+};
+std::this_thread::sleep_for(std::chrono::seconds(10));
+```
+
+### Example 4: Resource Management
+```cpp
+siddiqsoft::resource_pool<Connection> pool;
+auto conn = pool.checkout();
+conn.query("SELECT * FROM users");
+pool.checkin(std::move(conn));
+```
+
+@section qr_json_output JSON Output Format
+
+When calling `toJson()` on workers, the output includes:
+
+```json
+{
+  "_typver": "siddiqsoft.asynchrony-lib.simple_worker/0.10",
+  "itemsSize": 5,
+  "queueCounter": 100,
+  "itemsQueued": 100,
+  "itemsPopped": 95,
+  "itemsOutstanding": 5,
+  "threadPriority": 0,
+  "outstandingCallback": 1,
+  "waitInterval": 1500
+}
+```
+

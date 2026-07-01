@@ -1,10 +1,9 @@
-![](https://gravatar.com/avatar/b22603b65d11dcab44885c65e44f7dc9)
-
 asynchrony : Asynchrony support library
 ---------------------------------------
 
-<!-- badges -->
-[![CodeQL](https://github.com/SiddiqSoft/asynchrony/actions/workflows/github-code-scanning-codeql/badge.svg)](https://github.com/SiddiqSoft/asynchrony/actions/workflows/github-code-scanning-codeql)
+<img align="right" src="https://gravatar.com/avatar/b22603b65d11dcab44885c65e44f7dc9">
+
+[![CodeQL](https://github.com/SiddiqSoft/asynchrony/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/SiddiqSoft/asynchrony/actions/workflows/github-code-scanning/codeql)
 [![Build Status](https://dev.azure.com/siddiqsoft/siddiqsoft/_apis/build/status/SiddiqSoft.asynchrony?branchName=main)](https://dev.azure.com/siddiqsoft/siddiqsoft/_build/latest?definitionId=17&branchName=main)
 ![](https://img.shields.io/nuget/v/SiddiqSoft.asynchrony)
 ![](https://img.shields.io/github/v/tag/SiddiqSoft/asynchrony)
@@ -24,11 +23,7 @@ asynchrony : Asynchrony support library
 - This library uses standard C++20 code with support for Windows, Linux, and macOS.
   - We use [`<concepts>`](https://en.cppreference.com/w/cpp/concepts), [`<jthread>`](https://en.cppreference.com/w/cpp/thread/jthread), [`<semaphore>`](https://en.cppreference.com/w/cpp/thread/counting_semaphore), and [`<format>`](https://en.cppreference.com/w/cpp/header/format).
   - The most compatible compilers are GCC 10+, MSVC 16.11+, and Clang 10+.
-- On Windows with Visual Studio, use the NuGet package!
-- Make sure you use `c++latest` or `-std=c++20` as the language standard.
-
-> **NOTE**
-> We are tracking the latest C++20 standard and the API is subject to change.
+- On Windows, you can use the Nuget package or CMakeLists.
 
 ## Quick Start
 

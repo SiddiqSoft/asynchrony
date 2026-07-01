@@ -34,6 +34,7 @@ trigger:
     exclude:
       - README.md
       - .azure/*
+      - docs/* # Sometimes we would like to deploy manually
       - azure-pipelines.yml # Avoids recursive triggers when modifying the pipeline itself
 pr:
   branches:

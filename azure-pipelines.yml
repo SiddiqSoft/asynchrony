@@ -217,6 +217,7 @@ stages:
 
   # ==========================================================================
   # STAGE 4: DOCUMENTATION DEPLOYMENT
+  # This stage can be run independently and without the requisite code build.
   # ==========================================================================
   - stage: Documentation
     displayName: Documentation

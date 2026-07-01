@@ -1,4 +1,4 @@
-![Siddiq Software Logo](./pack/Siddiq-Software-Avatar.png)
+![](https://gravatar.com/avatar/b22603b65d11dcab44885c65e44f7dc9)
 
 asynchrony : Add asynchrony to your apps
 -------------------------------------------
@@ -9,7 +9,7 @@ asynchrony : Add asynchrony to your apps
 ![](https://img.shields.io/azure-devops/tests/siddiqsoft/siddiqsoft/17)
 <!-- end badges -->
 
-## 📚 Documentation
+## Documentation
 
 For comprehensive documentation, visit our **[GitHub Pages](https://siddiqsoft.github.io/asynchrony/)**:
 

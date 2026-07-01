@@ -1,4 +1,4 @@
-![Siddiq Software Logo](./assets/logo.png)
+![](https://gravatar.com/avatar/b22603b65d11dcab44885c65e44f7dc9)
 
 asynchrony : Asynchrony support library
 ---------------------------------------

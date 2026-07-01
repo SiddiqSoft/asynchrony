@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['parallel_20processing_0',['Example 2: Parallel Processing',['../quick_reference.html#autotoc_md22',1,'']]],
+  ['parameters_1',['Template Parameters',['../quick_reference.html#qr_template_params',1,'']]],
+  ['pattern_2',['Producer-Consumer Pattern',['../examples.html#ex_producer_consumer',1,'']]],
+  ['pattern_201_3a_20fire_20and_20forget_3',['Pattern 1: Fire and Forget',['../getting_started.html#autotoc_md5',1,'']]],
+  ['pattern_202_3a_20batch_20processing_4',['Pattern 2: Batch Processing',['../getting_started.html#autotoc_md6',1,'']]],
+  ['pattern_203_3a_20periodic_20tasks_5',['Pattern 3: Periodic Tasks',['../getting_started.html#autotoc_md7',1,'']]],
+  ['pattern_204_3a_20resource_20pool_6',['Pattern 4: Resource Pool',['../getting_started.html#autotoc_md8',1,'']]],
+  ['patterns_7',['Patterns',['../quick_reference.html#qr_basic_patterns',1,'Basic Patterns'],['../getting_started.html#common_patterns',1,'Common Patterns']]],
+  ['performance_20considerations_8',['Performance Considerations',['../usage_guide.html#sp_performance',1,'']]],
+  ['performance_20tips_9',['Performance Tips',['../quick_reference.html#qr_performance',1,'Performance Tips'],['../usage_guide.html#bp_performance',1,'Performance Tips']]],
+  ['periodic_20monitoring_10',['Example 3: Periodic Monitoring',['../quick_reference.html#autotoc_md23',1,'']]],
+  ['periodic_20task_11',['Periodic Task',['../quick_reference.html#qr_pattern_periodic',1,'']]],
+  ['periodic_20tasks_12',['Pattern 3: Periodic Tasks',['../getting_started.html#autotoc_md7',1,'']]],
+  ['periodic_20worker_13',['Periodic Worker',['../usage_guide.html#pw_named',1,'Named Periodic Worker'],['../usage_guide.html#periodic_worker',1,'Periodic Worker']]],
+  ['periodic_5fworker_14',['periodic_worker',['../structsiddiqsoft_1_1periodic__worker.html',1,'siddiqsoft::periodic_worker&lt; Pri &gt;'],['../structsiddiqsoft_1_1periodic__worker.html#a60aace3f42bd6b2088af2777e3c1f63e',1,'siddiqsoft::periodic_worker::periodic_worker()'],['../quick_reference.html#autotoc_md14',1,'periodic_worker&amp;lt;Pri&amp;gt;']]],
+  ['pool_15',['Pool',['../getting_started.html#autotoc_md8',1,'Pattern 4: Resource Pool'],['../quick_reference.html#qr_pattern_resource',1,'Resource Pool'],['../usage_guide.html#resource_pool',1,'Resource Pool'],['../quick_reference.html#qr_pattern_roundrobin',1,'Round-Robin Pool'],['../usage_guide.html#roundrobin_pool',1,'Round-Robin Pool'],['../usage_guide.html#rrp_vs_simple',1,'Round-Robin vs Simple Pool'],['../usage_guide.html#simple_pool',1,'Simple Pool'],['../quick_reference.html#qr_pattern_pool',1,'Thread Pool']]],
+  ['pool_20example_16',['Thread Pool Example',['../index.html#pool_example',1,'']]],
+  ['pool_20methods_17',['Resource Pool Methods',['../usage_guide.html#rp_methods',1,'']]],
+  ['practices_18',['Best Practices',['../usage_guide.html#best_practices',1,'']]],
+  ['principles_19',['Design Principles',['../index.html#design',1,'']]],
+  ['priority_20',['Priority',['../usage_guide.html#pw_priority',1,'Priority'],['../usage_guide.html#sw_priority',1,'Thread Priority']]],
+  ['priority_20based_20workers_21',['Priority-Based Workers',['../examples.html#ex_priority_workers',1,'']]],
+  ['processing_22',['Processing',['../examples.html#ex_event_processing',1,'Event Processing'],['../quick_reference.html#autotoc_md22',1,'Example 2: Parallel Processing'],['../examples.html#ex_file_processing',1,'File Processing'],['../getting_started.html#autotoc_md6',1,'Pattern 2: Batch Processing']]],
+  ['producer_20consumer_20pattern_23',['Producer-Consumer Pattern',['../examples.html#ex_producer_consumer',1,'']]],
+  ['program_24',['Your First Program',['../getting_started.html#first_program',1,'']]]
+];

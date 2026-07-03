@@ -21,6 +21,11 @@ For comprehensive documentation, visit our **[GitHub Pages](https://siddiqsoft.g
 
 # Motivation
 - We needed to add asynchrony to our code.
+  - A periodic worker
+  - A resource pool
+  - A round robin pool
+  - A simple thread pool
+  - A simple worker pool
 - The code here is a set of helpers that utilize the underlying deque, semaphore, mutex features found in std.
 - Be instructive while providing functional code.
 - Use only C++20 standard code: jthread, deque, semaphore, and concepts

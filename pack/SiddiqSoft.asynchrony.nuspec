@@ -18,6 +18,7 @@
 		<license type="expression">BSD-3-Clause</license>
 		<icon>docs\Siddiq-Software-Avatar.png</icon>
 		<readme>docs\README.md</readme>
+        <documentationUrl>https://siddiqsoft.github.io/asynchrony/</documentationUrl>
 		<releaseNotes></releaseNotes>
 		<copyright>Copyright (c) 2021-2026 Siddiq Software LLC</copyright>
 		<!-- Dependencies -->

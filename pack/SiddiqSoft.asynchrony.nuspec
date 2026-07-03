@@ -18,11 +18,13 @@
 		<license type="expression">BSD-3-Clause</license>
 		<icon>docs\Siddiq-Software-Avatar.png</icon>
 		<readme>docs\README.md</readme>
-        <documentationUrl>https://siddiqsoft.github.io/asynchrony/</documentationUrl>
-		<releaseNotes></releaseNotes>
+		<releaseNotes>Refer to the project repository for release notes. Documentation at https://siddiqsoft.github.io/asynchrony/</releaseNotes>
 		<copyright>Copyright (c) 2021-2026 Siddiq Software LLC</copyright>
 		<!-- Dependencies -->
 		<dependencies>
+            <dependency id="Siddiqsoft.RunOnEnd" version="1.4.5" />
+            <dependency id="Siddiqsoft.RWLEnvelope" version="1.5.0" />
+            <dependency id="Siddiqsoft.RWLContainer" version="1.5.3" />
 		</dependencies>
 	</metadata>
 

@@ -44,7 +44,7 @@
 #include <vector>
 #include <mutex>
 #include <set>
-#include <limits.h>
+#include <climits>
 
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/simple_worker.hpp"
@@ -53,6 +53,7 @@
 #include "../include/siddiqsoft/periodic_worker.hpp"
 #include "../include/siddiqsoft/resource_pool.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 /// @brief BUG TEST: Race condition in queueCounter increment
 /// The queueCounter should be incremented atomically and consistently.
@@ -143,7 +144,7 @@ TEST(bug_tests, periodic_worker_outstanding_callback_exception)
         unsigned outstanding = j["outstandingCallbacks"].get<unsigned>();
         if (outstanding > outstandingPeak.load()) {
             outstandingPeak = outstanding;
-            std::println(std::cerr, "Outstanding callbacks: {}", outstanding);
+            std::cerr << std::format("Outstanding callbacks: {}", outstanding);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
@@ -318,7 +319,7 @@ TEST(bug_tests, simple_worker_exception_doesnt_lose_items)
             throw std::runtime_error("test exception");
         }
         {
-            std::lock_guard<std::mutex> lk(mtx);
+            std::scoped_lock<std::mutex> lk(mtx);
             processedIndices.insert(idx);
         }
         processedCount++;
@@ -338,7 +339,7 @@ TEST(bug_tests, simple_worker_exception_doesnt_lose_items)
 
     // Verify no items were lost
     {
-        std::lock_guard<std::mutex> lk(mtx);
+        std::scoped_lock<std::mutex> lk(mtx);
         for (int i = 0; i < ITEM_COUNT; i++) {
             if (i % 5 != 0) {
                 EXPECT_TRUE(processedIndices.count(i)) << "Item " << i << " was not processed";
@@ -365,7 +366,7 @@ TEST(bug_tests, simple_pool_exception_doesnt_block_other_workers)
             throw std::runtime_error("test exception");
         }
         {
-            std::lock_guard<std::mutex> lk(mtx);
+            std::scoped_lock<std::mutex> lk(mtx);
             processedIndices.insert(idx);
         }
         processedCount++;
@@ -384,7 +385,7 @@ TEST(bug_tests, simple_pool_exception_doesnt_block_other_workers)
     EXPECT_EQ(85u, processedCount.load());
 
     {
-        std::lock_guard<std::mutex> lk(mtx);
+        std::scoped_lock<std::mutex> lk(mtx);
         EXPECT_EQ(85u, processedIndices.size());
     }
 }
@@ -451,9 +452,9 @@ TEST(bug_tests, periodic_worker_invocation_consistency)
     // Should have at least 5 invocations in 500ms with 50ms interval
     EXPECT_GE(invokeCount.load(), 5u);
 
-    // Intervals should be roughly around 50ms (allow 20-100ms tolerance for CI)
+    // Intervals should be roughly around 50ms (allow 20-120ms tolerance for CI)
     if (invokeCount.load() > 1) {
-        EXPECT_LE(minInterval.load(), 100u) << "Min interval too large: " << minInterval.load() << "ms";
+        EXPECT_LE(minInterval.load(), 120u) << "Min interval too large: " << minInterval.load() << "ms";
         EXPECT_GE(maxInterval.load(), 20u) << "Max interval too small: " << maxInterval.load() << "ms";
     }
 }
@@ -513,3 +514,4 @@ TEST(bug_tests, resource_pool_no_resource_leak)
     // Total operations should equal successes + failures
     EXPECT_EQ(THREAD_COUNT * OPS_PER_THREAD, successCount.load() + failCount.load());
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

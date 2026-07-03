@@ -47,7 +47,7 @@
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/simple_worker.hpp"
 
-
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 TEST(simple_worker, test1)
 {
     bool                                      passTest {false};
@@ -191,7 +191,7 @@ TEST(simple_worker, string_type)
     std::mutex                             mtx;
 
     siddiqsoft::simple_worker<std::string> worker {[&](auto&& item) {
-        std::lock_guard<std::mutex> lk(mtx);
+        std::scoped_lock<std::mutex> lk(mtx);
         lastValue = item;
         processedCount++;
     }};
@@ -202,7 +202,7 @@ TEST(simple_worker, string_type)
     std::this_thread::sleep_for(std::chrono::seconds(1));
     EXPECT_EQ(2u, processedCount.load());
     {
-        std::lock_guard<std::mutex> lk(mtx);
+        std::scoped_lock<std::mutex> lk(mtx);
         EXPECT_EQ("world", lastValue);
     }
 }
@@ -510,7 +510,9 @@ TEST(simple_worker, forceCleanupTerminate_multiple_calls)
     catch (...) {
     }
 
-    std::println(std::cerr, "{} - Post test the processCount: {}", __func__, processedCount.load());
+    std::cerr << std::format("{} - Post test the processCount: {}", __func__, processedCount.load());
     EXPECT_GT(processedCount.load(), 0u);
 }
 #endif
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

@@ -41,6 +41,9 @@
 #include <latch>
 #include <exception>
 #include <atomic>
+#include <utility>
+
+#include "siddiqsoft/WaitableQueue.hpp"
 #include "siddiqsoft/RunOnEnd.hpp"
 
 namespace siddiqsoft
@@ -106,7 +109,7 @@ namespace siddiqsoft
                         }
                         catch (const std::exception& ex) {
                             // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                            std::println(std::cerr, "Ignoring Exception in simple_worker callback: {}", ex.what());
+                            std::cerr << std::format("Ignoring Exception in simple_worker callback: {}", ex.what());
                         }
                     } // while ..continue until we're asked to stop
                 });
@@ -117,13 +120,12 @@ namespace siddiqsoft
         /// @param item Item to queue must be move'd
         void queue(T&& item)
         {
-            {
-                std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
+            // With this interface, we can peform a perfect forward of the r-value from the caller into the
+            // items internal container without the complexity of lambda capture forwards.
+            items.emplace(std::forward<T>(item));
 
-                items.emplace_back(std::move(item));
-                // Use atomic fetch_add with release semantics to ensure thread-safe updates
-                queueCounter.fetch_add(1, std::memory_order_release);
-            }
+            // Use atomic fetch_add with release semantics to ensure thread-safe updates
+            queueCounter.fetch_add(1, std::memory_order_release);
             signal.release();
         }
 
@@ -133,11 +135,13 @@ namespace siddiqsoft
         /// @param  this object
         /// @note The use of signal.max() is causing an issue where winmindef.h is defining the `max` as a macro and thus we end up
         /// with compiler error when the client application includes any of the windows headers! Disabled for now.
-        nlohmann::json toJson() const
+        /// @note FIX: Acquire shared lock to prevent data race on items deque when multiple threads call toJson() concurrently
+        auto toJson() const -> nlohmann::json
         {
+            const auto sz = items.size();
             return nlohmann::json {{"_typver", "siddiqsoft.asynchrony-lib.simple_pool/0.10"},
                                    {"workersSize", workers.size()},
-                                   {"dequeSize", items.size()},
+                                   {"dequeSize", sz},
                                    {"queueCounter", queueCounter.load(std::memory_order_acquire)},
                                    {"waitInterval", DEFAULT_WAIT_FOR_NEXT_ITEM_MS.count()}};
         }
@@ -155,8 +159,8 @@ namespace siddiqsoft
         std::vector<std::jthread> workers {};
         std::function<void(T&&)>  callback;
         std::counting_semaphore<> signal {0};
-        std::deque<T>             items {};
-        std::shared_mutex         items_mutex;
+        // siddiqsoft::RWLEnvelope<std::deque<T>> items {};
+        siddiqsoft::WaitableQueue<T> items {};
 
         /// @brief Performs an acquire on the semaphore and if successful,
         /// attempts to lock to pull the item from the top of the deque.
@@ -164,17 +168,7 @@ namespace siddiqsoft
         /// @return An optional which may contain the item or empty (most of the time it'll be empty)
         std::optional<T> getNextItem(const std::chrono::milliseconds& delta = DEFAULT_WAIT_FOR_NEXT_ITEM_MS)
         {
-            if (signal.try_acquire_for(delta)) {
-                // Guard against empty signals which are terminating indicator
-                if (std::unique_lock<std::shared_mutex> myWriterLock(items_mutex); !items.empty()) {
-                    siddiqsoft::RunOnEnd onCleanup([&]() { items.pop_front(); });
-                    // WE require that the stored type by move-constructible!
-                    return std::move(items.front());
-                }
-            }
-
-            // Fall-through empty
-            return {};
+            return items.tryWaitItem(delta);
         }
     };
 
@@ -184,7 +178,7 @@ namespace siddiqsoft
     /// @param dest destination json object
     /// @param src source object
     template <typename T, uint16_t N = 0>
-    static void to_json(nlohmann::json& dest, const siddiqsoft::simple_pool<T, N>& src)
+    static auto to_json(nlohmann::json& dest, const siddiqsoft::simple_pool<T, N>& src) -> void const
     {
         dest = src.toJson();
     }

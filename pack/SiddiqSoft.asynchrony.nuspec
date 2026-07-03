@@ -13,15 +13,18 @@
 		<authors>SiddiqSoft</authors>
 		<description>Add asynchrony to your apps</description>
 		<tags>jthread thread periodic timer async pool deque cpp20 native nativepackage cpp</tags>
-		<projectUrl>https://github.com/SiddiqSoft/asynchrony-lib</projectUrl>
+		<projectUrl>https://github.com/SiddiqSoft/asynchrony</projectUrl>
 		<requireLicenseAcceptance>true</requireLicenseAcceptance>
 		<license type="expression">BSD-3-Clause</license>
 		<icon>docs\Siddiq-Software-Avatar.png</icon>
 		<readme>docs\README.md</readme>
-		<releaseNotes></releaseNotes>
-		<copyright>Copyright (c) 2021-2024 Siddiq Software LLC</copyright>
+		<releaseNotes>Refer to the project repository for release notes. Documentation at https://siddiqsoft.github.io/asynchrony/</releaseNotes>
+		<copyright>Copyright (c) 2021-2026 Siddiq Software LLC</copyright>
 		<!-- Dependencies -->
 		<dependencies>
+            <dependency id="Siddiqsoft.RunOnEnd" version="1.4.5" />
+            <dependency id="Siddiqsoft.RWLEnvelope" version="1.5.0" />
+            <dependency id="Siddiqsoft.RWLContainer" version="1.5.3" />
 		</dependencies>
 	</metadata>
 
@@ -41,6 +44,6 @@
 		<file src="SiddiqSoft.asynchrony.targets" target="build\native" />
 
 		<!-- Natvis file for Visual Studio debugger visualization -->
-		<file src="..\SiddiqSoft.asynchrony.natvis" target="build\native" />
+		<file src="..\pack\SiddiqSoft.asynchrony.natvis" target="build\native" />
 	</files>
 </package>

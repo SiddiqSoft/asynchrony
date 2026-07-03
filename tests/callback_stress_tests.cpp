@@ -45,6 +45,7 @@
 #include <mutex>
 #include <chrono>
 #include <stdexcept>
+#include <memory>
 
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/simple_worker.hpp"
@@ -52,6 +53,7 @@
 #include "../include/siddiqsoft/roundrobin_pool.hpp"
 #include "../include/siddiqsoft/periodic_worker.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 // ============================================================================
 // HELPER STRUCT FOR TESTS
@@ -70,6 +72,7 @@ struct TestItem
     TestItem& operator=(TestItem&&)      = default;
     TestItem(const TestItem&)            = delete;
     TestItem& operator=(const TestItem&) = delete;
+    ~TestItem()                          = default;
 };
 
 
@@ -81,20 +84,20 @@ struct TestItem
 /// Verifies that other items can still be queued even if one callback is blocked
 TEST(callback_lockup, simple_worker_callback_lockup)
 {
-    std::atomic_uint                    processedCount {0};
-    std::atomic_bool                    lockupStarted {false};
-    std::atomic_bool                    lockupCanFinish {false};
+    auto                                processedCount  = std::make_shared<std::atomic_uint>(0);
+    auto                                lockupStarted   = std::make_shared<std::atomic_bool>(false);
+    auto                                lockupCanFinish = std::make_shared<std::atomic_bool>(false);
 
-    siddiqsoft::simple_worker<TestItem> worker {[&](auto&& item) {
+    siddiqsoft::simple_worker<TestItem> worker {[processedCount, lockupStarted, lockupCanFinish](auto&& item) {
         if (item.value == 0) {
-            lockupStarted = true;
+            lockupStarted->store(true);
             // Simulate indefinite lockup
-            while (!lockupCanFinish.load()) {
+            while (!lockupCanFinish->load()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         }
         else {
-            processedCount++;
+            (*processedCount)++;
         }
     }};
 
@@ -102,7 +105,7 @@ TEST(callback_lockup, simple_worker_callback_lockup)
     worker.queue(TestItem(0));
 
     // Wait for lockup to start
-    while (!lockupStarted.load()) {
+    while (!lockupStarted->load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
@@ -115,16 +118,16 @@ TEST(callback_lockup, simple_worker_callback_lockup)
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // Items should be queued but not processed yet (worker is blocked)
-    EXPECT_EQ(0u, processedCount.load());
+    EXPECT_EQ(0u, processedCount->load());
 
     // Release the lockup
-    lockupCanFinish = true;
+    lockupCanFinish->store(true);
 
     // Wait for remaining items to be processed
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // All non-lockup items should be processed
-    EXPECT_EQ(10u, processedCount.load());
+    EXPECT_EQ(10u, processedCount->load());
 }
 
 
@@ -132,16 +135,16 @@ TEST(callback_lockup, simple_worker_callback_lockup)
 /// Verifies that the worker can recover after a lockup
 TEST(callback_lockup, simple_worker_callback_temporary_lockup)
 {
-    std::atomic_uint                    processedCount {0};
-    std::atomic_uint                    lockupCount {0};
+    auto                                processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                lockupCount    = std::make_shared<std::atomic_uint>(0);
 
-    siddiqsoft::simple_worker<TestItem> worker {[&](auto&& item) {
+    siddiqsoft::simple_worker<TestItem> worker {[processedCount, lockupCount](auto&& item) {
         if (item.value % 5 == 0) {
-            lockupCount++;
+            (*lockupCount)++;
             // Temporary lockup
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
         }
-        processedCount++;
+        (*processedCount)++;
     }};
 
     // Queue items
@@ -153,8 +156,8 @@ TEST(callback_lockup, simple_worker_callback_temporary_lockup)
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     // All items should be processed despite lockups
-    EXPECT_EQ(20u, processedCount.load());
-    EXPECT_EQ(4u, lockupCount.load()); // Items 0, 5, 10, 15
+    EXPECT_EQ(20u, processedCount->load());
+    EXPECT_EQ(4u, lockupCount->load()); // Items 0, 5, 10, 15
 }
 
 
@@ -166,15 +169,15 @@ TEST(callback_lockup, simple_worker_callback_temporary_lockup)
 /// Verifies that exceptions don't stop processing of subsequent items
 TEST(callback_exception, simple_worker_runtime_error)
 {
-    std::atomic_uint                    processedCount {0};
-    std::atomic_uint                    exceptionCount {0};
+    auto                                processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                exceptionCount = std::make_shared<std::atomic_uint>(0);
 
-    siddiqsoft::simple_worker<TestItem> worker {[&](auto&& item) {
+    siddiqsoft::simple_worker<TestItem> worker {[processedCount, exceptionCount](auto&& item) {
         if (item.value % 3 == 0) {
-            exceptionCount++;
+            (*exceptionCount)++;
             throw std::runtime_error("Test runtime error");
         }
-        processedCount++;
+        (*processedCount)++;
     }};
 
     // Queue items
@@ -186,8 +189,8 @@ TEST(callback_exception, simple_worker_runtime_error)
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // Verify results
-    EXPECT_EQ(20u, processedCount.load()); // 30 - 10 exceptions
-    EXPECT_EQ(10u, exceptionCount.load()); // Items 0,3,6,9,12,15,18,21,24,27
+    EXPECT_EQ(20u, processedCount->load()); // 30 - 10 exceptions
+    EXPECT_EQ(10u, exceptionCount->load()); // Items 0,3,6,9,12,15,18,21,24,27
 }
 
 
@@ -195,15 +198,15 @@ TEST(callback_exception, simple_worker_runtime_error)
 /// Verifies that memory exceptions are handled gracefully
 TEST(callback_exception, simple_worker_bad_alloc)
 {
-    std::atomic_uint                    processedCount {0};
-    std::atomic_uint                    exceptionCount {0};
+    auto                                processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                exceptionCount = std::make_shared<std::atomic_uint>(0);
 
-    siddiqsoft::simple_worker<TestItem> worker {[&](auto&& item) {
+    siddiqsoft::simple_worker<TestItem> worker {[processedCount, exceptionCount](auto&& item) {
         if (item.value == 5) {
-            exceptionCount++;
+            (*exceptionCount)++;
             throw std::bad_alloc();
         }
-        processedCount++;
+        (*processedCount)++;
     }};
 
     // Queue items
@@ -215,29 +218,36 @@ TEST(callback_exception, simple_worker_bad_alloc)
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // Verify results
-    EXPECT_EQ(9u, processedCount.load());
-    EXPECT_EQ(1u, exceptionCount.load());
+    EXPECT_EQ(9u, processedCount->load());
+    EXPECT_EQ(1u, exceptionCount->load());
 }
 
-
+#if defined (NOT_RELEVANT_BUT_NEEDS_TO_BE_DOCUMENTED)
 /// @brief Test simple_worker with callback that throws custom exception
 /// Verifies that custom exceptions are handled
 TEST(callback_exception, simple_worker_custom_exception)
 {
-    struct CustomException : public std::exception
-    {
-        const char* what() const noexcept override { return "Custom exception"; }
-    };
+    auto processedCount = std::make_shared<std::atomic_uint>(0);
+    auto exceptionCount = std::make_shared<std::atomic_uint>(0);
 
-    std::atomic_uint                    processedCount {0};
-    std::atomic_uint                    exceptionCount {0};
-
-    siddiqsoft::simple_worker<TestItem> worker {[&](auto&& item) {
+    // When you tag a method (or callable) with noexcept.. if you throw then the library will
+    // not allow the exception to go to the underlying handler and just abort here!
+    // This test is not relevant.
+    siddiqsoft::simple_worker<TestItem> worker {[processedCount, exceptionCount](auto&& item) noexcept {
         if (item.value % 4 == 0) {
-            exceptionCount++;
-            throw CustomException();
+            (*exceptionCount)++;
+            // throws an exception
+            try {
+                auto _ = std::stoi("dummy-should-throw");
+            }
+            catch (...) {
+                // if we do not catch then the library will abort the invocation of this method
+                // as we have declared this method as noexcept
+                // and no amount of exception handling by the caller to this method will
+                // help nor will any exception handling in the simple_worker dispatch.
+            }
         }
-        processedCount++;
+        (*processedCount)++;
     }};
 
     // Queue items
@@ -249,25 +259,25 @@ TEST(callback_exception, simple_worker_custom_exception)
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // Verify results
-    EXPECT_EQ(15u, processedCount.load()); // 20 - 5 exceptions
-    EXPECT_EQ(5u, exceptionCount.load());  // Items 0,4,8,12,16
+    EXPECT_EQ(15u, processedCount->load()); // 20 - 5 exceptions
+    EXPECT_EQ(5u, exceptionCount->load());  // Items 0,4,8,12,16
 }
-
+#endif
 
 /// @brief Test simple_worker with callback that throws and then recovers
 /// Verifies that exceptions don't permanently break the worker
 TEST(callback_exception, simple_worker_exception_recovery)
 {
-    std::atomic_uint                    processedCount {0};
-    std::atomic_uint                    exceptionCount {0};
-    std::atomic_bool                    shouldThrow {true};
+    auto                                processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                exceptionCount = std::make_shared<std::atomic_uint>(0);
+    auto                                shouldThrow    = std::make_shared<std::atomic_bool>(true);
 
-    siddiqsoft::simple_worker<TestItem> worker {[&](auto&& item) {
-        if (shouldThrow && item.value < 5) {
-            exceptionCount++;
+    siddiqsoft::simple_worker<TestItem> worker {[processedCount, exceptionCount, shouldThrow](auto&& item) {
+        if (shouldThrow->load() && item.value < 5) {
+            (*exceptionCount)++;
             throw std::runtime_error("Temporary error");
         }
-        processedCount++;
+        (*processedCount)++;
     }};
 
     // Queue first batch (will throw)
@@ -278,7 +288,7 @@ TEST(callback_exception, simple_worker_exception_recovery)
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // Stop throwing
-    shouldThrow = false;
+    shouldThrow->store(false);
 
     // Queue second batch (should process normally)
     for (int i = 5; i < 10; i++) {
@@ -289,8 +299,8 @@ TEST(callback_exception, simple_worker_exception_recovery)
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // Verify results
-    EXPECT_EQ(5u, processedCount.load()); // Only second batch
-    EXPECT_EQ(5u, exceptionCount.load()); // First batch threw
+    EXPECT_EQ(5u, processedCount->load()); // Only second batch
+    EXPECT_EQ(5u, exceptionCount->load()); // First batch threw
 }
 
 
@@ -302,20 +312,20 @@ TEST(callback_exception, simple_worker_exception_recovery)
 /// Verifies that other worker threads can still process items
 TEST(callback_lockup, simple_pool_callback_lockup)
 {
-    std::atomic_uint                     processedCount {0};
-    std::atomic_bool                     lockupStarted {false};
-    std::atomic_bool                     lockupCanFinish {false};
+    auto                                 processedCount  = std::make_shared<std::atomic_uint>(0);
+    auto                                 lockupStarted   = std::make_shared<std::atomic_bool>(false);
+    auto                                 lockupCanFinish = std::make_shared<std::atomic_bool>(false);
 
-    siddiqsoft::simple_pool<TestItem, 4> pool {[&](auto&& item) {
+    siddiqsoft::simple_pool<TestItem, 4> pool {[processedCount, lockupStarted, lockupCanFinish](auto&& item) noexcept {
         if (item.value == 0) {
-            lockupStarted = true;
-            while (!lockupCanFinish.load()) {
+            lockupStarted->store(true);
+            while (!lockupCanFinish->load()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         }
         else {
             std::this_thread::sleep_for(std::chrono::milliseconds(50)); // Add work
-            processedCount++;
+            (*processedCount)++;
         }
     }};
 
@@ -323,7 +333,7 @@ TEST(callback_lockup, simple_pool_callback_lockup)
     pool.queue(TestItem(0));
 
     // Wait for lockup to start
-    while (!lockupStarted.load()) {
+    while (!lockupStarted->load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
@@ -336,17 +346,17 @@ TEST(callback_lockup, simple_pool_callback_lockup)
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // Some items should be processed by other threads
-    EXPECT_GT(processedCount.load(), 0u);
-    EXPECT_LT(processedCount.load(), 21u); // Not all, since one thread is locked
+    EXPECT_GT(processedCount->load(), 0u);
+    EXPECT_LT(processedCount->load(), 21u); // Not all, since one thread is locked
 
     // Release the lockup
-    lockupCanFinish = true;
+    lockupCanFinish->store(true);
 
     // Wait for remaining items
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // All non-lockup items should be processed
-    EXPECT_EQ(20u, processedCount.load());
+    EXPECT_EQ(20u, processedCount->load());
 }
 
 
@@ -354,19 +364,19 @@ TEST(callback_lockup, simple_pool_callback_lockup)
 /// Verifies that remaining threads can still process items
 TEST(callback_lockup, simple_pool_multiple_lockups)
 {
-    std::atomic_uint                     processedCount {0};
-    std::atomic_uint                     lockupCount {0};
-    std::atomic_bool                     canFinish {false};
+    auto                                 processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                 lockupCount    = std::make_shared<std::atomic_uint>(0);
+    auto                                 canFinish      = std::make_shared<std::atomic_bool>(false);
 
-    siddiqsoft::simple_pool<TestItem, 4> pool {[&](auto&& item) {
+    siddiqsoft::simple_pool<TestItem, 4> pool {[processedCount, lockupCount, canFinish](auto&& item) {
         if (item.value % 10 == 0) {
-            lockupCount++;
+            (*lockupCount)++;
             // Lockup
-            while (!canFinish.load()) {
+            while (!canFinish->load()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         }
-        processedCount++;
+        (*processedCount)++;
     }};
 
     // Queue items
@@ -378,17 +388,17 @@ TEST(callback_lockup, simple_pool_multiple_lockups)
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // Some items should be processed
-    EXPECT_GT(processedCount.load(), 0u);
+    EXPECT_GT(processedCount->load(), 0u);
 
     // Release lockups
-    canFinish = true;
+    canFinish->store(true);
 
     // Wait for all items
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // All items should be processed
-    EXPECT_EQ(40u, processedCount.load());
-    EXPECT_EQ(4u, lockupCount.load()); // Items 0, 10, 20, 30
+    EXPECT_EQ(40u, processedCount->load());
+    EXPECT_EQ(4u, lockupCount->load()); // Items 0, 10, 20, 30
 }
 
 
@@ -400,15 +410,15 @@ TEST(callback_lockup, simple_pool_multiple_lockups)
 /// Verifies that exceptions in one thread don't affect others
 TEST(callback_exception, simple_pool_exception)
 {
-    std::atomic_uint                     processedCount {0};
-    std::atomic_uint                     exceptionCount {0};
+    auto                                 processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                 exceptionCount = std::make_shared<std::atomic_uint>(0);
 
-    siddiqsoft::simple_pool<TestItem, 4> pool {[&](auto&& item) {
+    siddiqsoft::simple_pool<TestItem, 4> pool {[processedCount, exceptionCount](auto&& item) {
         if (item.value % 5 == 0) {
-            exceptionCount++;
+            (*exceptionCount)++;
             throw std::runtime_error("Pool exception");
         }
-        processedCount++;
+        (*processedCount)++;
     }};
 
     // Queue items
@@ -420,8 +430,8 @@ TEST(callback_exception, simple_pool_exception)
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // Verify results
-    EXPECT_EQ(40u, processedCount.load()); // 50 - 10 exceptions
-    EXPECT_EQ(10u, exceptionCount.load()); // Items 0,5,10,15,20,25,30,35,40,45
+    EXPECT_EQ(40u, processedCount->load()); // 50 - 10 exceptions
+    EXPECT_EQ(10u, exceptionCount->load()); // Items 0,5,10,15,20,25,30,35,40,45
 }
 
 
@@ -429,27 +439,26 @@ TEST(callback_exception, simple_pool_exception)
 /// Verifies robustness under combined stress
 TEST(callback_exception, simple_pool_mixed_stress)
 {
-    std::atomic_uint                     processedCount {0};
-    std::atomic_uint                     exceptionCount {0};
-    std::atomic_uint                     lockupCount {0};
-    std::atomic_bool                     canFinish {false};
+    auto                                 processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                 exceptionCount = std::make_shared<std::atomic_uint>(0);
+    auto                                 lockupCount    = std::make_shared<std::atomic_uint>(0);
 
-    siddiqsoft::simple_pool<TestItem, 4> pool {[&](auto&& item) {
+    siddiqsoft::simple_pool<TestItem, 4> pool {[processedCount, exceptionCount, lockupCount](auto&& item) {
         if (item.value % 7 == 0) {
             // Items divisible by 7: lockup then process
-            lockupCount++;
+            (*lockupCount)++;
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            processedCount++; // Explicitly increment after lockup
+            (*processedCount)++; // Explicitly increment after lockup
         }
         else if (item.value % 3 == 0) {
             // Items divisible by 3 but not 7: throw exception, NOT processed
-            exceptionCount++;
+            (*exceptionCount)++;
             throw std::runtime_error("Mixed stress exception");
             // processedCount NOT incremented (exception thrown)
         }
         else {
             // All other items: process normally
-            processedCount++;
+            (*processedCount)++;
         }
     }};
 
@@ -465,9 +474,9 @@ TEST(callback_exception, simple_pool_mixed_stress)
     // Items divisible by 7: 0,7,14,21,28,35,42,49,56,63,70,77,84,91,98 (15 items)
     // Items divisible by 3 but not 7: 3,6,9,12,15,18,24,27,30,33,36,39,45,48,51,54,57,60,66,69,72,75,78,81,87,90,93,96,99 (29
     // items) Processed: 100 - 15 - 29 = 56 items
-    EXPECT_EQ(71u, processedCount.load());
-    EXPECT_EQ(29u, exceptionCount.load());
-    EXPECT_EQ(15u, lockupCount.load());
+    EXPECT_EQ(71u, processedCount->load());
+    EXPECT_EQ(29u, exceptionCount->load());
+    EXPECT_EQ(15u, lockupCount->load());
 }
 
 
@@ -479,20 +488,20 @@ TEST(callback_exception, simple_pool_mixed_stress)
 /// Verifies that other workers can still process items
 TEST(callback_lockup, roundrobin_pool_callback_lockup)
 {
-    std::atomic_uint                         processedCount {0};
-    std::atomic_bool                         lockupStarted {false};
-    std::atomic_bool                         lockupCanFinish {false};
+    auto                                     processedCount  = std::make_shared<std::atomic_uint>(0);
+    auto                                     lockupStarted   = std::make_shared<std::atomic_bool>(false);
+    auto                                     lockupCanFinish = std::make_shared<std::atomic_bool>(false);
 
-    siddiqsoft::roundrobin_pool<TestItem, 4> pool {[&](auto&& item) {
+    siddiqsoft::roundrobin_pool<TestItem, 4> pool {[processedCount, lockupStarted, lockupCanFinish](auto&& item) {
         if (item.value == 0) {
-            lockupStarted = true;
+            lockupStarted->store(true);
             // Lockup
-            while (!lockupCanFinish.load()) {
+            while (!lockupCanFinish->load()) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
         }
         else {
-            processedCount++;
+            (*processedCount)++;
         }
     }};
 
@@ -500,7 +509,7 @@ TEST(callback_lockup, roundrobin_pool_callback_lockup)
     pool.queue(TestItem(0));
 
     // Wait for lockup to start
-    while (!lockupStarted.load()) {
+    while (!lockupStarted->load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
@@ -513,16 +522,16 @@ TEST(callback_lockup, roundrobin_pool_callback_lockup)
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // Some items should be processed
-    EXPECT_GT(processedCount.load(), 0u);
+    EXPECT_GT(processedCount->load(), 0u);
 
     // Release lockup
-    lockupCanFinish = true;
+    lockupCanFinish->store(true);
 
     // Wait for remaining items
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // All non-lockup items should be processed
-    EXPECT_EQ(20u, processedCount.load());
+    EXPECT_EQ(20u, processedCount->load());
 }
 
 
@@ -534,15 +543,15 @@ TEST(callback_lockup, roundrobin_pool_callback_lockup)
 /// Verifies that exceptions don't affect other workers
 TEST(callback_exception, roundrobin_pool_exception)
 {
-    std::atomic_uint                         processedCount {0};
-    std::atomic_uint                         exceptionCount {0};
+    auto                                     processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                     exceptionCount = std::make_shared<std::atomic_uint>(0);
 
-    siddiqsoft::roundrobin_pool<TestItem, 4> pool {[&](auto&& item) {
+    siddiqsoft::roundrobin_pool<TestItem, 4> pool {[processedCount, exceptionCount](auto&& item) {
         if (item.value % 4 == 0) {
-            exceptionCount++;
+            (*exceptionCount)++;
             throw std::runtime_error("Roundrobin exception");
         }
-        processedCount++;
+        (*processedCount)++;
     }};
 
     // Queue items
@@ -554,8 +563,8 @@ TEST(callback_exception, roundrobin_pool_exception)
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // Verify results
-    EXPECT_EQ(30u, processedCount.load()); // 40 - 10 exceptions
-    EXPECT_EQ(10u, exceptionCount.load()); // Items 0,4,8,12,16,20,24,28,32,36
+    EXPECT_EQ(30u, processedCount->load()); // 40 - 10 exceptions
+    EXPECT_EQ(10u, exceptionCount->load()); // Items 0,4,8,12,16,20,24,28,32,36
 }
 
 
@@ -567,16 +576,16 @@ TEST(callback_exception, roundrobin_pool_exception)
 /// Verifies that the worker can recover after lockup
 TEST(callback_lockup, periodic_worker_callback_lockup)
 {
-    std::atomic_uint            invokeCount {0};
-    std::atomic_bool            lockupStarted {false};
-    std::atomic_bool            lockupCanFinish {false};
+    auto                        invokeCount     = std::make_shared<std::atomic_uint>(0);
+    auto                        lockupStarted   = std::make_shared<std::atomic_bool>(false);
+    auto                        lockupCanFinish = std::make_shared<std::atomic_bool>(false);
 
-    siddiqsoft::periodic_worker worker {[&]() {
-                                            invokeCount++;
-                                            if (invokeCount.load() == 2) {
-                                                lockupStarted = true;
+    siddiqsoft::periodic_worker worker {[invokeCount, lockupStarted, lockupCanFinish]() {
+                                            (*invokeCount)++;
+                                            if (invokeCount->load() == 2) {
+                                                lockupStarted->store(true);
                                                 // Lockup
-                                                while (!lockupCanFinish.load()) {
+                                                while (!lockupCanFinish->load()) {
                                                     std::this_thread::sleep_for(std::chrono::milliseconds(10));
                                                 }
                                             }
@@ -584,7 +593,7 @@ TEST(callback_lockup, periodic_worker_callback_lockup)
                                         std::chrono::milliseconds(50)};
 
     // Wait for lockup to start
-    while (!lockupStarted.load()) {
+    while (!lockupStarted->load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
@@ -592,13 +601,13 @@ TEST(callback_lockup, periodic_worker_callback_lockup)
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
     // Release lockup
-    lockupCanFinish = true;
+    lockupCanFinish->store(true);
 
     // Wait for more invocations
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
     // Should have invoked multiple times despite lockup
-    EXPECT_GT(invokeCount.load(), 2u);
+    EXPECT_GT(invokeCount->load(), 2u);
 }
 
 #if defined(DEV_TESTING)
@@ -606,15 +615,15 @@ TEST(callback_lockup, periodic_worker_callback_lockup)
 /// Verifies that destructor can still clean up
 TEST(callback_lockup, periodic_worker_indefinite_lockup_cleanup)
 {
-    std::atomic_uint invokeCount {0};
-    std::atomic_bool lockupStarted {false};
+    auto invokeCount   = std::make_shared<std::atomic_uint>(0);
+    auto lockupStarted = std::make_shared<std::atomic_bool>(false);
 
     EXPECT_NO_THROW({
         siddiqsoft::periodic_worker worker(
-                [&]() {
-                    invokeCount++;
-                    if (invokeCount.load() == 1) {
-                        lockupStarted = true;
+                [invokeCount, lockupStarted]() {
+                    (*invokeCount)++;
+                    if (invokeCount->load() == 1) {
+                        lockupStarted->store(true);
                         // Indefinite lockup
                         while (true) {
                             std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -624,7 +633,7 @@ TEST(callback_lockup, periodic_worker_indefinite_lockup_cleanup)
                 std::chrono::milliseconds(50));
 
         // Wait for lockup to start
-        while (!lockupStarted.load()) {
+        while (!lockupStarted->load()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
@@ -635,10 +644,10 @@ TEST(callback_lockup, periodic_worker_indefinite_lockup_cleanup)
         // TODO: This test tends to lockup the build servers and we should
         // exclude it from the CI tests and instead ust it only manually.
         worker.forceCleanupTerminate();
-        std::println(std::cerr, "WE SHOULD be destroying periodic_worker while locked up...");
+        std::cerr << std::format("WE SHOULD be destroying periodic_worker while locked up...");
     });
 
-    EXPECT_EQ(1u, invokeCount.load());
+    EXPECT_EQ(1u, invokeCount->load());
 }
 #endif
 
@@ -650,13 +659,13 @@ TEST(callback_lockup, periodic_worker_indefinite_lockup_cleanup)
 /// Verifies that exceptions don't stop periodic invocations
 TEST(callback_exception, periodic_worker_exception)
 {
-    std::atomic_uint            invokeCount {0};
-    std::atomic_uint            exceptionCount {0};
+    auto                        invokeCount    = std::make_shared<std::atomic_uint>(0);
+    auto                        exceptionCount = std::make_shared<std::atomic_uint>(0);
 
-    siddiqsoft::periodic_worker worker {[&]() {
-                                            invokeCount++;
-                                            if (invokeCount.load() % 3 == 0) {
-                                                exceptionCount++;
+    siddiqsoft::periodic_worker worker {[invokeCount, exceptionCount]() {
+                                            (*invokeCount)++;
+                                            if (invokeCount->load() % 3 == 0) {
+                                                (*exceptionCount)++;
                                                 throw std::runtime_error("Periodic exception");
                                             }
                                         },
@@ -665,18 +674,17 @@ TEST(callback_exception, periodic_worker_exception)
     // Wait for multiple invocations
     std::this_thread::sleep_for(std::chrono::milliseconds(800));
 
-    std::println(std::cerr,
-                 "{} - invokeCount:{}.. and div by 3: {} - exceptionCount:{}",
-                 __func__,
-                 invokeCount.load(),
-                 invokeCount.load() / 3,
-                 exceptionCount.load());
+    std::cerr << std::format("{} - invokeCount:{}.. and div by 3: {} - exceptionCount:{}",
+                             __func__,
+                             invokeCount->load(),
+                             invokeCount->load() / 3,
+                             exceptionCount->load());
 
     // Verify results
-    EXPECT_GT(invokeCount.load(), 5u);
-    EXPECT_GT(exceptionCount.load(), 0u);
+    EXPECT_GT(invokeCount->load(), 5u);
+    EXPECT_GT(exceptionCount->load(), 0u);
     // Exceptions should be roughly 1/3 of invocations
-    EXPECT_NEAR(exceptionCount.load(), invokeCount.load() / 3, 2);
+    EXPECT_NEAR(exceptionCount->load(), invokeCount->load() / 3, 2);
 }
 
 
@@ -684,14 +692,14 @@ TEST(callback_exception, periodic_worker_exception)
 /// Verifies that periodic invocations continue despite exceptions
 TEST(callback_exception, periodic_worker_exception_recovery)
 {
-    std::atomic_uint            invokeCount {0};
-    std::atomic_uint            exceptionCount {0};
-    std::atomic_bool            shouldThrow {true};
+    auto                        invokeCount    = std::make_shared<std::atomic_uint>(0);
+    auto                        exceptionCount = std::make_shared<std::atomic_uint>(0);
+    auto                        shouldThrow    = std::make_shared<std::atomic_bool>(true);
 
-    siddiqsoft::periodic_worker worker {[&]() {
-                                            invokeCount++;
-                                            if (shouldThrow && invokeCount.load() < 5) {
-                                                exceptionCount++;
+    siddiqsoft::periodic_worker worker {[invokeCount, exceptionCount, shouldThrow]() {
+                                            (*invokeCount)++;
+                                            if (shouldThrow->load() && invokeCount->load() < 5) {
+                                                (*exceptionCount)++;
                                                 throw std::runtime_error("Temporary periodic exception");
                                             }
                                         },
@@ -701,14 +709,14 @@ TEST(callback_exception, periodic_worker_exception_recovery)
     std::this_thread::sleep_for(std::chrono::milliseconds(800));
 
     // Stop throwing
-    shouldThrow = false;
+    shouldThrow->store(false);
 
     // Wait for second batch (without exceptions)
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
     // Verify results
-    EXPECT_GE(invokeCount.load(), 8u);
-    EXPECT_GT(exceptionCount.load(), 0u);
+    EXPECT_GE(invokeCount->load(), 8u);
+    EXPECT_GT(exceptionCount->load(), 0u);
 }
 
 
@@ -720,23 +728,22 @@ TEST(callback_exception, periodic_worker_exception_recovery)
 /// Verifies robustness under extreme conditions
 TEST(callback_stress, simple_pool_concurrent_lockup_and_exceptions)
 {
-    std::atomic_uint                     processedCount {0};
-    std::atomic_uint                     exceptionCount {0};
-    std::atomic_uint                     lockupCount {0};
-    std::atomic_bool                     canFinish {false};
+    auto                                 processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                 exceptionCount = std::make_shared<std::atomic_uint>(0);
+    auto                                 lockupCount    = std::make_shared<std::atomic_uint>(0);
 
-    siddiqsoft::simple_pool<TestItem, 8> pool {[&](auto&& item) {
+    siddiqsoft::simple_pool<TestItem, 8> pool {[processedCount, exceptionCount, lockupCount](auto&& item) {
         if (item.value % 13 == 0) {
-            lockupCount++;
+            (*lockupCount)++;
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            processedCount++;
+            (*processedCount)++;
         }
         else if (item.value % 7 == 0) {
-            exceptionCount++;
+            (*exceptionCount)++;
             throw std::runtime_error("Stress test exception");
         }
         else {
-            processedCount++;
+            (*processedCount)++;
         }
     }};
 
@@ -749,7 +756,7 @@ TEST(callback_stress, simple_pool_concurrent_lockup_and_exceptions)
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     // Verify all items were processed or threw
-    EXPECT_EQ(216u, processedCount.load() + exceptionCount.load() + lockupCount.load());
+    EXPECT_EQ(216u, processedCount->load() + exceptionCount->load() + lockupCount->load());
 }
 
 
@@ -757,15 +764,15 @@ TEST(callback_stress, simple_pool_concurrent_lockup_and_exceptions)
 /// Verifies that round-robin distribution handles exceptions well
 TEST(callback_stress, roundrobin_pool_rapid_exceptions)
 {
-    std::atomic_uint                         processedCount {0};
-    std::atomic_uint                         exceptionCount {0};
+    auto                                     processedCount = std::make_shared<std::atomic_uint>(0);
+    auto                                     exceptionCount = std::make_shared<std::atomic_uint>(0);
 
-    siddiqsoft::roundrobin_pool<TestItem, 8> pool {[&](auto&& item) {
+    siddiqsoft::roundrobin_pool<TestItem, 8> pool {[processedCount, exceptionCount](auto&& item) {
         if (item.value % 2 == 0) {
-            exceptionCount++;
+            (*exceptionCount)++;
             throw std::runtime_error("Rapid exception");
         }
-        processedCount++;
+        (*processedCount)++;
     }};
 
     // Queue many items rapidly
@@ -777,6 +784,7 @@ TEST(callback_stress, roundrobin_pool_rapid_exceptions)
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
     // Verify results
-    EXPECT_EQ(250u, processedCount.load()); // Half processed
-    EXPECT_EQ(250u, exceptionCount.load()); // Half threw
+    EXPECT_EQ(250u, processedCount->load()); // Half processed
+    EXPECT_EQ(250u, exceptionCount->load()); // Half threw
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

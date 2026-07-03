@@ -47,6 +47,7 @@
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/periodic_worker.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 TEST(periodic_worker, test1)
 {
@@ -389,7 +390,7 @@ TEST(periodic_worker, forceCleanupTerminate_rapid_invocations)
         EXPECT_NO_THROW({ worker.forceCleanupTerminate(); });
     }
 
-    std::println(std::cerr, "{} - Invocations prior to kill: {}", __func__, invokeCount.load());
+    std::cerr << std::format("{} - Invocations prior to kill: {}", __func__, invokeCount.load());
     // Verify that many invocations occurred before termination
     EXPECT_GT(invokeCount.load(), 5u);
 }
@@ -436,3 +437,5 @@ TEST(periodic_worker, forceCleanupTerminate_named_worker)
     EXPECT_GT(invokeCount.load(), 0u);
 }
 #endif
+
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

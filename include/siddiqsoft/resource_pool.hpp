@@ -79,7 +79,7 @@ namespace siddiqsoft
         /// FIX: Removed unnecessary empty check - clear() is safe on empty deque
         void clear()
         {
-            std::lock_guard<std::mutex> l(_poolLock);
+            std::scoped_lock<std::mutex> l(_poolLock);
             _pool.clear();
         }
 
@@ -88,13 +88,13 @@ namespace siddiqsoft
         /// This prevents TOCTOU (Time-of-Check-Time-of-Use) race condition
         auto size()
         {
-            std::lock_guard<std::mutex> l(_poolLock);
+            std::scoped_lock<std::mutex> l(_poolLock);
             return _pool.size();
         }
 
         [[nodiscard]] T checkout() /* throw() */
         {
-            std::lock_guard<std::mutex> l(_poolLock);
+            std::scoped_lock<std::mutex> l(_poolLock);
             if (!_pool.empty()) {
                 RunOnEnd roe([&]() { _pool.pop_front(); });
                 return std::move(_pool.front());
@@ -110,7 +110,7 @@ namespace siddiqsoft
          */
         void checkin(T&& rsrc)
         {
-            std::lock_guard<std::mutex> l(_poolLock);
+            std::scoped_lock<std::mutex> l(_poolLock);
             _pool.push_back(std::move(rsrc));
         }
     };

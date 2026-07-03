@@ -52,6 +52,7 @@
 #include "../include/siddiqsoft/periodic_worker.hpp"
 #include "../include/siddiqsoft/resource_pool.hpp"
 
+// NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 /// @brief BUG #1: TOCTOU Race Condition in resource_pool::size()
 /// The size() method checks if pool is empty, then returns size.
@@ -365,3 +366,4 @@ TEST(additional_bugs, periodic_worker_lambda_capture_safety)
     // If we got here without a crash, the lambda capture might be safe
     EXPECT_GT(invokeCount.load(), 0u);
 }
+// NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

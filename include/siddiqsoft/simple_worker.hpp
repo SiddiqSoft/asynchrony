@@ -58,6 +58,7 @@
 #include <processthreadsapi.h>
 #endif
 
+#include "siddiqsoft/WaitableQueue.hpp"
 #include "siddiqsoft/RunOnEnd.hpp"
 #include "private/common.hpp"
 
@@ -79,8 +80,14 @@ namespace siddiqsoft
 
         ~simple_worker()
         {
-            // Empty signal to get our thread to wake up
-            signal.release();
+#if defined(DEBUG) || defined(_DEBUG)
+            std::cerr << std::format("{} - Waiting for queue to be empty: {}\n", __func__, items.toJson().dump(2));
+#endif
+
+            // Drain the existing items..
+            items.waitUntilEmpty();
+
+            // Signal the threads to shutdown..
             try {
                 // Ask thread to shutdown
                 if (processor.request_stop() && processor.joinable()) processor.join();
@@ -102,17 +109,17 @@ namespace siddiqsoft
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 #if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
                     auto nativeHandle = processor.native_handle();
-                    std::println(std::cerr,
-                                 "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
-                                 "ending! from: {}:{}",
+                    std::cerr << std::format(
+                            "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
+                            "ending! from: {}:{}",
 
-                                 sl.file_name(),
-                                 sl.line());
+                            sl.file_name(),
+                            sl.line());
                     pthread_cancel(nativeHandle);
                     processor.detach();
 #elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
                 auto nativeHandle = processor.native_handle();
-                std::println(std::cerr,
+                std::cerr << std::format(
                              "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
                              "ending! from: {}:{}",
                              
@@ -123,7 +130,7 @@ namespace siddiqsoft
 #endif
                 }
                 catch (const std::exception& ex) {
-                    std::println(std::cerr, "forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
+                    std::cerr << std::format("forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
                 }
             });
         }
@@ -144,11 +151,7 @@ namespace siddiqsoft
         /// @param item This is move'd into the internal deque
         void queue(T&& item)
         {
-            // The RunOnEnd ensures we release the signal upon completion.
-            siddiqsoft::RunOnEnd                autoReleaseSignal {[&] { signal.release(); }};
-            std::unique_lock<std::shared_mutex> myWriterLock(items_mutex);
-
-            items.emplace_back(std::move(item));
+            items.emplace(std::move(item));
             queueCounter.fetch_add(1, std::memory_order_release);
         }
 
@@ -159,19 +162,19 @@ namespace siddiqsoft
         /// @note The use of signal.max() is causing an issue where winmindef.h is defining the `max` as a macro and thus we end up
         /// with compiler error when the client application includes any of the windows headers! Disabled for now.
         /// @note FIX: Acquire shared lock to prevent data race on items deque when multiple threads call toJson() concurrently
-        nlohmann::json toJson() const
+        auto toJson() const -> nlohmann::json
         {
-            // Acquire shared lock to safely read items.size()
-            // Multiple readers (toJson calls) can hold the lock simultaneously
-            // Writers (queue/getNextItem) will wait for all readers to release
-            std::shared_lock<std::shared_mutex> readLock(items_mutex);
-            auto itemsSize = items.size();
-            readLock.unlock();
+            auto itemsSize        = items.size();
+            auto itemsQueued      = items.addCounter();
+            auto itemsPopped      = items.removeCounter();
+            auto itemsOutstanding = itemsQueued - itemsPopped;
 
             return {{"_typver", "siddiqsoft.asynchrony-lib.simple_worker/0.10"},
                     {"itemsSize", itemsSize},
-                    //{"semaphoreMax", signal.max()}, // conflicts with windows headers :-(
                     {"queueCounter", queueCounter.load(std::memory_order_acquire)},
+                    {"itemsQueued", itemsQueued},
+                    {"itemsPopped", itemsPopped},
+                    {"itemsOutstanding", itemsOutstanding},
                     {"threadPriority", Pri},
                     {"outstandingCallback", outstandingCallback.load()},
                     {"waitInterval", DEFAULT_WAIT_FOR_NEXT_ITEM_MS.count()}};
@@ -188,13 +191,7 @@ namespace siddiqsoft
         std::atomic_uint64_t queueCounter {0};
 
         /// @brief The internal queue for this worker.
-        std::deque<T> items {};
-
-        /// @brief Mutex to protect the items
-        mutable std::shared_mutex items_mutex {};
-
-        /// @brief Semaphore with default max signals.
-        std::counting_semaphore<> signal {0};
+        siddiqsoft::WaitableQueue<T> items {};
 
         /// @brief The callback is invoked whenever there is an item in the queue
         std::function<void(T&&)> callback;
@@ -217,40 +214,24 @@ namespace siddiqsoft
                     // If there is an item, it will get that item (minimizing move) and performs the pop
                     // and returns the item so we can invoke the callback outside the lock.
                     // We must ensure that the callback is nonempty!
-                    if (auto item = getNextItem(); item && !st.stop_requested() && callback) {
+                    if (auto item = items.tryWaitItem(DEFAULT_WAIT_FOR_NEXT_ITEM_MS); item && !st.stop_requested() && callback) {
                         // Delegate to the callback outside the lock
-                        callback(std::move(*item));
+                        try {
+                            // We get an optional<> and thus the use of the * to get the value if present..
+                            callback(std::move(*item));
+                        }
+                        catch (const std::exception& ex) {
+                            // We swallow exceptions from the callback to avoid thread termination and log it if needed.
+                            std::cerr << std::format("Ignoring Exception in simple_worker callback: {} - inner\n", ex.what());
+                        }
                     }
                 }
                 catch (const std::exception& ex) {
                     // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                    std::println(std::cerr, "Ignoring Exception in simple_worker callback: {}", ex.what());
+                    std::cerr << std::format("Ignoring Exception in simple_worker callback: {} - outter\n", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};
-
-        /// @brief Performs an acquire on the semaphore and if successful,
-        /// attempts to lock to pull the item from the top of the deque.
-        /// @param delta Amount of milliseconds to wait on the semaphore
-        /// @return An optional which may contain the item or empty (most of the time it'll be empty)
-        std::optional<T> getNextItem(const std::chrono::milliseconds& delta = DEFAULT_WAIT_FOR_NEXT_ITEM_MS)
-        {
-            if (signal.try_acquire_for(delta)) {
-                // Guard against empty signals which are terminating indicator
-                if (std::unique_lock<std::shared_mutex> myWriterLock(items_mutex); !items.empty()) {
-                    RunOnEnd onScopeExit([&]() { items.pop_front(); });
-                    // WE require that the stored type by move-constructible!
-                    return std::move(items.front());
-                    // The pop_front() happens on scope exit
-                    // T item {std::move(items.front())};
-                    // items.pop_front();
-                    // return std::move(item);
-                }
-            }
-
-            // Fall-through empty
-            return {};
-        }
     };
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)

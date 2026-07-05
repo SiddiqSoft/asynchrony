@@ -49,7 +49,7 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/SiddiqSoft.asynchrony.natvis
 # automatically included.
 cpmaddpackage("gh:siddiqsoft/RunOnEnd#1.4.5")
 target_link_libraries(${PROJECT_NAME} INTERFACE RunOnEnd::RunOnEnd)
-cpmaddpackage("gh:siddiqsoft/RWLEnvelope#1.5.0")
+cpmaddpackage("gh:siddiqsoft/RWLEnvelope#1.5.2")
 target_link_libraries(${PROJECT_NAME} INTERFACE RWLEnvelope::RWLEnvelope)
 cpmaddpackage("gh:siddiqsoft/RWLContainer#1.5.3")
 target_link_libraries(${PROJECT_NAME} INTERFACE RWLContainer::RWLContainer)

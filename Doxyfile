@@ -8,7 +8,7 @@ PROJECT_LOGO           = ./pack/Siddiq-Software-Avatar.png
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute) path
 # into which the generated documentation will be written.
-OUTPUT_DIRECTORY       = ./docs/doxygen
+OUTPUT_DIRECTORY       = ./docs/doxygen/
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create 4096 sub-directories
 # (in 2 levels) under the output directory of each output format and will distribute
@@ -583,10 +583,9 @@ TREEVIEW_WIDTH         = 250
 # If the EXT_LINKS_IN_WINDOW tag is set to YES, doxygen will open links to
 # external symbols imported from tag files in a new window.
 EXT_LINKS_IN_WINDOW    = NO
-
-# Use this tag to change the font size of Latex formulas included as images in
-# the HTML documentation.
-FORMULA_FONTSIZE       = 10
+OBFUSCATE_EMAILS       = YES
+HTML_FORMULA_FORMAT    = png
+FORMULA_FONTSIZE       = 13
 
 # Use the FORMULA_TRANSPARENT tag to determine whether or not the images
 # generated for formulas are transparent PNGs.
@@ -888,7 +887,7 @@ EXTERNAL_GROUPS        = YES
 # If the EXTERNAL_PAGES tag is set to YES all external pages will be listed
 # in the related pages index.
 EXTERNAL_PAGES         = YES
-
+CLASS_DIAGRAMS         = YES
 # The PERL_PATH should be the absolute path and name of the perl script
 # interpreter.
 PERL_PATH              = /usr/bin/perl
@@ -911,7 +910,7 @@ DOT_FONTNAME           = Helvetica
 
 # The DOT_FONTSIZE tag can be used to set the fontsize (in points) of labels
 # in generated dot graphs.
-DOT_FONTSIZE           = 10
+DOT_FONTSIZE           = 13
 
 # By default doxygen will tell dot to use the Helvetica font family.
 DOT_FONTNAME_GRAPH     = Helvetica
@@ -1027,7 +1026,7 @@ DOT_FONTNAME           = Helvetica
 
 # The DOT_FONTSIZE tag can be used to set the fontsize (in points) of labels
 # in generated dot graphs.
-DOT_FONTSIZE           = 10
+DOT_FONTSIZE           = 13
 
 # Enable the use of user-defined image magick conversion tools to process
 # generated graphs.

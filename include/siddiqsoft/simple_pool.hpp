@@ -78,11 +78,11 @@ namespace siddiqsoft
      * siddiqsoft::simple_pool<std::string> pool([](std::string&& item) {
      *     std::cout << "Processing: " << item << std::endl;
      * });
-     * 
+     *
      * // Queue work items
      * pool.queue(std::string("task1"));
      * pool.queue(std::string("task2"));
-     * 
+     *
      * // Pool automatically cleans up on destruction
      * @endcode
      */
@@ -94,16 +94,16 @@ namespace siddiqsoft
         static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
 
         /// @brief Move constructor (deleted - pools are not movable)
-        simple_pool(simple_pool&&)            = delete;
-        
+        simple_pool(simple_pool&&) = delete;
+
         /// @brief Move assignment operator (deleted - pools are not movable)
         simple_pool& operator=(simple_pool&&) = delete;
-        
+
         /// @brief Copy constructor (deleted - pools are not copyable)
-        simple_pool(simple_pool&)             = delete;
-        
+        simple_pool(simple_pool&) = delete;
+
         /// @brief Copy assignment operator (deleted - pools are not copyable)
-        simple_pool& operator=(simple_pool&)  = delete;
+        simple_pool& operator=(simple_pool&) = delete;
 
 
         /**
@@ -121,11 +121,15 @@ namespace siddiqsoft
         {
             // Compared to skipping the following code, we save at least about 100ms
             // of idle time waiting for the threads to be signalled by default.
+            // Request all threads to stop first
             for (auto& t : workers) {
-                // Release the signal to indicate to the threads to abandon.
+                t.request_stop();
+            }
+
+            // Then wake them up and join
+            for (auto& t : workers) {
                 signal.release();
-                // Signal the threads to stop
-                if (t.request_stop() && t.joinable()) t.join();
+                if (t.joinable()) t.join();
             }
         }
 
@@ -248,13 +252,13 @@ namespace siddiqsoft
     private:
         /// @brief Vector of worker threads
         std::vector<std::jthread> workers {};
-        
+
         /// @brief Callback function invoked for each dequeued item
-        std::function<void(T&&)>  callback;
-        
+        std::function<void(T&&)> callback;
+
         /// @brief Counting semaphore for signaling available work
         std::counting_semaphore<> signal {0};
-        
+
         /// @brief Thread-safe queue for work items
         siddiqsoft::WaitableQueue<T> items {};
 

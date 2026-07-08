@@ -51,5 +51,6 @@
         "queue": "cpp",
         "stack": "cpp",
         "algorithm": "cpp"
-    }
+    },
+    "codium.codeCompletion.enable": true
 }

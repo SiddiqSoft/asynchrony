@@ -360,13 +360,13 @@ namespace siddiqsoft
                         }
                         catch (const std::exception& ex) {
                             // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                            std::cerr << std::format("Ignoring Exception (inner) in simple_worker callback: {}", ex.what());
+                            std::cerr << std::format("Ignoring Exception (inner) in periodic_worker callback: {}", ex.what());
                         }
                     }
                 }
                 catch (const std::exception& ex) {
                     // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                    std::cerr << std::format("Ignoring Exception (outer) in simple_worker callback: {}", ex.what());
+                    std::cerr << std::format("Ignoring Exception (outer) in periodic_worker callback: {}", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};

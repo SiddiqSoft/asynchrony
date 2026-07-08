@@ -76,12 +76,12 @@ namespace siddiqsoft
      * siddiqsoft::roundrobin_pool<std::string> pool([](std::string&& item) {
      *     std::cout << "Processing: " << item << std::endl;
      * });
-     * 
+     *
      * // Queue work items - distributed round-robin across workers
      * pool.queue(std::string("task1"));
      * pool.queue(std::string("task2"));
      * pool.queue(std::string("task3"));
-     * 
+     *
      * // Pool automatically cleans up on destruction
      * @endcode
      */
@@ -92,13 +92,13 @@ namespace siddiqsoft
     public:
         /// @brief Move constructor (deleted - pools are not movable)
         roundrobin_pool(roundrobin_pool&&) = delete;
-        
+
         /// @brief Move assignment operator (deleted - pools are not movable)
         auto operator=(roundrobin_pool&&) = delete;
-        
+
         /// @brief Copy constructor (deleted - pools are not copyable)
         roundrobin_pool(roundrobin_pool&) = delete;
-        
+
         /// @brief Copy assignment operator (deleted - pools are not copyable)
         auto operator=(roundrobin_pool&) = delete;
 
@@ -122,14 +122,13 @@ namespace siddiqsoft
          */
         roundrobin_pool(std::function<void(T&&)> c)
         {
-            // Create as many threads as reported by the system.
-            // std::deque does not relocate elements on growth, so non-movable types are safe.
-            for (unsigned i = 0; i < ((N > 0) ? N : std::thread::hardware_concurrency()); i++) {
+            // Calculate size first
+            workersSize = (N > 0) ? N : std::thread::hardware_concurrency();
+
+            // Then create workers
+            for (unsigned i = 0; i < workersSize; i++) {
                 workers.emplace_back(c);
             }
-
-            // Shortcut; save the size of the array
-            workersSize = workers.size();
         }
 
         /**

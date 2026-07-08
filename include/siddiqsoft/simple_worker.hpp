@@ -92,11 +92,11 @@ namespace siddiqsoft
      * siddiqsoft::simple_worker<std::string> worker([](std::string&& item) {
      *     std::cout << "Processing: " << item << std::endl;
      * });
-     * 
+     *
      * // Queue work items
      * worker.queue(std::string("task1"));
      * worker.queue(std::string("task2"));
-     * 
+     *
      * // Worker automatically cleans up on destruction
      * @endcode
      */
@@ -109,8 +109,8 @@ namespace siddiqsoft
 
     public:
         /// @brief Copy constructor (deleted - workers are not copyable)
-        simple_worker(const simple_worker&)            = delete;
-        
+        simple_worker(const simple_worker&) = delete;
+
         /// @brief Copy assignment operator (deleted - workers are not copyable)
         simple_worker& operator=(const simple_worker&) = delete;
 
@@ -130,14 +130,15 @@ namespace siddiqsoft
 #if defined(DEBUG) || defined(_DEBUG)
             std::cerr << std::format("{} - Waiting for queue to be empty: {}\n", __func__, items.toJson().dump(2));
 #endif
+            // Ask the processor to stop().. nicely..
+            processor.request_stop();
 
             // Drain the existing items..
             items.waitUntilEmpty();
 
             // Signal the threads to shutdown..
             try {
-                // Ask thread to shutdown
-                if (processor.request_stop() && processor.joinable()) processor.join();
+                if (processor.joinable()) processor.join();
             }
             catch (const std::exception&) {
             }
@@ -198,8 +199,8 @@ namespace siddiqsoft
         }
 
         /// @brief Move constructor (deleted - workers are not movable)
-        simple_worker(simple_worker&&)            = delete;
-        
+        simple_worker(simple_worker&&) = delete;
+
         /// @brief Move assignment operator (deleted - workers are not movable)
         simple_worker& operator=(simple_worker&&) = delete;
 
@@ -283,7 +284,7 @@ namespace siddiqsoft
                     {"itemsPopped", itemsPopped},
                     {"itemsOutstanding", itemsOutstanding},
                     {"threadPriority", Pri},
-                    {"outstandingCallback", outstandingCallback.load()},
+                    {"outstandingCallback", outstandingCallback.load(std::memory_order_acquire)},
                     {"waitInterval", DEFAULT_WAIT_FOR_NEXT_ITEM_MS.count()}};
         }
 #endif
@@ -347,7 +348,7 @@ namespace siddiqsoft
                 }
                 catch (const std::exception& ex) {
                     // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                    std::cerr << std::format("Ignoring Exception in simple_worker callback: {} - outter\n", ex.what());
+                    std::cerr << std::format("Ignoring Exception in simple_worker callback: {} - outer\n", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};

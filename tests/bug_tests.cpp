@@ -203,7 +203,6 @@ TEST(bug_tests, resource_pool_concurrent_clear_checkout_race)
                     auto item = pool.checkout();
                     checkoutCount++;
                     std::this_thread::sleep_for(std::chrono::microseconds(100));
-                    pool.checkin(std::move(item));
                     checkinCount++;
                 }
                 catch (const std::runtime_error&) {
@@ -409,9 +408,9 @@ TEST(bug_tests, simple_pool_queue_counter_large_volume)
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        auto     j        = pool.toJson();
-        uint64_t counter  = j["queueCounter"].get<uint64_t>();
-        uint64_t expected = static_cast<uint64_t>((b + 1) * BATCH_SIZE);
+        auto j        = pool.toJson();
+        auto counter  = j["queueCounter"].get<uint64_t>();
+        auto expected = static_cast<uint64_t>((b + 1) * BATCH_SIZE);
 
         EXPECT_EQ(expected, counter) << "After batch " << b << ": expected " << expected << ", got " << counter;
     }
@@ -496,7 +495,6 @@ TEST(bug_tests, resource_pool_no_resource_leak)
                     auto item = pool.checkout();
                     successCount++;
                     std::this_thread::sleep_for(std::chrono::microseconds(50));
-                    pool.checkin(std::move(item));
                 }
                 catch (const std::runtime_error&) {
                     failCount++;

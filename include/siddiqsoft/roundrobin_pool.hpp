@@ -43,24 +43,83 @@
 
 namespace siddiqsoft
 {
-    /// @brief Implements a lock-free round robin work allocation into vector of simple_worker<T>
-    /// @tparam T Your datatype
-    /// #tparam N Number of threads in the pool. Leave it to 0 to use the value returned by std::thread::hardware_concurrency()
-    /// @remarks The number of threads in the pool is determined by the nature of your "work". If you're spending time against db
-    /// then you might wish to use more threads as individual queries might take time and hog the thread.
+    /**
+     * @brief Implements a lock-free round-robin work distribution thread pool.
+     *
+     * This template class provides a thread pool that distributes work items across
+     * multiple worker threads using a round-robin algorithm. Each worker thread has its own
+     * queue, eliminating lock contention on a shared queue. Work items are distributed
+     * sequentially to each worker in turn, ensuring balanced load distribution.
+     *
+     * @details
+     * - Multiple simple_worker<T> instances stored in a deque
+     * - Work items are distributed using round-robin indexing
+     * - Each worker has its own queue, minimizing lock contention
+     * - No locks needed for work distribution (uses atomic counter)
+     * - Thread count is determined by N parameter or std::thread::hardware_concurrency()
+     * - Uses std::deque to avoid element relocation on growth (safe for non-movable types)
+     * - Provides JSON serialization for monitoring and diagnostics
+     *
+     * @tparam T The data type for work items (must be move-constructible)
+     * @tparam N Number of threads in the pool. If 0 (default), uses std::thread::hardware_concurrency()
+     *
+     * @remarks The round-robin approach has several advantages:
+     * - Eliminates lock contention on a shared queue
+     * - Each thread only pops from its own queue (single consumer)
+     * - Multiple producers can push to different queues concurrently
+     * - Cost of modulo operation is cheaper than lock acquisition
+     * - If one thread is blocked, other threads continue processing
+     *
+     * @example
+     * @code
+     * // Create a round-robin pool with default number of threads
+     * siddiqsoft::roundrobin_pool<std::string> pool([](std::string&& item) {
+     *     std::cout << "Processing: " << item << std::endl;
+     * });
+     * 
+     * // Queue work items - distributed round-robin across workers
+     * pool.queue(std::string("task1"));
+     * pool.queue(std::string("task2"));
+     * pool.queue(std::string("task3"));
+     * 
+     * // Pool automatically cleans up on destruction
+     * @endcode
+     */
     template <typename T, uint16_t N = 0>
         requires std::is_move_constructible_v<T>
     struct roundrobin_pool
     {
     public:
+        /// @brief Move constructor (deleted - pools are not movable)
         roundrobin_pool(roundrobin_pool&&) = delete;
+        
+        /// @brief Move assignment operator (deleted - pools are not movable)
         auto operator=(roundrobin_pool&&) = delete;
+        
+        /// @brief Copy constructor (deleted - pools are not copyable)
         roundrobin_pool(roundrobin_pool&) = delete;
+        
+        /// @brief Copy assignment operator (deleted - pools are not copyable)
         auto operator=(roundrobin_pool&) = delete;
 
 
-        /// @brief Consturcts a deque of simple_worker<T> with the given callback
-        /// @param c Callback worker function
+        /**
+         * @brief Constructs a round-robin thread pool
+         *
+         * Creates a deque of simple_worker<T> instances that will process work items
+         * using the provided callback function. Work items are distributed across workers
+         * using a round-robin algorithm.
+         *
+         * @param c The worker callback function with signature void(T&&)
+         *          Called for each item dequeued from a worker's queue
+         *
+         * @details
+         * - Creates N worker threads (or hardware_concurrency() if N is 0)
+         * - Uses std::deque to store workers (no relocation on growth)
+         * - Caches the worker count for efficient round-robin calculation
+         * - Each worker is initialized with the same callback
+         * - Workers start immediately and wait for items
+         */
         roundrobin_pool(std::function<void(T&&)> c)
         {
             // Create as many threads as reported by the system.
@@ -73,12 +132,30 @@ namespace siddiqsoft
             workersSize = workers.size();
         }
 
-        /// @brief Queue item into one of the thread's queue.
-        /// @param item The item must be std::move'd
-        /// @remarks The choice of the roundrobin might mean that if one thread is blocked then the rest of the items for this queue
-        /// would be blocked. The cost of the % is cheaper than the cost it takes to pay for locks. The round-robin approach ensures
-        /// that the underlying deque isn't being pop'd and push'd by multiple threads as there is only one consumer for that deque
-        /// (one per thread) while we may have any number of producers.
+        /**
+         * @brief Queue a work item for processing
+         *
+         * Adds an item to one of the worker's queues using round-robin distribution.
+         * The choice of worker is determined by the queue counter modulo the number of workers.
+         *
+         * @param item The work item to queue (must be move-constructible)
+         *             Ownership is transferred to the selected worker
+         *
+         * @details
+         * - Uses atomic fetch_add to get a unique index for each queued item
+         * - Calculates worker index as (counter % workersSize)
+         * - Distributes items evenly across all workers
+         * - Thread-safe for concurrent calls from multiple producers
+         * - Each worker only pops from its own queue (single consumer per queue)
+         *
+         * @remarks The round-robin approach ensures:
+         * - Balanced load distribution across workers
+         * - No lock contention on the shared queue (each worker has its own)
+         * - Cost of modulo is cheaper than lock acquisition
+         * - If one worker is blocked, others continue processing
+         *
+         * @note The item is moved into the selected worker's queue
+         */
         void queue(T&& item)
         {
             // Add into the thread's internal queue using round-robin index
@@ -91,9 +168,21 @@ namespace siddiqsoft
         }
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)
-        /// @brief Serializer for json
-        /// @param  destination
-        /// @param  this object
+        /**
+         * @brief Serialize pool state to JSON
+         *
+         * Returns a JSON object containing diagnostic information about the pool state.
+         * Useful for monitoring and debugging.
+         *
+         * @return nlohmann::json object with pool statistics
+         *
+         * @details Includes:
+         * - _typver: Version identifier for the pool type
+         * - workersSize: Number of worker threads in the pool
+         * - queueCounter: Total number of items queued (atomic counter)
+         *
+         * @note Thread-safe operation with acquire semantics
+         */
         nlohmann::json toJson() const
         {
             return {{"_typver", "siddiqsoft.asynchrony-lib.roundrobin_pool/0.10"},
@@ -104,26 +193,46 @@ namespace siddiqsoft
 
 #ifdef _DEBUG
     public:
+        /// @brief Queue counter - tracks total items queued (public in debug builds)
         std::atomic_uint64_t queueCounter {0};
 #else
     private:
+        /// @brief Queue counter - tracks total items queued (private in release builds)
         std::atomic_uint64_t queueCounter {0};
 #endif
 
     private:
-        /// @brief deque of the simple_worker elements of type T
-        /// std::deque supports non-movable types (elements are not relocated on growth)
-        /// and provides random access via at()
+        /**
+         * @brief Deque of worker threads
+         *
+         * Uses std::deque instead of std::vector because:
+         * - Deque does not relocate elements on growth
+         * - Safe for non-movable types
+         * - Provides random access via at()
+         * - Allows efficient iteration
+         */
         std::deque<simple_worker<T>> workers {};
 
-        /// @brief Tracks the size of the deque workers
+        /// @brief Cached size of the workers deque for efficient round-robin calculation
         uint64_t workersSize {};
 
-        /// @brief Calculates the index into the workers thread using modulo and the running counter of the number of items pushed
-        /// into the queue.
-        /// @return size_t index into the workers array
-        /// FIX: Changed from memory_order_relaxed to memory_order_acquire to ensure consistent round-robin distribution
-        /// and proper synchronization with queue() which uses memory_order_release
+        /**
+         * @brief Calculates the next worker index using round-robin distribution
+         *
+         * Computes the index into the workers array based on the queue counter
+         * and the number of workers. Uses modulo arithmetic to wrap around.
+         *
+         * @return size_t index into the workers array (0 to workersSize-1)
+         *
+         * @details
+         * - Uses atomic load with acquire semantics for consistency
+         * - Ensures proper synchronization with queue() which uses release semantics
+         * - Returns 0 if workersSize is 0 (safety check)
+         * - Provides consistent round-robin distribution
+         *
+         * @note The acquire/release semantics ensure that the round-robin distribution
+         *       is consistent across threads and matches the order of queue() calls
+         */
         size_t nextWorkerIndex()
         {
             if (workersSize == 0) return 0;
@@ -132,10 +241,16 @@ namespace siddiqsoft
     };
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)
-    /// @brief Serializer for the roundrobin_pool
-    /// @tparam T base typename
-    /// @param dest destination json object
-    /// @param src source object
+    /**
+     * @brief JSON serialization adapter for roundrobin_pool
+     *
+     * Enables automatic JSON serialization of roundrobin_pool objects via nlohmann::json.
+     *
+     * @tparam T The item type stored in the pool
+     * @tparam N The number of threads in the pool
+     * @param dest Destination JSON object to populate
+     * @param src Source roundrobin_pool object to serialize
+     */
     template <typename T, uint16_t N = 0>
     static void to_json(nlohmann::json& dest, const siddiqsoft::roundrobin_pool<T, N>& src)
     {

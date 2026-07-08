@@ -73,19 +73,21 @@ TEST(resource_pool, T_shared_ptr_string)
         rp.checkin(std::shared_ptr<std::string>(new std::string(__TIME__)));
         EXPECT_EQ(1, rp.size());
 
-        auto item = rp.checkout();
-        EXPECT_EQ(0, rp.size());
-        EXPECT_EQ(__TIME__, *item);
-        (*item).append("-ok");
-
-        rp.checkin(std::move(item));
+        {
+            auto item = rp.checkout();
+            EXPECT_EQ(0, rp.size());
+            EXPECT_EQ(__TIME__, **item);
+            (*item)->append("-ok");
+        }
+        // item is automatically returned to pool when it goes out of scope
         EXPECT_EQ(1, rp.size());
 
-        auto item2 = rp.checkout();
-        EXPECT_EQ(0, rp.size());
-        EXPECT_TRUE(item2->ends_with("-ok"));
-
-        rp.checkin(std::move(item2));
+        {
+            auto item2 = rp.checkout();
+            EXPECT_EQ(0, rp.size());
+            EXPECT_TRUE((*item2)->ends_with("-ok"));
+        }
+        // item2 is automatically returned to pool when it goes out of scope
         EXPECT_EQ(1, rp.size());
 
         passTest = true;
@@ -106,19 +108,21 @@ TEST(resource_pool, T_unique_ptr_string)
         rp.checkin(std::unique_ptr<std::string>(new std::string(__TIME__)));
         EXPECT_EQ(1, rp.size());
 
-        auto item = rp.checkout();
-        EXPECT_EQ(0, rp.size());
-        EXPECT_EQ(__TIME__, *item);
-        (*item).append("-ok");
-
-        rp.checkin(std::move(item));
+        {
+            auto item = rp.checkout();
+            EXPECT_EQ(0, rp.size());
+            EXPECT_EQ(__TIME__, **item);
+            (*item)->append("-ok");
+        }
+        // item is automatically returned to pool when it goes out of scope
         EXPECT_EQ(1, rp.size());
 
-        auto item2 = rp.checkout();
-        EXPECT_EQ(0, rp.size());
-        EXPECT_TRUE(item2->ends_with("-ok"));
-
-        rp.checkin(std::move(item2));
+        {
+            auto item2 = rp.checkout();
+            EXPECT_EQ(0, rp.size());
+            EXPECT_TRUE((*item2)->ends_with("-ok"));
+        }
+        // item2 is automatically returned to pool when it goes out of scope
         EXPECT_EQ(1, rp.size());
 
         passTest = true;
@@ -138,21 +142,24 @@ TEST(resource_pool, T_checkin_checkout_unique_ptr_string)
         rp.checkin(std::unique_ptr<std::string>(new std::string(__TIME__)));
         EXPECT_EQ(1, rp.size());
 
-        // Immediately push back in.. we're testing to make sure that there is
-        // no leakage!
-        rp.checkin(rp.checkout());
+        // Checkout and let it go out of scope to return automatically
+        {
+            [[maybe_unused]] auto item = rp.checkout();
+        }
+        // Resource is automatically returned to pool
         EXPECT_EQ(1, rp.size());
 
-        auto item2 = rp.checkout();
-        EXPECT_EQ(0, rp.size());
-        EXPECT_EQ(__TIME__, *item2);
+        {
+            auto item2 = rp.checkout();
+            EXPECT_EQ(0, rp.size());
+            EXPECT_EQ(__TIME__, **item2);
+        }
 
         passTest = true;
     });
 
     EXPECT_TRUE(passTest);
 }
-
 
 
 TEST(resource_pool, T_checkin_checkout_vector_string)
@@ -166,21 +173,22 @@ TEST(resource_pool, T_checkin_checkout_vector_string)
         rp.checkin({"A", "B", "C"});
         EXPECT_EQ(1, rp.size());
 
-        // Immediately push back in.. we're testing to make sure that there is
-        // no leakage!
-        rp.checkin(rp.checkout());
+        // Checkout and let it go out of scope to return automatically
+        {
+            [[maybe_unused]] auto item = rp.checkout();
+        }
+        // Resource is automatically returned to pool
         EXPECT_EQ(1, rp.size());
 
-        auto item2 = rp.checkout();
-        item2.emplace_back("1");
-        item2.emplace_back("2");
-        item2.emplace_back("3");
-        EXPECT_EQ(0, rp.size());
-        EXPECT_EQ(6, item2.size());
-
-        rp.checkin(std::move(item2));
-        // The resource is now empty; the checking moved now owns it.
-        EXPECT_EQ(0, item2.size());
+        {
+            auto item2 = rp.checkout();
+            item2.rsrc.emplace_back("1");
+            item2.rsrc.emplace_back("2");
+            item2.rsrc.emplace_back("3");
+            EXPECT_EQ(0, rp.size());
+            EXPECT_EQ(6, item2.rsrc.size());
+        }
+        // item2 is automatically returned to pool when it goes out of scope
 
         passTest = true;
     });
@@ -227,9 +235,9 @@ TEST(resource_pool, multiple_items)
     // Checkout all items (FIFO order)
     for (int i = 0; i < 10; i++) {
         auto item = rp.checkout();
-        EXPECT_EQ(i, item);
+        EXPECT_EQ(i, *item);
     }
-    EXPECT_EQ(0u, rp.size());
+    EXPECT_EQ(10u, rp.size());
 }
 
 
@@ -239,14 +247,17 @@ TEST(resource_pool, round_trip_preserves_value)
     siddiqsoft::resource_pool<std::string> rp {};
 
     rp.checkin(std::string("hello"));
-    auto item = rp.checkout();
-    EXPECT_EQ("hello", item);
+    {
+        auto item = rp.checkout();
+        EXPECT_EQ("hello", *item);
+        *item += " world";
+    }
+    // item is automatically returned to pool
 
-    item += " world";
-    rp.checkin(std::move(item));
-
-    auto item2 = rp.checkout();
-    EXPECT_EQ("hello world", item2);
+    {
+        auto item2 = rp.checkout();
+        EXPECT_EQ("hello world", *item2);
+    }
 }
 
 
@@ -258,9 +269,11 @@ TEST(resource_pool, json_type)
     rp.checkin(nlohmann::json {{"key", "value"}});
     EXPECT_EQ(1u, rp.size());
 
-    auto item = rp.checkout();
-    EXPECT_EQ("value", item["key"].get<std::string>());
-    EXPECT_EQ(0u, rp.size());
+    {
+        auto item = rp.checkout();
+        EXPECT_EQ("value", (*item)["key"].get<std::string>());
+        EXPECT_EQ(0u, rp.size());
+    }
 }
 
 
@@ -281,11 +294,13 @@ TEST(resource_pool, concurrent_access)
         threads.emplace_back([&]() {
             for (int i = 0; i < ITERATIONS / 4; i++) {
                 try {
-                    auto item = rp.checkout();
-                    checkoutCount++;
-                    // Simulate some work
-                    std::this_thread::sleep_for(std::chrono::microseconds(10));
-                    rp.checkin(std::move(item));
+                    {
+                        auto item = rp.checkout();
+                        checkoutCount++;
+                        // Simulate some work
+                        std::this_thread::sleep_for(std::chrono::microseconds(10));
+                    }
+                    // item is automatically returned to pool
                 }
                 catch (const std::runtime_error&) {
                     // Pool was empty — that's OK in concurrent scenario
@@ -321,17 +336,17 @@ TEST(resource_pool, double_clear)
 /// All resources must be returned to the pool at the end.
 TEST(resource_pool, starvation_under_contention)
 {
-    constexpr int POOL_SIZE    = 3;
-    constexpr int THREAD_COUNT = 8;
-    constexpr int OPS_PER_THREAD = 50;
+    constexpr int                  POOL_SIZE      = 3;
+    constexpr int                  THREAD_COUNT   = 8;
+    constexpr int                  OPS_PER_THREAD = 50;
 
     siddiqsoft::resource_pool<int> rp {};
     for (int i = 0; i < POOL_SIZE; i++) {
-        rp.checkin(int(i));
+        rp.checkin(std::move(i));
     }
 
-    std::atomic_int successCount {0};
-    std::atomic_int failCount {0};
+    std::atomic_int           successCount {0};
+    std::atomic_int           failCount {0};
 
     std::vector<std::jthread> threads;
     std::barrier              startBarrier {THREAD_COUNT};
@@ -341,11 +356,13 @@ TEST(resource_pool, starvation_under_contention)
             startBarrier.arrive_and_wait();
             for (int i = 0; i < OPS_PER_THREAD; i++) {
                 try {
-                    auto item = rp.checkout();
-                    successCount++;
-                    // Simulate work
-                    std::this_thread::sleep_for(std::chrono::microseconds(50));
-                    rp.checkin(std::move(item));
+                    {
+                        auto item = rp.checkout();
+                        successCount++;
+                        // Simulate work
+                        std::this_thread::sleep_for(std::chrono::microseconds(50));
+                    }
+                    // item is automatically returned to pool
                 }
                 catch (const std::runtime_error&) {
                     failCount++;
@@ -371,10 +388,10 @@ TEST(resource_pool, starvation_under_contention)
 TEST(resource_pool, concurrent_clear_with_operations)
 {
     siddiqsoft::resource_pool<int> rp {};
-    constexpr int INITIAL_SIZE = 20;
+    constexpr int                  INITIAL_SIZE = 20;
 
     for (int i = 0; i < INITIAL_SIZE; i++) {
-        rp.checkin(int(i));
+        rp.checkin(std::move(i));
     }
 
     std::atomic_bool done {false};
@@ -388,7 +405,7 @@ TEST(resource_pool, concurrent_clear_with_operations)
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             // Re-populate
             for (int i = 0; i < 5; i++) {
-                rp.checkin(int(i));
+                rp.checkin(std::move(i));
             }
         }
     });
@@ -399,9 +416,11 @@ TEST(resource_pool, concurrent_clear_with_operations)
         workers.emplace_back([&]() {
             for (int i = 0; i < 100; i++) {
                 try {
-                    auto item = rp.checkout();
-                    std::this_thread::sleep_for(std::chrono::microseconds(10));
-                    rp.checkin(std::move(item));
+                    {
+                        auto item = rp.checkout();
+                        std::this_thread::sleep_for(std::chrono::microseconds(10));
+                    }
+                    // item is automatically returned to pool
                 }
                 catch (const std::runtime_error&) {
                     // Pool was empty — expected during clear
@@ -421,20 +440,20 @@ TEST(resource_pool, concurrent_clear_with_operations)
 
 /// @brief Test high-throughput checkin/checkout cycling from many threads.
 /// Each thread does many rapid checkout-then-checkin cycles. This exercises
-/// the recursive_mutex under high contention.
+/// the mutex under high contention.
 TEST(resource_pool, high_throughput_cycling)
 {
-    constexpr int POOL_SIZE    = 8;
-    constexpr int THREAD_COUNT = 8;
-    constexpr int CYCLES       = 200;
+    constexpr int                          POOL_SIZE    = 8;
+    constexpr int                          THREAD_COUNT = 8;
+    constexpr int                          CYCLES       = 200;
 
     siddiqsoft::resource_pool<std::string> rp {};
     for (int i = 0; i < POOL_SIZE; i++) {
         rp.checkin(std::format("resource-{}", i));
     }
 
-    std::atomic_int totalCheckouts {0};
-    std::barrier    startBarrier {THREAD_COUNT};
+    std::atomic_int           totalCheckouts {0};
+    std::barrier              startBarrier {THREAD_COUNT};
 
     std::vector<std::jthread> threads;
     for (int t = 0; t < THREAD_COUNT; t++) {
@@ -442,10 +461,12 @@ TEST(resource_pool, high_throughput_cycling)
             startBarrier.arrive_and_wait();
             for (int c = 0; c < CYCLES; c++) {
                 try {
-                    auto item = rp.checkout();
-                    totalCheckouts++;
-                    // Immediately return
-                    rp.checkin(std::move(item));
+                    {
+                        auto item = rp.checkout();
+                        totalCheckouts++;
+                        // Immediately return
+                    }
+                    // item is automatically returned to pool
                 }
                 catch (const std::runtime_error&) {
                     // Pool was momentarily empty
@@ -470,11 +491,17 @@ TEST(resource_pool, checkout_after_drain_throws)
     rp.checkin(1);
     rp.checkin(2);
 
-    [[maybe_unused]] auto a = rp.checkout();
-    [[maybe_unused]] auto b = rp.checkout();
-    EXPECT_EQ(0u, rp.size());
+    {
+        [[maybe_unused]] auto a = rp.checkout();
+        [[maybe_unused]] auto b = rp.checkout();
+        EXPECT_EQ(0u, rp.size());
 
-    EXPECT_THROW({ [[maybe_unused]] auto v = rp.checkout(); }, std::runtime_error);
+        // This must be checked prior to the a and b going out of
+        // scope in which case they'll be put back into the pool
+        // and the check for rp.checkout() throwing (due to empty)
+        // will fail!
+        EXPECT_THROW({ [[maybe_unused]] auto v = rp.checkout(); }, std::runtime_error);
+    }
 }
 
 
@@ -483,11 +510,11 @@ TEST(resource_pool, checkout_after_drain_throws)
 TEST(resource_pool, size_accuracy_under_concurrency)
 {
     siddiqsoft::resource_pool<int> rp {};
-    constexpr int ITEMS_PER_THREAD = 50;
-    constexpr int THREAD_COUNT     = 4;
+    constexpr int                  ITEMS_PER_THREAD = 50;
+    constexpr int                  THREAD_COUNT     = 4;
 
-    std::barrier              startBarrier {THREAD_COUNT};
-    std::vector<std::jthread> threads;
+    std::barrier                   startBarrier {THREAD_COUNT};
+    std::vector<std::jthread>      threads;
 
     for (int t = 0; t < THREAD_COUNT; t++) {
         threads.emplace_back([&, t]() {
@@ -510,17 +537,17 @@ TEST(resource_pool, size_accuracy_under_concurrency)
 /// move semantics under thread contention.
 TEST(resource_pool, concurrent_unique_ptr)
 {
-    constexpr int POOL_SIZE    = 4;
-    constexpr int THREAD_COUNT = 4;
-    constexpr int CYCLES       = 100;
+    constexpr int                                           POOL_SIZE    = 4;
+    constexpr int                                           THREAD_COUNT = 4;
+    constexpr int                                           CYCLES       = 100;
 
     siddiqsoft::resource_pool<std::unique_ptr<std::string>> rp {};
     for (int i = 0; i < POOL_SIZE; i++) {
         rp.checkin(std::make_unique<std::string>(std::format("resource-{}", i)));
     }
 
-    std::atomic_int totalCheckouts {0};
-    std::barrier    startBarrier {THREAD_COUNT};
+    std::atomic_int           totalCheckouts {0};
+    std::barrier              startBarrier {THREAD_COUNT};
 
     std::vector<std::jthread> threads;
     for (int t = 0; t < THREAD_COUNT; t++) {
@@ -528,10 +555,12 @@ TEST(resource_pool, concurrent_unique_ptr)
             startBarrier.arrive_and_wait();
             for (int c = 0; c < CYCLES; c++) {
                 try {
-                    auto item = rp.checkout();
-                    EXPECT_NE(nullptr, item);
-                    totalCheckouts++;
-                    rp.checkin(std::move(item));
+                    {
+                        auto item = rp.checkout();
+                        EXPECT_NE(nullptr, item.rsrc);
+                        totalCheckouts++;
+                    }
+                    // item is automatically returned to pool
                 }
                 catch (const std::runtime_error&) {
                     // Pool was momentarily empty

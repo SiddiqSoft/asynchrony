@@ -64,20 +64,67 @@
 
 namespace siddiqsoft
 {
-    /// @brief Implements a simple queue + semaphore driven asynchronous processor
-    /// @tparam T The data type for this processor
-    /// @tparam Pri Optional thread priority level. 0=Normal
+    /**
+     * @brief Implements a simple asynchronous worker thread with queue-based processing.
+     *
+     * This template class provides a single worker thread that processes items from a queue
+     * asynchronously. Items are queued by the main thread and processed by the worker thread
+     * via a callback function. The worker thread waits on a semaphore for items and processes
+     * them as they become available.
+     *
+     * @details
+     * - Single dedicated worker thread per instance
+     * - Items are stored in a WaitableQueue protected by internal synchronization
+     * - Thread waits for up to DEFAULT_WAIT_FOR_NEXT_ITEM_MS (1500ms) for the next item
+     * - Exceptions in callbacks are caught and logged to prevent thread termination
+     * - Uses jthread for automatic cleanup on destruction
+     * - Supports optional thread priority adjustment (Windows and POSIX systems)
+     * - Provides JSON serialization for monitoring and diagnostics
+     *
+     * @tparam T The data type for work items (must be move-constructible)
+     * @tparam Pri Optional thread priority level (-10 to 10, default: 0 for normal priority)
+     *         On Windows: passed to SetThreadPriority()
+     *         On POSIX: can be used for custom priority handling
+     *
+     * @example
+     * @code
+     * // Create a worker that processes strings
+     * siddiqsoft::simple_worker<std::string> worker([](std::string&& item) {
+     *     std::cout << "Processing: " << item << std::endl;
+     * });
+     * 
+     * // Queue work items
+     * worker.queue(std::string("task1"));
+     * worker.queue(std::string("task2"));
+     * 
+     * // Worker automatically cleans up on destruction
+     * @endcode
+     */
     template <typename T, int Pri = 0>
         requires((Pri >= -10) && (Pri <= 10)) && std::move_constructible<T>
     struct simple_worker
     {
+        /// @brief Default wait interval for the worker thread waiting on items
         static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
 
     public:
+        /// @brief Copy constructor (deleted - workers are not copyable)
         simple_worker(const simple_worker&)            = delete;
+        
+        /// @brief Copy assignment operator (deleted - workers are not copyable)
         simple_worker& operator=(const simple_worker&) = delete;
 
 
+        /**
+         * @brief Destructor - gracefully shuts down the worker thread
+         *
+         * Performs the following cleanup steps:
+         * 1. Waits for the queue to be empty (all pending items processed)
+         * 2. Requests the worker thread to stop via stop_token
+         * 3. Joins the thread to ensure clean shutdown
+         *
+         * @remarks In debug builds, logs the queue state before shutdown
+         */
         ~simple_worker()
         {
 #if defined(DEBUG) || defined(_DEBUG)
@@ -96,15 +143,30 @@ namespace siddiqsoft
             }
         }
 
-        /// @brief This method is to be used by the user when they shutdown their application.
-        /// This is best used for cases when the callback cannot be guaranteed to be "clean"
-        /// or respect the stop_token
+        /**
+         * @brief Force immediate termination of the worker thread
+         *
+         * This method should only be used during application shutdown when the callback
+         * cannot be guaranteed to be "clean" or respect the stop_token. It forcefully
+         * terminates the thread using platform-specific APIs.
+         *
+         * @param sl Source location for logging purposes (automatically captured)
+         *
+         * @warning This is a last-resort cleanup method and should only be called when
+         *          normal shutdown has failed. Using this during normal operation can
+         *          lead to resource leaks and undefined behavior.
+         *
+         * @details
+         * - On POSIX systems: calls pthread_cancel() and detaches the thread
+         * - On Windows: calls TerminateThread() and detaches the thread
+         * - Uses std::call_once to ensure this is only called once
+         * - Logs a warning message with the source location
+         */
         void forceCleanupTerminate(const std::source_location& sl = std::source_location::current())
         {
             std::call_once(flag_forceCleanupTerminate, [&]() {
                 try {
-                    // Notify the thread to stop.. and wait for a bit.. and then instead of joining we should just let the jthread
-                    // destroy. Ask thread to shutdown and if joinable.. join.
+                    // Notify the thread to stop.. and wait a bit before forceful termination
                     processor.request_stop();
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 #if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
@@ -135,20 +197,50 @@ namespace siddiqsoft
             });
         }
 
-        /// @brief Move constructor and assignment are disallowed to avoid transferring thread ownership
+        /// @brief Move constructor (deleted - workers are not movable)
         simple_worker(simple_worker&&)            = delete;
+        
+        /// @brief Move assignment operator (deleted - workers are not movable)
         simple_worker& operator=(simple_worker&&) = delete;
 
-        /// @brief Constructor requires the callback for the thread
-        /// @param c The callback which accepts the type T as reference and performs action.
+        /**
+         * @brief Constructs a worker thread with the given callback
+         *
+         * Creates a single worker thread that will process items from the queue
+         * using the provided callback function.
+         *
+         * @param c The worker callback function with signature void(T&&)
+         *          Called for each item dequeued from the worker's queue
+         *
+         * @details
+         * - The callback is stored and invoked by the worker thread
+         * - The worker thread starts immediately and waits for items
+         * - Thread priority is set if Pri != 0 (Windows only)
+         * - Exceptions in callbacks are caught and logged to prevent thread termination
+         */
         simple_worker(std::function<void(T&&)> c)
             : callback(c)
         {
         }
 
 
-        /// @brief Queue item into this worker thread's deque
-        /// @param item This is move'd into the internal deque
+        /**
+         * @brief Queue a work item for processing
+         *
+         * Adds an item to the worker's queue for asynchronous processing.
+         * The worker thread will process this item as soon as it becomes available.
+         *
+         * @param item The work item to queue (must be move-constructible)
+         *             Ownership is transferred to the worker
+         *
+         * @details
+         * - Thread-safe operation
+         * - Increments the queue counter with release semantics
+         * - Item is moved into the internal queue
+         * - Worker thread is signaled to wake up if waiting
+         *
+         * @note The item is moved into the queue, so the original is no longer valid
+         */
         void queue(T&& item)
         {
             items.emplace(std::move(item));
@@ -156,12 +248,27 @@ namespace siddiqsoft
         }
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)
-        /// @brief Serializer for json
-        /// @param  destination
-        /// @param  this object
-        /// @note The use of signal.max() is causing an issue where winmindef.h is defining the `max` as a macro and thus we end up
-        /// with compiler error when the client application includes any of the windows headers! Disabled for now.
-        /// @note FIX: Acquire shared lock to prevent data race on items deque when multiple threads call toJson() concurrently
+        /**
+         * @brief Serialize worker state to JSON
+         *
+         * Returns a JSON object containing diagnostic information about the worker state.
+         * Useful for monitoring and debugging.
+         *
+         * @return nlohmann::json object with worker statistics
+         *
+         * @details Includes:
+         * - _typver: Version identifier for the worker type
+         * - itemsSize: Current number of items in the queue
+         * - queueCounter: Total number of items queued (atomic counter)
+         * - itemsQueued: Total items added to queue
+         * - itemsPopped: Total items removed from queue
+         * - itemsOutstanding: Items queued but not yet processed
+         * - threadPriority: Thread priority level
+         * - outstandingCallback: Number of callbacks currently executing
+         * - waitInterval: Default wait interval in milliseconds
+         *
+         * @note Thread-safe operation with acquire semantics
+         */
         auto toJson() const -> nlohmann::json
         {
             auto itemsSize        = items.size();
@@ -182,26 +289,38 @@ namespace siddiqsoft
 #endif
 
     private:
+        /// @brief Flag to ensure forceCleanupTerminate is called only once
         std::once_flag flag_forceCleanupTerminate {};
 
-        /// @brief Check the outstanding callback
+        /// @brief Tracks the number of callbacks currently executing
+        /// Uses acquire/release semantics for proper synchronization
         std::atomic_uint outstandingCallback {0};
 
-        /// @brief Track number of times we've got items added into our queue
+        /// @brief Track number of times items have been added to the queue
         std::atomic_uint64_t queueCounter {0};
 
-        /// @brief The internal queue for this worker.
+        /// @brief The internal queue for work items
         siddiqsoft::WaitableQueue<T> items {};
 
-        /// @brief The callback is invoked whenever there is an item in the queue
+        /// @brief The callback function invoked for each dequeued item
         std::function<void(T&&)> callback;
 
-        /// @brief Processor thread
-        /// The driver runs forever until signalled to stop
-        /// Tries to get next item ready in the queue (for max 500ms cycle)
-        /// If we have an item, invoke the callback with the item
-        /// @note
-        /// The processor thread captures `this` and access the signal and callback
+        /**
+         * @brief Worker thread that processes items from the queue
+         *
+         * This jthread runs the main worker loop:
+         * 1. Waits on the queue for the next item (with timeout)
+         * 2. If an item is available and stop not requested, invokes the callback
+         * 3. Catches and logs any exceptions to prevent thread termination
+         * 4. Continues until stop_token is signaled
+         *
+         * @details
+         * - Captures 'this' to access the queue and callback
+         * - Sets thread priority if Pri != 0 (Windows only)
+         * - Exceptions are caught at two levels (inner and outer) for robustness
+         * - Uses acquire/release semantics for thread-safe operations
+         * - Waits up to DEFAULT_WAIT_FOR_NEXT_ITEM_MS for each item
+         */
         std::jthread processor {[&](std::stop_token st) {
 #if defined(WIN64) || defined(_WIN64) || defined(WIN32) || defined(_WIN32)
             // Set the thread priority if possible
@@ -235,10 +354,16 @@ namespace siddiqsoft
     };
 
 #if defined(NLOHMANN_JSON_VERSION_MAJOR)
-    /// @brief Serializer for the simple_worker
-    /// @tparam T base typename
-    /// @param dest destination json object
-    /// @param src source object
+    /**
+     * @brief JSON serialization adapter for simple_worker
+     *
+     * Enables automatic JSON serialization of simple_worker objects via nlohmann::json.
+     *
+     * @tparam T The item type processed by the worker
+     * @tparam Pri The thread priority level
+     * @param dest Destination JSON object to populate
+     * @param src Source simple_worker object to serialize
+     */
     template <typename T, int Pri = 0>
     static void to_json(nlohmann::json& dest, const siddiqsoft::simple_worker<T, Pri>& src)
     {

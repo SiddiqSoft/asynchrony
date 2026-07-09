@@ -104,6 +104,8 @@ namespace siddiqsoft
         requires((Pri >= -10) && (Pri <= 10)) && std::move_constructible<T>
     struct simple_worker
     {
+        std::atomic<bool> accepting_items {true};
+        std::atomic<bool> shutdown_initiated {false};
         /// @brief Default wait interval for the worker thread waiting on items
         static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
 
@@ -130,18 +132,30 @@ namespace siddiqsoft
 #if defined(DEBUG) || defined(_DEBUG)
             std::cerr << std::format("{} - Waiting for queue to be empty: {}\n", __func__, items.toJson().dump(2));
 #endif
-            // Ask the processor to stop().. nicely..
+
+            shutdown(std::chrono::seconds(5));
+        }
+
+        bool shutdown(std::chrono::milliseconds timeout = std::chrono::seconds(5))
+        {
+            accepting_items.store(false, std::memory_order_release);
             processor.request_stop();
 
-            // Drain the existing items..
-            items.waitUntilEmpty();
+            // Drain existing items and wait for the queue to be empty.
+            // Add a total deadline with buffer of 500ms extra..
+            auto deadline = std::chrono::steady_clock::now() + timeout + std::chrono::milliseconds(500);
+            items.waitUntilEmpty(timeout);
 
-            // Signal the threads to shutdown..
-            try {
-                if (processor.joinable()) processor.join();
+            if (processor.joinable()) {
+                auto remaining = deadline - std::chrono::steady_clock::now();
+                if (remaining.count() > 0) {
+                    processor.join();
+                    return true; // Graceful shutdown succeeded
+                }
             }
-            catch (const std::exception&) {
-            }
+
+            std::cerr << "WARNING: Graceful shutdown timeout exceeded\n";
+            return false; // Timeout occurred
         }
 
         /**
@@ -163,6 +177,7 @@ namespace siddiqsoft
          * - Uses std::call_once to ensure this is only called once
          * - Logs a warning message with the source location
          */
+        [[deprecated("Use shutdown_gracefully() instead. This method is unsafe and can cause deadlocks.")]]
         void forceCleanupTerminate(const std::source_location& sl = std::source_location::current())
         {
             std::call_once(flag_forceCleanupTerminate, [&]() {
@@ -242,8 +257,12 @@ namespace siddiqsoft
          *
          * @note The item is moved into the queue, so the original is no longer valid
          */
-        void queue(T&& item)
+        void queue(T&& item) noexcept(false)
         {
+            if (!accepting_items.load(std::memory_order_acquire)) {
+                throw std::runtime_error("Worker is shutting down, cannot queue new items");
+            }
+
             items.emplace(std::move(item));
             queueCounter.fetch_add(1, std::memory_order_release);
         }

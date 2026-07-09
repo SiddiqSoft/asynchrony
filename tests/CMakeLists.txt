@@ -100,6 +100,7 @@ if(${${PROJECT_NAME}_BUILD_TESTS})
                     ${PROJECT_SOURCE_DIR}/tests/roundrobin_pool.cpp
                     ${PROJECT_SOURCE_DIR}/tests/simple_pool.cpp
                     ${PROJECT_SOURCE_DIR}/tests/resource_pool.cpp
+                    ${PROJECT_SOURCE_DIR}/tests/vulnerabilities_tests.cpp
                     ${PROJECT_SOURCE_DIR}/tests/data_race_detection.cpp
                     ${PROJECT_SOURCE_DIR}/tests/simple_worker.cpp)
 

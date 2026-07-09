@@ -110,6 +110,7 @@ namespace siddiqsoft
 
         /// @brief Default wait interval for the worker thread waiting on items
         static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
+        static constexpr std::chrono::milliseconds DEFAULT_SHUTDOWN_DRAIN_MS {1000};
 
     public:
         /// @brief Copy constructor (deleted - workers are not copyable)
@@ -138,7 +139,7 @@ namespace siddiqsoft
             shutdown();
         }
 
-        bool shutdown(std::chrono::milliseconds timeout = std::chrono::seconds(5))
+        bool shutdown(std::chrono::milliseconds timeout = DEFAULT_SHUTDOWN_DRAIN_MS)
         {
             bool shutdown_status {false};
 
@@ -176,69 +177,15 @@ namespace siddiqsoft
                         else {
                             std::cerr << std::format("worker shutdown failed; isDrained: {}. size:{}\n", isDrained, items.size());
                         }
-#endif
 
                         std::cerr << "WARNING: Graceful shutdown timeout exceeded\n";
+#endif
+
                         status = isDrained; // Timeout occurred
                     },
                     shutdown_status,
                     timeout);
             return shutdown_status;
-        }
-
-        /**
-         * @brief Force immediate termination of the worker thread
-         *
-         * This method should only be used during application shutdown when the callback
-         * cannot be guaranteed to be "clean" or respect the stop_token. It forcefully
-         * terminates the thread using platform-specific APIs.
-         *
-         * @param sl Source location for logging purposes (automatically captured)
-         *
-         * @warning This is a last-resort cleanup method and should only be called when
-         *          normal shutdown has failed. Using this during normal operation can
-         *          lead to resource leaks and undefined behavior.
-         *
-         * @details
-         * - On POSIX systems: calls pthread_cancel() and detaches the thread
-         * - On Windows: calls TerminateThread() and detaches the thread
-         * - Uses std::call_once to ensure this is only called once
-         * - Logs a warning message with the source location
-         */
-        [[deprecated("Use shutdown_gracefully() instead. This method is unsafe and can cause deadlocks.")]]
-        void forceCleanupTerminate(const std::source_location& sl = std::source_location::current())
-        {
-            std::call_once(flag_forceCleanupTerminate, [&]() {
-                try {
-                    // Notify the thread to stop.. and wait a bit before forceful termination
-                    processor.request_stop();
-                    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-#if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
-                    auto nativeHandle = processor.native_handle();
-                    std::cerr << std::format(
-                            "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
-                            "ending! from: {}:{}",
-
-                            sl.file_name(),
-                            sl.line());
-                    pthread_cancel(nativeHandle);
-                    processor.detach();
-#elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
-                auto nativeHandle = processor.native_handle();
-                std::cerr << std::format(
-                             "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
-                             "ending! from: {}:{}",
-                             
-                             sl.file_name(),
-                             sl.line());
-                TerminateThread(nativeHandle, 0);
-                processor.detach();
-#endif
-                }
-                catch (const std::exception& ex) {
-                    std::cerr << std::format("forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
-                }
-            });
         }
 
         /// @brief Move constructor (deleted - workers are not movable)

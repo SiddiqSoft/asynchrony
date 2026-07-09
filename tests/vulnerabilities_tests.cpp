@@ -76,20 +76,26 @@ TEST(vulns_simple_worker, no_use_after_free)
     EXPECT_TRUE(callback_executed);
 }
 
+/*
+ * THIS WILL CAUSE A CRASH!
+ * ************************
 TEST(vuln_simple_worker, no_race_in_destructor) {
     std::atomic_uint items_processed{0};
-    
+
     std::thread late_producer;
-    
+
     {
+        // Create the worker.. this will go out of scope before the destructor is called
         siddiqsoft::simple_worker<std::string> worker([&](auto&& item) {
             items_processed++;
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         });
-        
+
         worker.queue("item1");
-        
+
         // Start thread that will try to queue after destruction
+        // We're using the worker as a reference..
+        // This is clearly going to crash!
         late_producer = std::thread([&worker]() {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             try {
@@ -101,70 +107,79 @@ TEST(vuln_simple_worker, no_race_in_destructor) {
             }
         });
     }
-    
+
     late_producer.join();
     EXPECT_EQ(1u, items_processed);  // Only first item processed
 }
+*/
 
+TEST(vuln_simple_worker, graceful_shutdown)
+{
+    std::atomic_uint items_processed {0};
 
-TEST(vuln_simple_worker, graceful_shutdown) {
-    std::atomic_uint items_processed{0};
-    
     {
-        siddiqsoft::simple_worker<std::string> worker([&](auto&&) {
+        siddiqsoft::simple_worker<std::string> worker([&](auto&& val) {
             items_processed++;
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::cerr << "  task completed for   `" << val << "`   via tid: " << std::this_thread::get_id()
+                      << "; items_processed: " << items_processed.load() << "\n";
         });
-        
+
         for (int i = 0; i < 10; i++) {
             worker.queue(std::format("item-{}", i));
         }
-        
+
         // Graceful shutdown
-        bool success = worker.shutdown(std::chrono::seconds(5));
+        bool success = worker.shutdown(std::chrono::seconds(2));
         EXPECT_TRUE(success);
     }
-    
+
     EXPECT_EQ(10u, items_processed);
 }
 
-TEST(vuln_simple_worker, graceful_shutdown_timeout) {
-    std::atomic_uint items_processed{0};
-    
+TEST(vuln_simple_worker, graceful_shutdown_timeout)
+{
+    std::atomic_uint items_processed {0};
+
     {
         siddiqsoft::simple_worker<std::string> worker([&](auto&&) {
             items_processed++;
-            std::this_thread::sleep_for(std::chrono::seconds(10));  // Long callback
+            std::this_thread::sleep_for(std::chrono::seconds(2)); // Long callback
         });
-        
-        worker.queue("item");
-        
+
+        // We must add more than one item otherwise the queue will drain
+        // regardless of the shutdown timeout.
+        worker.queue("item-0");
+        worker.queue("item-1");
+        worker.queue("item-2");
+
         // Graceful shutdown with very short timeout
         bool success = worker.shutdown(std::chrono::milliseconds(100));
-        EXPECT_FALSE(success);  // Should timeout
+        EXPECT_FALSE(success); // Should timeout
     }
 }
 
-TEST(vuln_roundrobin_pool, even_distribution) {
-    constexpr int WORKERS = 4;
-    constexpr int ITEMS = 1000;
-    
-    std::vector<std::atomic_uint> worker_counts(WORKERS);
-    
+TEST(vuln_roundrobin_pool, even_distribution)
+{
+    constexpr int                                     WORKERS = 4;
+    constexpr int                                     ITEMS   = 1000;
+
+    std::vector<std::atomic_uint>                     worker_counts(WORKERS);
+
     siddiqsoft::roundrobin_pool<std::string, WORKERS> pool([&](auto&&) {
         // Track which worker processed this
     });
-    
+
     for (int i = 0; i < ITEMS; i++) {
         pool.queue(std::format("item-{}", i));
     }
-    
+
     std::this_thread::sleep_for(std::chrono::seconds(2));
-    
+
     // Verify even distribution (within 10% tolerance)
     uint expected_per_worker = ITEMS / WORKERS;
-    uint tolerance = expected_per_worker / 10;
-    
+    uint tolerance           = expected_per_worker / 10;
+
     for (int i = 0; i < WORKERS; i++) {
         // Each worker should have approximately ITEMS/WORKERS items
         // (This test would need instrumentation in the callback)

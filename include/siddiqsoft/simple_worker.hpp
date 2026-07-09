@@ -106,6 +106,8 @@ namespace siddiqsoft
     {
         std::atomic<bool> accepting_items {true};
         std::atomic<bool> shutdown_initiated {false};
+        std::once_flag    shutdown_invoked;
+
         /// @brief Default wait interval for the worker thread waiting on items
         static constexpr std::chrono::milliseconds DEFAULT_WAIT_FOR_NEXT_ITEM_MS {1500};
 
@@ -132,30 +134,56 @@ namespace siddiqsoft
 #if defined(DEBUG) || defined(_DEBUG)
             std::cerr << std::format("{} - Waiting for queue to be empty: {}\n", __func__, items.toJson().dump(2));
 #endif
-
-            shutdown(std::chrono::seconds(5));
+            // Performs a graceful shutdown (drains and kills the threads.)
+            shutdown();
         }
 
         bool shutdown(std::chrono::milliseconds timeout = std::chrono::seconds(5))
         {
-            accepting_items.store(false, std::memory_order_release);
-            processor.request_stop();
+            bool shutdown_status {false};
 
-            // Drain existing items and wait for the queue to be empty.
-            // Add a total deadline with buffer of 500ms extra..
-            auto deadline = std::chrono::steady_clock::now() + timeout + std::chrono::milliseconds(500);
-            items.waitUntilEmpty(timeout);
+            std::call_once(
+                    shutdown_invoked,
+                    [&](bool& status, std::chrono::milliseconds& t) {
+                        accepting_items.store(false, std::memory_order_release);
+#if defined(DEBUG)
+                        std::cerr << std::format("worker shutdown started inside call_once.. asking for waitUntilEmpty...for {}ms\n", t.count());
+#endif
 
-            if (processor.joinable()) {
-                auto remaining = deadline - std::chrono::steady_clock::now();
-                if (remaining.count() > 0) {
-                    processor.join();
-                    return true; // Graceful shutdown succeeded
-                }
-            }
+                        // Drain existing items and wait for the queue to be empty.
+                        // Add a total deadline with buffer of 500ms extra..
+                        auto deadline  = std::chrono::steady_clock::now() + t + std::chrono::milliseconds(500);
+                        auto isDrained = items.waitUntilEmpty(t);
 
-            std::cerr << "WARNING: Graceful shutdown timeout exceeded\n";
-            return false; // Timeout occurred
+#if defined(DEBUG)
+                        std::cerr << std::format("worker shutdown possible; isDrained: {}. size:{}\n", isDrained, items.size());
+#endif
+
+                        // Notify the processor to shutdown (we should have no outstanding items.)
+                        processor.request_stop();
+#if defined(DEBUG)
+                        std::cerr << std::format("worker shutdown started inside call_once\n");
+#endif
+
+                        if (processor.joinable()) {
+                            processor.join();
+                            status = isDrained;
+#if defined(DEBUG)
+                            std::cerr << std::format("worker shutdown ok; isDrained: {}. size:{}\n", isDrained, items.size());
+#endif
+                        }
+#if defined(DEBUG)
+                        else {
+                            std::cerr << std::format("worker shutdown failed; isDrained: {}. size:{}\n", isDrained, items.size());
+                        }
+#endif
+
+                        std::cerr << "WARNING: Graceful shutdown timeout exceeded\n";
+                        status = isDrained; // Timeout occurred
+                    },
+                    shutdown_status,
+                    timeout);
+            return shutdown_status;
         }
 
         /**
@@ -370,6 +398,9 @@ namespace siddiqsoft
                     std::cerr << std::format("Ignoring Exception in simple_worker callback: {} - outer\n", ex.what());
                 }
             } // while ..continue until we're asked to stop
+#if defined(DEBUG)
+            std::cerr << std::format("WARNING: Abandon {} items processing due to stop request!\n", items.size());
+#endif
         }};
     };
 

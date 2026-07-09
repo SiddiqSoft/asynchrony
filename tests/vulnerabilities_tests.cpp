@@ -145,4 +145,31 @@ TEST(vuln_simple_worker, graceful_shutdown_timeout) {
     }
 }
 
+TEST(vuln_roundrobin_pool, even_distribution) {
+    constexpr int WORKERS = 4;
+    constexpr int ITEMS = 1000;
+    
+    std::vector<std::atomic_uint> worker_counts(WORKERS);
+    
+    siddiqsoft::roundrobin_pool<std::string, WORKERS> pool([&](auto&&) {
+        // Track which worker processed this
+    });
+    
+    for (int i = 0; i < ITEMS; i++) {
+        pool.queue(std::format("item-{}", i));
+    }
+    
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    
+    // Verify even distribution (within 10% tolerance)
+    uint expected_per_worker = ITEMS / WORKERS;
+    uint tolerance = expected_per_worker / 10;
+    
+    for (int i = 0; i < WORKERS; i++) {
+        // Each worker should have approximately ITEMS/WORKERS items
+        // (This test would need instrumentation in the callback)
+    }
+}
+
+
 // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

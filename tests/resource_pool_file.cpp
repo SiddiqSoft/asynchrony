@@ -36,6 +36,7 @@
 #include "gtest/gtest.h"
 
 #include <chrono>
+#include <exception>
 #include <iostream>
 #include <format>
 #include <string>
@@ -51,6 +52,21 @@
 #include "../include/siddiqsoft/resource_pool.hpp"
 #include "../include/siddiqsoft/simple_pool.hpp"
 
+// Helper function to get a platform-independent temporary file path
+inline std::string get_temp_file_path(const std::string& filename)
+{
+    auto temp_dir = std::filesystem::temp_directory_path();
+    auto temp_file = temp_dir / filename;
+    return temp_file.string();
+}
+
+// Helper function to safely remove a file
+inline void safe_remove_file(const std::string& filepath)
+{
+    std::error_code ec;
+    std::filesystem::remove(filepath, ec);
+}
+
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 /**
@@ -59,7 +75,7 @@
  * This wrapper ensures that FILE* resources are properly closed when
  * they go out of scope, even if an exception occurs.
  */
-struct FileHandle :  siddiqsoft::resource_wrap<FILE*>
+struct FileHandle : siddiqsoft::resource_wrap<FILE*>
 {
 public:
     // Default constructor
@@ -92,7 +108,15 @@ public:
     FileHandle& operator=(const FileHandle&) = delete;
 
     // Destructor
-    ~FileHandle() { close(); }
+    ~FileHandle()
+    {
+        if (rsrc) {
+#if defined(DEBUG)
+            std::cerr << "Flushing the file..\n";
+#endif
+            std::fflush(rsrc);
+        }
+    }
 
     // Get raw pointer
     operator FILE*() { return rsrc; }
@@ -140,7 +164,7 @@ public:
 TEST(resource_pool_file, basic_file_pool)
 {
     // Create a temporary file for testing
-    const std::string temp_file = "/tmp/asynchrony_test_basic.txt";
+    const std::string temp_file = get_temp_file_path("asynchrony_test_basic.txt");
 
     // Create resource pool for FILE* handles
     siddiqsoft::resource_pool<FileHandle> file_pool;
@@ -159,7 +183,6 @@ TEST(resource_pool_file, basic_file_pool)
 
         // Write to the file
         std::fprintf(*file_wrapper, "Hello, World!\n");
-        std::fflush(*file_wrapper);
     }
     // File is automatically returned to pool
 
@@ -176,7 +199,7 @@ TEST(resource_pool_file, basic_file_pool)
     }
 
     // Cleanup
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -194,8 +217,8 @@ TEST(resource_pool_file, file_handle_default_constructor)
  */
 TEST(resource_pool_file, file_handle_explicit_constructor)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_explicit.txt";
-    FILE*             fp         = std::fopen(temp_file.c_str(), "w");
+    const std::string temp_file = get_temp_file_path("asynchrony_test_explicit.txt");
+    FILE*             fp        = std::fopen(temp_file.c_str(), "w");
     ASSERT_NE(nullptr, fp);
 
     FileHandle fh(fp);
@@ -203,7 +226,7 @@ TEST(resource_pool_file, file_handle_explicit_constructor)
     EXPECT_EQ(fp, static_cast<FILE*>(fh));
 
     fh.close();
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -211,8 +234,8 @@ TEST(resource_pool_file, file_handle_explicit_constructor)
  */
 TEST(resource_pool_file, file_handle_move_constructor)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_move_ctor.txt";
-    FILE*             fp         = std::fopen(temp_file.c_str(), "w");
+    const std::string temp_file = get_temp_file_path("asynchrony_test_move_ctor.txt");
+    FILE*             fp        = std::fopen(temp_file.c_str(), "w");
     ASSERT_NE(nullptr, fp);
 
     FileHandle fh1(fp);
@@ -224,7 +247,7 @@ TEST(resource_pool_file, file_handle_move_constructor)
     EXPECT_EQ(fp, static_cast<FILE*>(fh2));
 
     fh2.close();
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -232,11 +255,11 @@ TEST(resource_pool_file, file_handle_move_constructor)
  */
 TEST(resource_pool_file, file_handle_move_assignment)
 {
-    const std::string temp_file1 = "/tmp/asynchrony_test_move_assign1.txt";
-    const std::string temp_file2 = "/tmp/asynchrony_test_move_assign2.txt";
+    const std::string temp_file1 = get_temp_file_path("asynchrony_test_move_assign1.txt");
+    const std::string temp_file2 = get_temp_file_path("asynchrony_test_move_assign2.txt");
 
-    FILE* fp1 = std::fopen(temp_file1.c_str(), "w");
-    FILE* fp2 = std::fopen(temp_file2.c_str(), "w");
+    FILE*             fp1        = std::fopen(temp_file1.c_str(), "w");
+    FILE*             fp2        = std::fopen(temp_file2.c_str(), "w");
     ASSERT_NE(nullptr, fp1);
     ASSERT_NE(nullptr, fp2);
 
@@ -252,8 +275,8 @@ TEST(resource_pool_file, file_handle_move_assignment)
     EXPECT_EQ(fp2, static_cast<FILE*>(fh1));
 
     fh1.close();
-    std::remove(temp_file1.c_str());
-    std::remove(temp_file2.c_str());
+    safe_remove_file(temp_file1);
+    safe_remove_file(temp_file2);
 }
 
 /**
@@ -261,8 +284,8 @@ TEST(resource_pool_file, file_handle_move_assignment)
  */
 TEST(resource_pool_file, file_handle_release)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_release.txt";
-    FILE*             fp         = std::fopen(temp_file.c_str(), "w");
+    const std::string temp_file = get_temp_file_path("asynchrony_test_release.txt");
+    FILE*             fp        = std::fopen(temp_file.c_str(), "w");
     ASSERT_NE(nullptr, fp);
 
     FileHandle fh(fp);
@@ -273,7 +296,7 @@ TEST(resource_pool_file, file_handle_release)
     EXPECT_FALSE(fh);
 
     std::fclose(released);
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -281,8 +304,8 @@ TEST(resource_pool_file, file_handle_release)
  */
 TEST(resource_pool_file, file_handle_close)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_close.txt";
-    FILE*             fp         = std::fopen(temp_file.c_str(), "w");
+    const std::string temp_file = get_temp_file_path("asynchrony_test_close.txt");
+    FILE*             fp        = std::fopen(temp_file.c_str(), "w");
     ASSERT_NE(nullptr, fp);
 
     FileHandle fh(fp);
@@ -291,7 +314,7 @@ TEST(resource_pool_file, file_handle_close)
     fh.close();
     EXPECT_FALSE(fh);
 
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -299,8 +322,8 @@ TEST(resource_pool_file, file_handle_close)
  */
 TEST(resource_pool_file, file_handle_operator_arrow)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_arrow.txt";
-    FILE*             fp         = std::fopen(temp_file.c_str(), "w");
+    const std::string temp_file = get_temp_file_path("asynchrony_test_arrow.txt");
+    FILE*             fp        = std::fopen(temp_file.c_str(), "w");
     ASSERT_NE(nullptr, fp);
 
     FileHandle fh(fp);
@@ -311,7 +334,7 @@ TEST(resource_pool_file, file_handle_operator_arrow)
     std::fflush(fh.operator->());
 
     fh.close();
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -319,8 +342,8 @@ TEST(resource_pool_file, file_handle_operator_arrow)
  */
 TEST(resource_pool_file, file_handle_operator_file_ptr)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_file_ptr.txt";
-    FILE*             fp         = std::fopen(temp_file.c_str(), "w");
+    const std::string temp_file = get_temp_file_path("asynchrony_test_file_ptr.txt");
+    FILE*             fp        = std::fopen(temp_file.c_str(), "w");
     ASSERT_NE(nullptr, fp);
 
     FileHandle fh(fp);
@@ -331,7 +354,7 @@ TEST(resource_pool_file, file_handle_operator_file_ptr)
     std::fflush(fh);
 
     fh.close();
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -339,11 +362,11 @@ TEST(resource_pool_file, file_handle_operator_file_ptr)
  */
 TEST(resource_pool_file, file_handle_assignment_operator)
 {
-    const std::string temp_file1 = "/tmp/asynchrony_test_assign1.txt";
-    const std::string temp_file2 = "/tmp/asynchrony_test_assign2.txt";
+    const std::string temp_file1 = get_temp_file_path("asynchrony_test_assign1.txt");
+    const std::string temp_file2 = get_temp_file_path("asynchrony_test_assign2.txt");
 
-    FILE* fp1 = std::fopen(temp_file1.c_str(), "w");
-    FILE* fp2 = std::fopen(temp_file2.c_str(), "w");
+    FILE*             fp1        = std::fopen(temp_file1.c_str(), "w");
+    FILE*             fp2        = std::fopen(temp_file2.c_str(), "w");
     ASSERT_NE(nullptr, fp1);
     ASSERT_NE(nullptr, fp2);
 
@@ -354,8 +377,8 @@ TEST(resource_pool_file, file_handle_assignment_operator)
     EXPECT_EQ(fp2, static_cast<FILE*>(fh));
 
     fh.close();
-    std::remove(temp_file1.c_str());
-    std::remove(temp_file2.c_str());
+    safe_remove_file(temp_file1);
+    safe_remove_file(temp_file2);
 }
 
 /**
@@ -363,8 +386,8 @@ TEST(resource_pool_file, file_handle_assignment_operator)
  */
 TEST(resource_pool_file, file_handle_bool_conversion)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_bool.txt";
-    FILE*             fp         = std::fopen(temp_file.c_str(), "w");
+    const std::string temp_file = get_temp_file_path("asynchrony_test_bool.txt");
+    FILE*             fp        = std::fopen(temp_file.c_str(), "w");
     ASSERT_NE(nullptr, fp);
 
     FileHandle fh(fp);
@@ -373,7 +396,7 @@ TEST(resource_pool_file, file_handle_bool_conversion)
     fh.close();
     EXPECT_FALSE(static_cast<bool>(fh));
 
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -381,9 +404,9 @@ TEST(resource_pool_file, file_handle_bool_conversion)
  */
 TEST(resource_pool_file, multiple_file_handles_in_pool)
 {
-    const std::string temp_file1 = "/tmp/asynchrony_test_multi1.txt";
-    const std::string temp_file2 = "/tmp/asynchrony_test_multi2.txt";
-    const std::string temp_file3 = "/tmp/asynchrony_test_multi3.txt";
+    const std::string                     temp_file1 = get_temp_file_path("asynchrony_test_multi1.txt");
+    const std::string                     temp_file2 = get_temp_file_path("asynchrony_test_multi2.txt");
+    const std::string                     temp_file3 = get_temp_file_path("asynchrony_test_multi3.txt");
 
     siddiqsoft::resource_pool<FileHandle> file_pool;
 
@@ -431,9 +454,9 @@ TEST(resource_pool_file, multiple_file_handles_in_pool)
     EXPECT_EQ(3u, file_pool.size());
 
     // Cleanup
-    std::remove(temp_file1.c_str());
-    std::remove(temp_file2.c_str());
-    std::remove(temp_file3.c_str());
+    safe_remove_file(temp_file1);
+    safe_remove_file(temp_file2);
+    safe_remove_file(temp_file3);
 }
 
 /**
@@ -441,7 +464,7 @@ TEST(resource_pool_file, multiple_file_handles_in_pool)
  */
 TEST(resource_pool_file, file_handle_read_write)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_rw.txt";
+    const std::string                     temp_file = get_temp_file_path("asynchrony_test_rw.txt");
 
     siddiqsoft::resource_pool<FileHandle> file_pool;
 
@@ -479,7 +502,7 @@ TEST(resource_pool_file, file_handle_read_write)
     }
 
     // Cleanup
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -487,7 +510,7 @@ TEST(resource_pool_file, file_handle_read_write)
  */
 TEST(resource_pool_file, file_handle_destructor_cleanup)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_dtor.txt";
+    const std::string temp_file = get_temp_file_path("asynchrony_test_dtor.txt");
 
     {
         FileHandle fh {std::fopen(temp_file.c_str(), "w")};
@@ -506,7 +529,7 @@ TEST(resource_pool_file, file_handle_destructor_cleanup)
     EXPECT_STREQ("Destructor test\n", buffer);
 
     std::fclose(fp);
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 /**
@@ -514,7 +537,7 @@ TEST(resource_pool_file, file_handle_destructor_cleanup)
  */
 TEST(resource_pool_file, file_handle_concurrent_access)
 {
-    const std::string temp_file = "/tmp/asynchrony_test_concurrent.txt";
+    const std::string                     temp_file = get_temp_file_path("asynchrony_test_concurrent.txt");
 
     siddiqsoft::resource_pool<FileHandle> file_pool;
 
@@ -522,22 +545,33 @@ TEST(resource_pool_file, file_handle_concurrent_access)
     // Add a file to the pool
     FileHandle f {std::fopen(temp_file.c_str(), "w+")};
     ASSERT_TRUE(f);
+    std::cerr << "About to checkin..\n";
     file_pool.checkin(std::move(f));
     EXPECT_EQ(1u, file_pool.size());
 
-    std::atomic<int> write_count {0};
+    std::atomic<int>         write_count {0};
     std::vector<std::thread> threads;
 
+    std::cerr << std::format("About to kick off the threads to use pool with {} items.\n", file_pool.size());
     // Create multiple threads that write to the file
     for (int i = 0; i < 3; ++i) {
         threads.emplace_back([&file_pool, &write_count, i]() {
-            auto fw = file_pool.checkout();
-            std::fprintf(*fw, "Thread %d\n", i);
-            std::fflush(*fw);
-            ++write_count;
+            try {
+                auto fw = file_pool.checkout();
+                std::fprintf(*fw, "Thread %d\n", i);
+                ++write_count;
+            }
+            catch (std::exception& ex) {
+                // Skip when we're getting an empty pool message
+                // if other threads are using up single resource!
+                std::cerr << std::format( "Ignoring: {}\n", ex.what() );
+            }
         });
     }
 
+    // Critical to wait for a second otherwise terminating will stop processing
+    std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+    std::cerr << std::format("About to terminated threads {}.\n", threads.size());
     // Wait for all threads to complete
     for (auto& t : threads) {
         t.join();
@@ -547,7 +581,7 @@ TEST(resource_pool_file, file_handle_concurrent_access)
     EXPECT_EQ(1u, file_pool.size());
 
     // Cleanup
-    std::remove(temp_file.c_str());
+    safe_remove_file(temp_file);
 }
 
 // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

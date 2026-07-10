@@ -70,7 +70,8 @@ namespace siddiqsoft
         /// @brief Provides dereference access to the underlying resource
         auto operator*() -> T& { return rsrc; }
 
-             operator T() { return rsrc; }
+        /// @brief Type case operator for type conversion
+        operator T() { return rsrc; }
 
         /// @brief Destructor automatically returns the resource to the pool
         ~resource_wrap()
@@ -192,21 +193,25 @@ namespace siddiqsoft
          */
         [[nodiscard]] resource_wrap<T> checkout() /* throw() */
         {
-            std::scoped_lock<std::mutex> l(_poolLock);
+            {
+                std::scoped_lock<std::mutex> l(_poolLock);
 
-            if (!_pool.empty()) {
-                RunOnEnd roe([&]() { _pool.pop_front(); });
+                if (!_pool.empty()) {
+                    RunOnEnd roe([&]() { _pool.pop_front(); });
 
-                /// @brief Lambda that returns the resource back to the pool
-                /// Captures 'this' to access the pool's checkin method
-                /// Called by resource_wrap destructor to ensure automatic return
-                /// even if an exception occurs
-                auto autoReturnResource = [this](T&& rsrc) {
-                    this->checkin(std::move(rsrc));
-                };
+                    /// @brief Lambda that returns the resource back to the pool
+                    /// Captures 'this' to access the pool's checkin method
+                    /// Called by resource_wrap destructor to ensure automatic return
+                    /// even if an exception occurs
+                    auto autoReturnResource = [this](T&& rsrc) {
+                        this->checkin(std::move(rsrc));
+                    };
 
-                return resource_wrap<T> {std::move(_pool.front()), autoReturnResource};
-            }
+                    return resource_wrap<T> {std::move(_pool.front()), autoReturnResource};
+                    // The pop_front() happens within this scope and
+                    // within the lock!
+                }
+            } // scope end
 
             throw std::runtime_error("Empty pool; add something first!");
         }

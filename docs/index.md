@@ -1,134 +1,214 @@
-asynchrony : Asynchrony support library
----------------------------------------
+# Asynchrony: Add Asynchrony to Your C++ Applications
 
-<img align="right" src="https://gravatar.com/avatar/b22603b65d11dcab44885c65e44f7dc9">
-
-[![CodeQL](https://github.com/SiddiqSoft/asynchrony/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/SiddiqSoft/asynchrony/actions/workflows/github-code-scanning/codeql)
 [![Build Status](https://dev.azure.com/siddiqsoft/siddiqsoft/_apis/build/status/SiddiqSoft.asynchrony?branchName=main)](https://dev.azure.com/siddiqsoft/siddiqsoft/_build/latest?definitionId=17&branchName=main)
 ![](https://img.shields.io/nuget/v/SiddiqSoft.asynchrony)
 ![](https://img.shields.io/github/v/tag/SiddiqSoft/asynchrony)
 ![](https://img.shields.io/azure-devops/tests/siddiqsoft/siddiqsoft/17)
-<!-- end badges -->
 
-## Documentation
+## Overview
 
-- **[API Reference](./doxygen/html/index.html)** - Complete Doxygen-generated API documentation
-- **[Getting Started](./doxygen/html/md_docs_pages_getting_started.html)** - Installation and setup guide
-- **[Usage Guide](./doxygen/html/md_docs_pages_usage_guide.html)** - Detailed usage examples
-- **[Examples](./doxygen/html/md_docs_pages_examples.html)** - Real-world code examples
-- **[Quick Reference](./doxygen/html/md_docs_pages_quick_reference.html)** - Quick lookup guide
+The **asynchrony** library provides a comprehensive set of modern C++20 utilities for building asynchronous and multi-threaded applications. It leverages standard library features like `std::jthread`, `std::semaphore`, `std::deque`, and `std::concepts` to provide clean, efficient abstractions for common asynchronous patterns.
 
-## Getting started
+## Key Features
 
-- This library uses standard C++20 code with support for Windows, Linux, and macOS.
-  - We use [`<concepts>`](https://en.cppreference.com/w/cpp/concepts), [`<jthread>`](https://en.cppreference.com/w/cpp/thread/jthread), [`<semaphore>`](https://en.cppreference.com/w/cpp/thread/counting_semaphore), and [`<format>`](https://en.cppreference.com/w/cpp/header/format).
-  - The most compatible compilers are GCC 10+, MSVC 16.11+, and Clang 10+.
-- On Windows, you can use the Nuget package or CMakeLists.
+- **Single-threaded Worker**: Process items asynchronously in a dedicated thread
+- **Thread Pool**: Distribute work across multiple threads with a shared queue
+- **Round-Robin Pool**: Minimize contention with per-thread queues
+- **Periodic Worker**: Execute functions at regular intervals
+- **Resource Pool**: Manage a pool of reusable resources
+- **Modern C++20**: Uses only standard library features (no external dependencies for core functionality)
+- **Type-Safe**: Leverages C++ concepts for compile-time type checking
+- **Exception Safe**: Handles exceptions gracefully without thread termination
 
-## Quick Start
+## Requirements
 
-### Single-threaded Worker
+- **C++20 Support**: Requires `std::jthread` and `std::stop_token`
+- **Compiler Support**:
+  - GCC 10+
+  - MSVC 16.11+ (Visual Studio 2019 or later)
+  - Clang 10+ (with `-fexperimental-library` flag)
+- **Platform Support**: Windows, Linux, macOS
+
+## Classes and Methods
+
+### simple_worker
+
+A single-threaded asynchronous processor that queues work items and processes them sequentially.
+
+```cpp
+template<typename T>
+class simple_worker {
+    void queue(T&& item);           // Queue an item for processing
+    size_t size() const;            // Get queue size
+    uint64_t addCounter() const;    // Get total items added
+    uint64_t removeCounter() const; // Get total items processed
+};
+```
+
+### simple_pool
+
+A multi-threaded pool with a shared queue that distributes work across multiple threads.
+
+```cpp
+template<typename T>
+class simple_pool {
+    void queue(T&& item);           // Queue an item for processing
+    size_t size() const;            // Get queue size
+    uint64_t addCounter() const;    // Get total items added
+    uint64_t removeCounter() const; // Get total items processed
+};
+```
+
+### roundrobin_pool
+
+A multi-threaded pool with per-thread queues that minimizes contention through round-robin distribution.
+
+```cpp
+template<typename T>
+class roundrobin_pool {
+    void queue(T&& item);           // Queue an item (round-robin distribution)
+    size_t size() const;            // Get total queue size
+    uint64_t addCounter() const;    // Get total items added
+    uint64_t removeCounter() const; // Get total items processed
+};
+```
+
+### periodic_worker
+
+Executes a function at regular intervals in a dedicated thread.
+
+```cpp
+template<typename Rep = std::milli, typename Period = std::ratio<1>>
+class periodic_worker {
+    periodic_worker(std::function<void()> fn, std::chrono::duration<Rep, Period> interval);
+};
+```
+
+### resource_pool
+
+Manages a pool of reusable resources for checkout/checkin operations.
+
+```cpp
+template<typename T>
+class resource_pool {
+    size_t size() const;            // Get current pool size
+    T checkout();                   // Checkout a resource (throws if empty)
+    void checkin(T&& rsrc);         // Return a resource to the pool
+    void clear();                   // Clear all resources from the pool
+};
+```
+
+## Quick Start Examples
+
+### Simple Worker Example
 
 ```cpp
 #include "siddiqsoft/simple_worker.hpp"
+#include <iostream>
 
-struct MyWork {
-   std::string urlDestination{};
-   std::string data{};
-   void operator()(){
-      // Process work
-   }
+struct MyTask {
+    std::string data;
+    void operator()() { 
+        std::cout << "Processing: " << data << std::endl;
+    }
 };
 
 int main() {
-   siddiqsoft::simple_worker<MyWork> worker{[](auto& item){
-      item();
-   }};
-   
-   for(int i=0; i < 100; i++) {
-      worker.queue({std::format("https://localhost:443/test?iter={}",i),
-                    "hello-world"});
-   }
+    siddiqsoft::simple_worker<MyTask> worker{[](auto& task) {
+        task();  // Execute the task
+    }};
 
-   std::this_thread::sleep_for(std::chrono::seconds(1));
-   return 0;
+    // Queue work
+    for (int i = 0; i < 100; ++i) {
+        worker.queue(MyTask{"data-" + std::to_string(i)});
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    return 0;
 }
 ```
 
-### Multi-threaded Pool
+### Thread Pool Example
 
 ```cpp
 #include "siddiqsoft/simple_pool.hpp"
 
 int main() {
-   siddiqsoft::simple_pool<MyWork> pool{[](auto& item){
-      item();
-   }};
-   
-   for(int i=0; i < 100; i++) {
-      pool.queue({std::format("https://localhost:443/test?iter={}",i),
-                  "hello-world"});
-   }
+    siddiqsoft::simple_pool<MyTask> pool{[](auto& task) {
+        task();  // Execute the task
+    }};
 
-   std::this_thread::sleep_for(std::chrono::seconds(1));
-   return 0;
+    // Queue work across multiple threads
+    for (int i = 0; i < 1000; ++i) {
+        pool.queue(MyTask{"data-" + std::to_string(i)});
+    }
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    return 0;
 }
 ```
 
-### Round-Robin Pool
-
-```cpp
-#include "siddiqsoft/roundrobin_pool.hpp"
-
-int main() {
-   siddiqsoft::roundrobin_pool<MyWork> pool{[](auto& item){
-      item();
-   }};
-   
-   for(int i=0; i < 100; i++) {
-      pool.queue({std::format("https://localhost:443/test?iter={}",i),
-                  "hello-world"});
-   }
-
-   std::this_thread::sleep_for(std::chrono::seconds(1));
-   return 0;
-}
-```
-
-### Periodic Worker
+### Periodic Worker Example
 
 ```cpp
 #include "siddiqsoft/periodic_worker.hpp"
+#include <iostream>
 
 int main() {
-   siddiqsoft::periodic_worker<> timer{
-      []() { std::cout << "Tick!" << std::endl; },
-      std::chrono::milliseconds(1000)
-   };
+    siddiqsoft::periodic_worker<> timer{
+        []() {
+            std::cout << "Tick!" << std::endl;
+        },
+        std::chrono::milliseconds(500)
+    };
 
-   std::this_thread::sleep_for(std::chrono::seconds(5));
-   return 0;
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+    return 0;
 }
 ```
 
-## API
+## Design Principles
 
-Utility                   | Description
--------------------------:|:------------
-[`siddiqsoft::simple_worker`](./doxygen/html/structsiddiqsoft_1_1simple__worker.html) | Provides a single thread with an internal deque.<br/>Use this to make any "long" task asynchronous.<br/>Use instead of `std::async`.<br/>Just register your callback/lambda and you're done. No need to worry about waiting for the result (no futures or waiting on them).<br/>Your declared callback will be invoked!
-[`siddiqsoft::simple_pool`](./doxygen/html/structsiddiqsoft_1_1simple__pool.html) | Implements an array of threads backed with a *single* deque. Each thread waits for and processes the next available item from the single deque.
-[`siddiqsoft::roundrobin_pool`](./doxygen/html/structsiddiqsoft_1_1roundrobin__pool.html) | Implements a vector of basic_workers (each worker has its independent queue therefore minimizing contention time).<br/>The queue method implements a running counter based round-robin feeder.
-[`siddiqsoft::periodic_worker`](./doxygen/html/structsiddiqsoft_1_1periodic__worker.html) | Provides a facility where you can have your function/lambda invoked at a given periodic rate (in microseconds).
-[`siddiqsoft::resource_pool`](./doxygen/html/structsiddiqsoft_1_1resource__pool.html) | Provides a basic resource pool useful for keeping a pool of connection objects for the various threadpools to checkout/checkin.
+- **Move Semantics**: All components use move semantics for efficient resource transfer
+- **RAII**: Proper resource management through constructors and destructors
+- **Exception Safety**: Exceptions in callbacks are caught and logged, not propagated
+- **Thread Safety**: Internal synchronization using mutexes and semaphores
+- **Zero-Copy**: Minimal data copying through perfect forwarding
 
-## Implementation note
+## Documentation
+
+For comprehensive documentation, see:
+
+- **[API Reference](./doxygen/html/index.html)** - Complete Doxygen-generated API documentation
+- **[Getting Started](./doxygen/html/md_docs_pages_getting_started.html)** - Installation and setup guide
+- **[Usage Guide](./doxygen/html/md_docs_pages_usage_guide.html)** - Detailed usage examples and best practices
+- **[Examples](./doxygen/html/md_docs_pages_examples.html)** - Real-world code examples
+- **[Quick Reference](./doxygen/html/md_docs_pages_quick_reference.html)** - Quick lookup guide for common tasks
+
+## Usage
+
+> Requires C++20 support!
+>
+> Specifically we require `jthread` and `stop_token` support. This library works with GCC 10+, MSVC 16.11+, or Clang 10+.
+
+The library uses concepts to ensure the type `T` meets move construct requirements.
+
+## Installation
+
+Use the NuGet package [SiddiqSoft.asynchrony](https://www.nuget.org/packages/SiddiqSoft.asynchrony/) or integrate via CMake/CPM.
+
+## Implementation Notes
 
 In order to use `std::jthread` on Clang 10 and later, we enable the compiler flag `"CMAKE_CXX_FLAGS": "-fexperimental-library"` in the CMakeLists.txt. This option will show up in your client library under Clang compilers.
+
+## License
+
+BSD 3-Clause License - See LICENSE file for details
+
+## Copyright
+
+Copyright (c) 2021, Siddiq Software LLC. All rights reserved.
 
 ---
 
 **Author**: [Siddiq Software LLC](https://gravatar.com/siddiqsoft)
-
-<p align="right">
-&copy; 2021 Siddiq Software LLC. All rights reserved.
-</p>

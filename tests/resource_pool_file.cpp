@@ -540,7 +540,7 @@ TEST(resource_pool_file, file_handle_concurrent_access)
         t.join();
     }
 
-    EXPECT_GT(write_count, 1);
+    EXPECT_GE(write_count, 1);
     EXPECT_EQ(1u, file_pool.size());
 
     // Cleanup

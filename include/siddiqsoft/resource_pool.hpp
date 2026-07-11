@@ -48,20 +48,51 @@
 namespace siddiqsoft
 {
     /**
-     * @brief RAII wrapper for checked-out resources
+     * @brief RAII wrapper for checked-out resources with validity tracking
      *
-     * @warning CRITICAL: This wrapper tracks resource validity to prevent returning
-     * uninitialized or moved-out resources to the pool. Only valid resources are
-     * returned to the pool on destruction.
-     *
-     * Automatically returns the resource to the pool when destroyed.
-     * Provides pointer-like access to the underlying resource via operator* and operator&.
+     * @warning CRITICAL SAFETY FEATURE: This wrapper tracks resource validity to prevent
+     * returning uninitialized or moved-out resources to the pool. Only valid resources are
+     * returned to the pool on destruction. This prevents pool corruption.
      *
      * @details
-     * - Holds the resource and a callback function to return it to the pool
-     * - Destructor automatically invokes the callback to ensure resource is returned
-     * - Supports pointer-like access patterns for convenience
-     * - Tracks validity to prevent pool corruption from uninitialized resources
+     * The resource_wrap class provides automatic resource management through RAII (Resource
+     * Acquisition Is Initialization). When a resource is checked out from a resource_pool,
+     * it is wrapped in a resource_wrap that automatically returns it to the pool when destroyed.
+     *
+     * Key Features:
+     * - Automatic resource return via RAII pattern
+     * - Validity tracking prevents pool corruption
+     * - Pointer-like access to underlying resource
+     * - Move-only semantics (no copying)
+     * - Thread-safe when used with resource_pool
+     *
+     * Validity Tracking:
+     * - Resources are marked as valid when constructed
+     * - Destructor only returns valid resources to the pool
+     * - Invalid resources are discarded (not returned)
+     * - Use invalidate() to prevent automatic return
+     *
+     * @tparam T The resource type (must be move-constructible)
+     *
+     * @example
+     * @code
+     * // Typical usage (automatic return)
+     * {
+     *     auto resource = pool.checkout();
+     *     resource->doSomething();
+     *     // Resource automatically returned to pool when scope exits
+     * }
+     *
+     * // Advanced usage (prevent return)
+     * {
+     *     auto resource = pool.checkout();
+     *     auto ptr = std::move(*resource);
+     *     resource.invalidate();  // Don't return the moved-out resource
+     *     // Resource is NOT returned to pool
+     * }
+     * @endcode
+     *
+     * @see resource_pool
      */
     template <typename T>
         requires std::move_constructible<T>
@@ -69,18 +100,38 @@ namespace siddiqsoft
     {
     protected:
         /// @brief The actual resource being wrapped
-        T        rsrc {};
+        T rsrc {};
+
+        /// @brief Debug identifier for tracking (used in DEBUG builds)
         uint64_t debugId {std::rand()};
+
         /// @brief Callback function to return the resource to the pool
+        /// Called by destructor when resource is valid
         std::function<void(T&&)> putbackCallback {};
 
         /// @brief Tracks whether the resource is valid and should be returned to pool
         /// Prevents returning uninitialized or moved-out resources
+        /// - true: resource will be returned to pool on destruction
+        /// - false: resource will NOT be returned to pool on destruction
         bool isValid {false};
 
     public:
+        /// @brief Default constructor is deleted
+        /// Resources must be explicitly constructed with a valid resource
         resource_wrap() = delete;
 
+        /**
+         * @brief Construct a resource_wrap with a resource and optional callback
+         *
+         * @param src R-value reference to the resource to wrap
+         * @param f Optional callback function to return resource to pool
+         *
+         * @details
+         * The resource is marked as valid upon construction. The callback is typically
+         * provided by resource_pool::checkout() to automatically return the resource.
+         *
+         * @note This constructor is typically called by resource_pool::checkout()
+         */
         resource_wrap(T&& src, std::function<void(T&&)>&& f = {})
             : rsrc(std::move(src))
             , putbackCallback(std::move(f))
@@ -98,7 +149,21 @@ namespace siddiqsoft
             }
 #endif
         }
+
+        /// @brief Copy constructor is deleted
+        /// Resources are move-only to maintain clear ownership semantics
         resource_wrap(const T&) = delete;
+
+        /**
+         * @brief Move assignment operator
+         *
+         * @param src R-value reference to the resource to assign
+         * @return Reference to this resource_wrap
+         *
+         * @details
+         * Assigns a new resource to this wrapper and marks it as valid.
+         * The previous resource (if any) is discarded.
+         */
         resource_wrap& operator=(T&& src)
         {
 #if defined(DEBUG)
@@ -109,14 +174,45 @@ namespace siddiqsoft
             return *this;
         };
 
-        /// @brief Provides dereference access to the underlying resource
+        /// @brief Copy assignment is deleted
+        resource_wrap& operator=(const resource_wrap&) = delete;
+
+        /**
+         * @brief Dereference operator to access the underlying resource
+         *
+         * @return Reference to the wrapped resource
+         *
+         * @example
+         * @code
+         * auto resource = pool.checkout();
+         * (*resource)->doSomething();  // Access via dereference
+         * @endcode
+         */
         auto operator*() -> T& { return rsrc; }
 
-        /// @brief Type case operator for type conversion
+        /**
+         * @brief Type conversion operator
+         *
+         * @return Copy of the wrapped resource
+         *
+         * @details
+         * Allows implicit conversion to the resource type.
+         * Useful for passing to functions expecting the resource type.
+         */
         operator T() { return rsrc; }
 
-        /// @brief Destructor automatically returns the resource to the pool
-        /// Only returns the resource if it's marked as valid to prevent pool corruption
+        /**
+         * @brief Destructor - automatically returns resource to pool if valid
+         *
+         * @details
+         * The destructor implements the RAII pattern:
+         * - If isValid is true and putbackCallback exists: returns resource to pool
+         * - If isValid is false: resource is discarded (not returned)
+         *
+         * This ensures resources are always properly managed, even if an exception occurs.
+         *
+         * @note This is called automatically when the resource_wrap goes out of scope
+         */
         ~resource_wrap()
         {
 #if defined(DEBUG)
@@ -130,49 +226,92 @@ namespace siddiqsoft
             }
         }
 
-        /// @brief Invalidate the resource to prevent it from being returned to pool
-        ///
-        /// Use this when you've moved the resource out or want to prevent automatic return.
-        /// After calling this, the destructor will not return the resource to the pool.
-        ///
-        /// @note This is primarily for internal use or advanced scenarios
+        /**
+         * @brief Invalidate the resource to prevent it from being returned to pool
+         *
+         * @details
+         * Call this method when you've moved the resource out or want to prevent
+         * automatic return to the pool. After calling this, the destructor will NOT
+         * return the resource to the pool.
+         *
+         * Use Cases:
+         * - You've moved the resource out and it's no longer valid
+         * - You want to take ownership and prevent automatic return
+         * - You're implementing custom resource management
+         *
+         * @note Safe to call multiple times
+         * @note This is primarily for advanced scenarios; normal usage doesn't need this
+         *
+         * @example
+         * @code
+         * auto resource = pool.checkout();
+         * auto ptr = std::move(*resource);
+         * resource.invalidate();  // Don't return the moved-out resource
+         * // Resource is NOT returned to pool
+         * @endcode
+         */
+#if defined(DEBUG)
         void invalidate() { isValid = false; }
+#endif
     };
 
     /**
-     * @brief Implements a thread-safe resource pool for managing reusable objects.
-     *
-     * This template class provides efficient resource pooling for managing expensive resources
-     * like database connections, thread pools, or other reusable objects. Resources are checked
-     * out from the pool and automatically returned when the wrapper goes out of scope (RAII pattern).
+     * @brief Thread-safe resource pool for managing reusable objects
      *
      * @details
-     * - Resources are stored in a deque and protected by a mutex for thread-safety
-     * - The checkout() method returns a resource_wrap that automatically returns the resource
-     *   to the pool when destroyed
-     * - The capacity should ideally match std::thread::hardware_concurrency() for optimal
-     *   performance in multi-threaded scenarios
-     * - Resources must be move-constructible
-     * - Uses FIFO (First-In-First-Out) ordering for resource retrieval
-     * @note
-     * - There is clear overhead when using the resource_wrap. The main benefit is from using
-     *   the resource within a long-lived scope and not having to worry about cleanup.
+     * The resource_pool class provides efficient resource pooling for managing expensive
+     * resources like database connections, file handles, thread pools, or other reusable
+     * objects. Resources are checked out from the pool and automatically returned when
+     * the wrapper goes out of scope (RAII pattern).
      *
-     * @tparam T The storage element type (e.g., shared_ptr or unique_ptr)
-     *         The only requirement is that the underlying object is move-constructible
-     * @tparam InitCapacity Initial capacity hint for the pool (default: 1 byte)
-     *         Must not exceed the size of uint16_t
+     * Key Features:
+     * - Thread-safe operations protected by mutex
+     * - RAII pattern ensures resources are always returned
+     * - FIFO (First-In-First-Out) ordering for resource retrieval
+     * - Automatic resource cleanup on pool destruction
+     * - Validity tracking prevents pool corruption
+     *
+     * Thread Safety:
+     * - All public methods are thread-safe
+     * - Uses std::mutex to protect internal state
+     * - Safe for concurrent checkout/checkin operations
+     *
+     * Performance Considerations:
+     * - Ideal capacity should match std::thread::hardware_concurrency()
+     * - Each checkout/checkin operation acquires a lock
+     * - Resources are stored in a deque for efficient FIFO access
+     * - There is overhead from the resource_wrap wrapper
+     *
+     * @tparam T The resource type (must be move-constructible)
+     *           Examples: std::shared_ptr<Connection>, std::unique_ptr<Buffer>, FILE*
+     * @tparam InitCapacity Initial capacity hint (default: 1 byte, max: 65535)
      *
      * @example
      * @code
      * // Create a pool of database connections
      * siddiqsoft::resource_pool<std::shared_ptr<DbConnection>> pool;
      *
-     * // Check out a resource
-     * auto wrapped = pool.checkout();
-     * wrapped->executeQuery("SELECT * FROM users");
-     * // Resource automatically returned to pool when wrapped goes out of scope
+     * // Add resources to the pool
+     * pool.checkin(std::make_shared<DbConnection>("localhost"));
+     * pool.checkin(std::make_shared<DbConnection>("localhost"));
+     *
+     * // Check out and use a resource
+     * {
+     *     auto connection = pool.checkout();
+     *     connection->executeQuery("SELECT * FROM users");
+     *     // Connection automatically returned to pool when scope exits
+     * }
+     *
+     * // Handle empty pool
+     * try {
+     *     auto connection = pool.checkout();
+     * }
+     * catch (const std::runtime_error& e) {
+     *     std::cerr << "Pool is empty: " << e.what() << std::endl;
+     * }
      * @endcode
+     *
+     * @see resource_wrap
      */
     template <typename T, uint16_t InitCapacity = sizeof(uint8_t)>
         requires((InitCapacity <= sizeof(uint16_t))) && std::move_constructible<T>
@@ -180,6 +319,7 @@ namespace siddiqsoft
     {
     private:
         /// @brief Internal deque storing the pooled resources
+        /// Uses FIFO ordering: resources are added to back, retrieved from front
         std::deque<T> _pool {};
 
         /// @brief Mutex protecting access to the resource pool
@@ -188,12 +328,15 @@ namespace siddiqsoft
 
     public:
         /// @brief Default constructor
+        /// Creates an empty pool ready to accept resources
         resource_pool() = default;
 
         /// @brief Copy constructor (deleted - pools are not copyable)
+        /// Each pool manages its own resources independently
         resource_pool(resource_pool&) = delete;
 
         /// @brief Move constructor (defaulted)
+        /// Allows moving a pool to a new location
         resource_pool(resource_pool&& src) = default;
 
         /// @brief Copy assignment operator (deleted - pools are not copyable)
@@ -203,15 +346,18 @@ namespace siddiqsoft
         resource_pool& operator=(resource_pool&& src) = default;
 
         /// @brief Destructor - clears all resources from the pool
+        /// All remaining resources are destroyed
         ~resource_pool() { clear(); }
 
         /**
          * @brief Clear all items from the pool
          *
-         * Removes all resources from the pool. Thread-safe operation.
-         * Safe to call on an empty pool.
+         * @details
+         * Removes and destroys all resources currently in the pool.
+         * Thread-safe operation. Safe to call on an empty pool.
          *
          * @note All resources are destroyed when cleared
+         * @note Any checked-out resources are NOT affected
          */
         void clear()
         {
@@ -222,13 +368,15 @@ namespace siddiqsoft
         /**
          * @brief Get the current size of the pool
          *
-         * Returns the number of available resources in the pool.
-         * Thread-safe operation.
+         * @return The number of available resources currently in the pool
          *
-         * @return The number of resources currently in the pool
+         * @details
+         * Returns the number of resources available for checkout.
+         * Thread-safe operation.
          *
          * @note This prevents TOCTOU (Time-of-Check-Time-of-Use) race conditions
          *       by returning the size directly without separate empty checks
+         * @note Size may change immediately after this call due to concurrent access
          */
         auto size()
         {
@@ -239,16 +387,39 @@ namespace siddiqsoft
         /**
          * @brief Check out a resource from the pool
          *
-         * Retrieves a resource from the pool and wraps it in a resource_wrap that
-         * automatically returns the resource when destroyed. This implements the RAII pattern
-         * to ensure resources are always returned to the pool.
-         *
          * @return A resource_wrap containing the checked-out resource
          * @throws std::runtime_error if the pool is empty
          *
-         * @note The returned resource_wrap uses RAII to ensure the resource is
-         *       returned to the pool even if an exception occurs in the calling code
+         * @details
+         * Retrieves a resource from the pool and wraps it in a resource_wrap that
+         * automatically returns the resource when destroyed. This implements the RAII
+         * pattern to ensure resources are always returned to the pool.
+         *
+         * The returned resource_wrap:
+         * - Provides pointer-like access to the resource
+         * - Automatically returns the resource to the pool on destruction
+         * - Ensures resource return even if an exception occurs
+         * - Can be invalidated to prevent automatic return
+         *
+         * Thread Safety:
+         * - Thread-safe operation protected by mutex
+         * - Multiple threads can safely checkout simultaneously
+         * - Resources are retrieved in FIFO order
+         *
          * @note The [[nodiscard]] attribute encourages proper usage of the returned wrapper
+         * @note If the pool is empty, throws std::runtime_error
+         *
+         * @example
+         * @code
+         * try {
+         *     auto resource = pool.checkout();
+         *     // Use resource...
+         *     // Automatically returned to pool when scope exits
+         * }
+         * catch (const std::runtime_error& e) {
+         *     std::cerr << "No resources available: " << e.what() << std::endl;
+         * }
+         * @endcode
          */
         [[nodiscard]] auto checkout() -> resource_wrap<T> /* throw() */
         {
@@ -278,15 +449,35 @@ namespace siddiqsoft
         /**
          * @brief Return a resource to the pool
          *
-         * Adds a resource back to the pool, making it available for future checkout operations.
-         * This is typically called automatically by the resource_wrap destructor.
-         *
          * @param rsrc R-Value reference to the resource to return to the pool
-         *             Can be a previously checked-out resource or a newly created one
+         *
+         * @details
+         * Adds a resource back to the pool, making it available for future checkout
+         * operations. This is typically called automatically by the resource_wrap
+         * destructor, but can also be called manually.
+         *
+         * Thread Safety:
+         * - Thread-safe operation protected by mutex
+         * - Multiple threads can safely checkin simultaneously
          *
          * @note Thread-safe operation protected by mutex
-         * @note Resources are added to the back of the deque and retrieved from the front (FIFO)
+         * @note Resources are added to the back of the deque (FIFO)
          * @note This method is typically not called directly; use checkout() instead
+         * @note Only valid resources should be checked in (not moved-out or invalid)
+         *
+         * @example
+         * @code
+         * // Automatic return (typical usage)
+         * {
+         *     auto resource = pool.checkout();
+         *     // Use resource...
+         * }  // Automatically returned via resource_wrap destructor
+         *
+         * // Manual return (advanced usage)
+         * auto resource = pool.checkout();
+         * // ... use resource ...
+         * pool.checkin(std::move(*resource));
+         * @endcode
          */
         void checkin(T&& rsrc)
         {

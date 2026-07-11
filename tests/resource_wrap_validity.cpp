@@ -4,6 +4,9 @@
     These tests verify that the resource_wrap class properly tracks
     resource validity and prevents returning uninitialized or invalid
     resources to the pool.
+
+    NOTE: Tests using invalidate() are only compiled in DEBUG builds
+    since invalidate() is only available in DEBUG mode.
 */
 
 #include "gtest/gtest.h"
@@ -18,37 +21,10 @@
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
 /**
- * @brief Test that invalid resources are not returned to the pool
- *
- * This test verifies the fix for the critical issue where uninitialized
- * resources could be returned to the pool, corrupting it.
- *
- * When a resource is invalidated, it should NOT be returned to the pool.
- */
-TEST(resource_wrap_validity, no_corruption_on_invalid_resource)
-{
-    siddiqsoft::resource_pool<int> pool;
-    pool.checkin(42);
-
-    EXPECT_EQ(1u, pool.size());
-
-    {
-        auto wrap = pool.checkout();
-        EXPECT_EQ(0u, pool.size());
-
-        // Invalidate the resource to simulate it being moved out
-        wrap.invalidate();
-        // After invalidation, the resource is NOT returned to pool
-    }
-
-    // Pool should be empty because we invalidated the resource
-    EXPECT_EQ(0u, pool.size());
-}
-
-/**
  * @brief Test that valid resources are still returned to the pool
  *
  * Ensures the fix doesn't break normal operation.
+ * This test works in both DEBUG and RELEASE builds.
  */
 TEST(resource_wrap_validity, valid_resource_returned)
 {
@@ -68,46 +44,6 @@ TEST(resource_wrap_validity, valid_resource_returned)
 
     auto item = pool.checkout();
     EXPECT_EQ(42, *item);
-}
-
-/**
- * @brief Test with unique_ptr to ensure move-only types work correctly
- */
-TEST(resource_wrap_validity, unique_ptr_invalidation)
-{
-    siddiqsoft::resource_pool<std::unique_ptr<int>> pool;
-    pool.checkin(std::make_unique<int>(42));
-
-    EXPECT_EQ(1u, pool.size());
-
-    {
-        auto wrap = pool.checkout();
-        EXPECT_EQ(0u, pool.size());
-
-        // Invalidate to prevent returning the resource
-        wrap.invalidate();
-    }
-
-    // Pool should be empty because we invalidated the resource
-    EXPECT_EQ(0u, pool.size());
-}
-
-/**
- * @brief Test multiple invalidations don't cause issues
- */
-TEST(resource_wrap_validity, multiple_invalidations)
-{
-    siddiqsoft::resource_pool<int> pool;
-    pool.checkin(42);
-
-    {
-        auto wrap = pool.checkout();
-        wrap.invalidate();
-        wrap.invalidate(); // Should be safe to call multiple times
-    }
-
-    // Pool should be empty because we invalidated
-    EXPECT_EQ(0u, pool.size());
 }
 
 /**
@@ -136,6 +72,102 @@ TEST(resource_wrap_validity, assignment_maintains_validity)
 }
 
 /**
+ * @brief Test that destructor properly handles valid resources
+ */
+TEST(resource_wrap_validity, destructor_returns_valid_resource)
+{
+    siddiqsoft::resource_pool<int> pool;
+    pool.checkin(100);
+
+    {
+        auto wrap = pool.checkout();
+        EXPECT_EQ(0u, pool.size());
+        // Don't invalidate - destructor should return it
+    }
+
+    // Resource should be back in pool
+    EXPECT_EQ(1u, pool.size());
+    auto item = pool.checkout();
+    EXPECT_EQ(100, *item);
+}
+
+#if defined(DEBUG)
+
+/**
+ * @brief Test that invalid resources are not returned to the pool
+ *
+ * This test verifies the fix for the critical issue where uninitialized
+ * resources could be returned to the pool, corrupting it.
+ *
+ * When a resource is invalidated, it should NOT be returned to the pool.
+ *
+ * NOTE: This test is only available in DEBUG builds
+ */
+TEST(resource_wrap_validity, no_corruption_on_invalid_resource)
+{
+    siddiqsoft::resource_pool<int> pool;
+    pool.checkin(42);
+
+    EXPECT_EQ(1u, pool.size());
+
+    {
+        auto wrap = pool.checkout();
+        EXPECT_EQ(0u, pool.size());
+
+        // Invalidate the resource to simulate it being moved out
+        wrap.invalidate();
+        // After invalidation, the resource is NOT returned to pool
+    }
+
+    // Pool should be empty because we invalidated the resource
+    EXPECT_EQ(0u, pool.size());
+}
+
+/**
+ * @brief Test with unique_ptr to ensure move-only types work correctly
+ *
+ * NOTE: This test is only available in DEBUG builds
+ */
+TEST(resource_wrap_validity, unique_ptr_invalidation)
+{
+    siddiqsoft::resource_pool<std::unique_ptr<int>> pool;
+    pool.checkin(std::make_unique<int>(42));
+
+    EXPECT_EQ(1u, pool.size());
+
+    {
+        auto wrap = pool.checkout();
+        EXPECT_EQ(0u, pool.size());
+
+        // Invalidate to prevent returning the resource
+        wrap.invalidate();
+    }
+
+    // Pool should be empty because we invalidated the resource
+    EXPECT_EQ(0u, pool.size());
+}
+
+/**
+ * @brief Test multiple invalidations don't cause issues
+ *
+ * NOTE: This test is only available in DEBUG builds
+ */
+TEST(resource_wrap_validity, multiple_invalidations)
+{
+    siddiqsoft::resource_pool<int> pool;
+    pool.checkin(42);
+
+    {
+        auto wrap = pool.checkout();
+        wrap.invalidate();
+        wrap.invalidate(); // Should be safe to call multiple times
+    }
+
+    // Pool should be empty because we invalidated
+    EXPECT_EQ(0u, pool.size());
+}
+
+/**
  * @brief Test concurrent access with invalidation
  *
  * This test verifies that concurrent access with mixed valid/invalid
@@ -143,6 +175,8 @@ TEST(resource_wrap_validity, assignment_maintains_validity)
  * - Valid resources are returned to the pool
  * - Invalid resources are NOT returned to the pool
  * - Final pool size = initial size - invalidated count
+ *
+ * NOTE: This test is only available in DEBUG builds
  */
 TEST(resource_wrap_validity, concurrent_with_invalidation)
 {
@@ -151,7 +185,7 @@ TEST(resource_wrap_validity, concurrent_with_invalidation)
     // Pre-fill the pool with enough resources
     // We use 100 to ensure no contention
     for (int i = 0; i < 100; i++) {
-        pool.checkin(std::move(i));
+        pool.checkin(i);
     }
 
     EXPECT_EQ(100u, pool.size());
@@ -205,27 +239,9 @@ TEST(resource_wrap_validity, concurrent_with_invalidation)
 }
 
 /**
- * @brief Test that destructor properly handles valid resources
- */
-TEST(resource_wrap_validity, destructor_returns_valid_resource)
-{
-    siddiqsoft::resource_pool<int> pool;
-    pool.checkin(100);
-
-    {
-        auto wrap = pool.checkout();
-        EXPECT_EQ(0u, pool.size());
-        // Don't invalidate - destructor should return it
-    }
-
-    // Resource should be back in pool
-    EXPECT_EQ(1u, pool.size());
-    auto item = pool.checkout();
-    EXPECT_EQ(100, *item);
-}
-
-/**
  * @brief Test that destructor does NOT return invalidated resources
+ *
+ * NOTE: This test is only available in DEBUG builds
  */
 TEST(resource_wrap_validity, destructor_skips_invalid_resource)
 {
@@ -245,6 +261,8 @@ TEST(resource_wrap_validity, destructor_skips_invalid_resource)
 
 /**
  * @brief Test mixed valid and invalid resources in concurrent scenario
+ *
+ * NOTE: This test is only available in DEBUG builds
  */
 TEST(resource_wrap_validity, mixed_valid_invalid_concurrent)
 {
@@ -252,7 +270,7 @@ TEST(resource_wrap_validity, mixed_valid_invalid_concurrent)
 
     // Pre-fill with 20 items
     for (int i = 0; i < 20; i++) {
-        pool.checkin(std::move(i));
+        pool.checkin(i);
     }
 
     std::atomic_int           valid_count {0};
@@ -288,5 +306,7 @@ TEST(resource_wrap_validity, mixed_valid_invalid_concurrent)
     EXPECT_EQ(static_cast<size_t>(valid_count.load()), pool.size());
     EXPECT_GT(invalid_count.load(), 0);
 }
+
+#endif  // defined(DEBUG)
 
 // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

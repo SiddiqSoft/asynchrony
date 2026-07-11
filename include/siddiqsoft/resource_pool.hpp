@@ -41,6 +41,7 @@
 #include <mutex>
 #include <shared_mutex>
 #include <deque>
+#include <format>
 
 #include "siddiqsoft/RunOnEnd.hpp"
 
@@ -49,6 +50,10 @@ namespace siddiqsoft
     /**
      * @brief RAII wrapper for checked-out resources
      *
+     * @warning CRITICAL: This wrapper tracks resource validity to prevent returning
+     * uninitialized or moved-out resources to the pool. Only valid resources are
+     * returned to the pool on destruction.
+     *
      * Automatically returns the resource to the pool when destroyed.
      * Provides pointer-like access to the underlying resource via operator* and operator&.
      *
@@ -56,16 +61,53 @@ namespace siddiqsoft
      * - Holds the resource and a callback function to return it to the pool
      * - Destructor automatically invokes the callback to ensure resource is returned
      * - Supports pointer-like access patterns for convenience
+     * - Tracks validity to prevent pool corruption from uninitialized resources
      */
     template <typename T>
         requires std::move_constructible<T>
-    struct resource_wrap
+    class resource_wrap
     {
+    protected:
         /// @brief The actual resource being wrapped
-        T rsrc {};
-
+        T        rsrc {};
+        uint64_t debugId {std::rand()};
         /// @brief Callback function to return the resource to the pool
         std::function<void(T&&)> putbackCallback {};
+
+        /// @brief Tracks whether the resource is valid and should be returned to pool
+        /// Prevents returning uninitialized or moved-out resources
+        bool isValid {false};
+
+    public:
+        resource_wrap() = delete;
+
+        resource_wrap(T&& src, std::function<void(T&&)>&& f = {})
+            : rsrc(std::move(src))
+            , putbackCallback(std::move(f))
+            , isValid(true)
+        {
+#if defined(DEBUG)
+            if constexpr (std::is_pointer_v<T>) {
+                std::cerr << std::format("  - resource_wrap: debugId:{} {:p}\n", debugId, static_cast<void*>(rsrc));
+            }
+            else if constexpr (std::is_integral_v<T>) {
+                std::cerr << std::format("  - resource_wrap: debugId:{} {}\n", debugId, rsrc);
+            }
+            else {
+                std::cerr << std::format("  - resource_wrap: debugId:{}\n", debugId);
+            }
+#endif
+        }
+        resource_wrap(const T&) = delete;
+        resource_wrap& operator=(T&& src)
+        {
+#if defined(DEBUG)
+            std::cerr << std::format("  - resource_wrap: move into debugId:{}\n", debugId);
+#endif
+            rsrc    = std::move(src);
+            isValid = true;
+            return *this;
+        };
 
         /// @brief Provides dereference access to the underlying resource
         auto operator*() -> T& { return rsrc; }
@@ -74,10 +116,27 @@ namespace siddiqsoft
         operator T() { return rsrc; }
 
         /// @brief Destructor automatically returns the resource to the pool
+        /// Only returns the resource if it's marked as valid to prevent pool corruption
         ~resource_wrap()
         {
-            if (putbackCallback) putbackCallback(std::move(rsrc));
+#if defined(DEBUG)
+            std::cerr << std::format("  - ~resource_wrap: putback debugId:{}  isValid:{}\n", debugId, isValid);
+#endif
+            // Only return resource if it's valid and callback exists
+            // This prevents returning uninitialized or moved-out resources to the pool
+            if (isValid && putbackCallback) {
+                putbackCallback(std::move(rsrc));
+                isValid = false;
+            }
         }
+
+        /// @brief Invalidate the resource to prevent it from being returned to pool
+        ///
+        /// Use this when you've moved the resource out or want to prevent automatic return.
+        /// After calling this, the destructor will not return the resource to the pool.
+        ///
+        /// @note This is primarily for internal use or advanced scenarios
+        void invalidate() { isValid = false; }
     };
 
     /**
@@ -191,7 +250,7 @@ namespace siddiqsoft
          *       returned to the pool even if an exception occurs in the calling code
          * @note The [[nodiscard]] attribute encourages proper usage of the returned wrapper
          */
-        [[nodiscard]] resource_wrap<T> checkout() /* throw() */
+        [[nodiscard]] auto checkout() -> resource_wrap<T> /* throw() */
         {
             {
                 std::scoped_lock<std::mutex> l(_poolLock);
@@ -207,7 +266,7 @@ namespace siddiqsoft
                         this->checkin(std::move(rsrc));
                     };
 
-                    return resource_wrap<T> {std::move(_pool.front()), autoReturnResource};
+                    return {std::move(_pool.front()), autoReturnResource};
                     // The pop_front() happens within this scope and
                     // within the lock!
                 }

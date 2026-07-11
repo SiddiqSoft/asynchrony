@@ -109,7 +109,7 @@ TEST(resource_pool, T_unique_ptr_string)
         EXPECT_EQ(1, rp.size());
 
         {
-            auto item = rp.checkout();
+            auto&& item = rp.checkout();
             EXPECT_EQ(0, rp.size());
             EXPECT_EQ(__TIME__, **item);
             (*item)->append("-ok");
@@ -118,7 +118,7 @@ TEST(resource_pool, T_unique_ptr_string)
         EXPECT_EQ(1, rp.size());
 
         {
-            auto item2 = rp.checkout();
+            auto&& item2 = rp.checkout();
             EXPECT_EQ(0, rp.size());
             EXPECT_TRUE((*item2)->ends_with("-ok"));
         }
@@ -144,13 +144,13 @@ TEST(resource_pool, T_checkin_checkout_unique_ptr_string)
 
         // Checkout and let it go out of scope to return automatically
         {
-            [[maybe_unused]] auto item = rp.checkout();
+            [[maybe_unused]] auto&& item = rp.checkout();
         }
         // Resource is automatically returned to pool
         EXPECT_EQ(1, rp.size());
 
         {
-            auto item2 = rp.checkout();
+            auto&& item2 = rp.checkout();
             EXPECT_EQ(0, rp.size());
             EXPECT_EQ(__TIME__, **item2);
         }
@@ -175,18 +175,18 @@ TEST(resource_pool, T_checkin_checkout_vector_string)
 
         // Checkout and let it go out of scope to return automatically
         {
-            [[maybe_unused]] auto item = rp.checkout();
+            [[maybe_unused]] auto&& item = rp.checkout();
         }
         // Resource is automatically returned to pool
         EXPECT_EQ(1, rp.size());
 
         {
             auto item2 = rp.checkout();
-            item2.rsrc.emplace_back("1");
-            item2.rsrc.emplace_back("2");
-            item2.rsrc.emplace_back("3");
+            (*item2).emplace_back("1");
+            (*item2).emplace_back("2");
+            (*item2).emplace_back("3");
             EXPECT_EQ(0, rp.size());
-            EXPECT_EQ(6, item2.rsrc.size());
+            EXPECT_EQ(6, (*item2).size());
         }
         // item2 is automatically returned to pool when it goes out of scope
 
@@ -556,8 +556,8 @@ TEST(resource_pool, concurrent_unique_ptr)
             for (int c = 0; c < CYCLES; c++) {
                 try {
                     {
-                        auto item = rp.checkout();
-                        EXPECT_NE(nullptr, item.rsrc);
+                        auto&& item = rp.checkout();
+                        EXPECT_NE(nullptr, *item);
                         totalCheckouts++;
                     }
                     // item is automatically returned to pool

@@ -185,7 +185,7 @@ TEST(resource_wrap_validity, concurrent_with_invalidation)
     // Pre-fill the pool with enough resources
     // We use 100 to ensure no contention
     for (int i = 0; i < 100; i++) {
-        pool.checkin(i);
+        pool.checkin(std::move(i));
     }
 
     EXPECT_EQ(100u, pool.size());
@@ -270,7 +270,7 @@ TEST(resource_wrap_validity, mixed_valid_invalid_concurrent)
 
     // Pre-fill with 20 items
     for (int i = 0; i < 20; i++) {
-        pool.checkin(i);
+        pool.checkin(std::move(i));
     }
 
     std::atomic_int           valid_count {0};

@@ -47,6 +47,39 @@
 namespace siddiqsoft
 {
     /**
+     * @brief RAII wrapper for checked-out resources
+     *
+     * Automatically returns the resource to the pool when destroyed.
+     * Provides pointer-like access to the underlying resource via operator* and operator&.
+     *
+     * @details
+     * - Holds the resource and a callback function to return it to the pool
+     * - Destructor automatically invokes the callback to ensure resource is returned
+     * - Supports pointer-like access patterns for convenience
+     */
+    template <typename T>
+        requires std::move_constructible<T>
+    struct resource_wrap
+    {
+        /// @brief The actual resource being wrapped
+        T rsrc {};
+
+        /// @brief Callback function to return the resource to the pool
+        std::function<void(T&&)> putbackCallback {};
+
+        /// @brief Provides dereference access to the underlying resource
+        auto operator*() -> T& { return rsrc; }
+
+             operator T() { return rsrc; }
+
+        /// @brief Destructor automatically returns the resource to the pool
+        ~resource_wrap()
+        {
+            if (putbackCallback) putbackCallback(std::move(rsrc));
+        }
+    };
+
+    /**
      * @brief Implements a thread-safe resource pool for managing reusable objects.
      *
      * This template class provides efficient resource pooling for managing expensive resources
@@ -64,7 +97,7 @@ namespace siddiqsoft
      * @note
      * - There is clear overhead when using the resource_wrap. The main benefit is from using
      *   the resource within a long-lived scope and not having to worry about cleanup.
-     * 
+     *
      * @tparam T The storage element type (e.g., shared_ptr or unique_ptr)
      *         The only requirement is that the underlying object is move-constructible
      * @tparam InitCapacity Initial capacity hint for the pool (default: 1 byte)
@@ -74,7 +107,7 @@ namespace siddiqsoft
      * @code
      * // Create a pool of database connections
      * siddiqsoft::resource_pool<std::shared_ptr<DbConnection>> pool;
-     * 
+     *
      * // Check out a resource
      * auto wrapped = pool.checkout();
      * wrapped->executeQuery("SELECT * FROM users");
@@ -88,54 +121,24 @@ namespace siddiqsoft
     private:
         /// @brief Internal deque storing the pooled resources
         std::deque<T> _pool {};
-        
+
         /// @brief Mutex protecting access to the resource pool
         /// Uses a regular mutex (not recursive) since no recursive locking is needed
-        std::mutex    _poolLock {};
-
-    public:
-        /**
-         * @brief RAII wrapper for checked-out resources
-         *
-         * Automatically returns the resource to the pool when destroyed.
-         * Provides pointer-like access to the underlying resource via operator* and operator&.
-         * 
-         * @details
-         * - Holds the resource and a callback function to return it to the pool
-         * - Destructor automatically invokes the callback to ensure resource is returned
-         * - Supports pointer-like access patterns for convenience
-         */
-        struct resource_wrap
-        {
-            /// @brief The actual resource being wrapped
-            T                        rsrc;
-            
-            /// @brief Callback function to return the resource to the pool
-            std::function<void(T&&)> putbackCallback;
-
-            /// @brief Provides reference access to the underlying resource
-            auto                     operator&() -> T& { return rsrc; }
-            
-            /// @brief Provides dereference access to the underlying resource
-            auto                     operator*() -> T& { return rsrc; }
-
-            /// @brief Destructor automatically returns the resource to the pool
-            ~resource_wrap() { putbackCallback(std::move(rsrc)); }
-        };
+        std::mutex _poolLock {};
 
     public:
         /// @brief Default constructor
-        resource_pool()                               = default;
-        
+        resource_pool() = default;
+
         /// @brief Copy constructor (deleted - pools are not copyable)
-        resource_pool(resource_pool&)                 = delete;
-        
+        resource_pool(resource_pool&) = delete;
+
         /// @brief Move constructor (defaulted)
-        resource_pool(resource_pool&& src)            = default;
-        
+        resource_pool(resource_pool&& src) = default;
+
         /// @brief Copy assignment operator (deleted - pools are not copyable)
-        resource_pool& operator=(resource_pool&)      = delete;
-        
+        resource_pool& operator=(resource_pool&) = delete;
+
         /// @brief Move assignment operator (defaulted)
         resource_pool& operator=(resource_pool&& src) = default;
 
@@ -147,7 +150,7 @@ namespace siddiqsoft
          *
          * Removes all resources from the pool. Thread-safe operation.
          * Safe to call on an empty pool.
-         * 
+         *
          * @note All resources are destroyed when cleared
          */
         void clear()
@@ -187,7 +190,7 @@ namespace siddiqsoft
          *       returned to the pool even if an exception occurs in the calling code
          * @note The [[nodiscard]] attribute encourages proper usage of the returned wrapper
          */
-        [[nodiscard]] resource_wrap checkout() /* throw() */
+        [[nodiscard]] resource_wrap<T> checkout() /* throw() */
         {
             std::scoped_lock<std::mutex> l(_poolLock);
 
@@ -202,24 +205,11 @@ namespace siddiqsoft
                     this->checkin(std::move(rsrc));
                 };
 
-                return resource_wrap {std::move(_pool.front()), autoReturnResource};
+                return resource_wrap<T> {std::move(_pool.front()), autoReturnResource};
             }
 
             throw std::runtime_error("Empty pool; add something first!");
         }
-
-        /*
-        [[nodiscard]] T checkout_old()
-        {
-            std::scoped_lock<std::mutex> l(_poolLock);
-            if (!_pool.empty()) {
-                RunOnEnd roe([&]() { _pool.pop_front(); });
-                return std::move(_pool.front());
-            }
-
-            throw std::runtime_error("Empty pool; add something first!");
-        }
-        */
 
         /**
          * @brief Return a resource to the pool

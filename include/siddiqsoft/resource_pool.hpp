@@ -103,7 +103,7 @@ namespace siddiqsoft
         T rsrc {};
 
         /// @brief Debug identifier for tracking (used in DEBUG builds)
-        uint64_t debugId {std::rand()};
+        uint64_t debugId {static_cast<uint64_t>(std::rand())};
 
         /// @brief Callback function to return the resource to the pool
         /// Called by destructor when resource is valid

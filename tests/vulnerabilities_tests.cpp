@@ -177,8 +177,8 @@ TEST(vuln_roundrobin_pool, even_distribution)
     std::this_thread::sleep_for(std::chrono::seconds(2));
 
     // Verify even distribution (within 10% tolerance)
-    uint expected_per_worker = ITEMS / WORKERS;
-    uint tolerance           = expected_per_worker / 10;
+    uint32_t expected_per_worker = ITEMS / WORKERS;
+    uint32_t tolerance           = expected_per_worker / 10;
 
     for (int i = 0; i < WORKERS; i++) {
         // Each worker should have approximately ITEMS/WORKERS items

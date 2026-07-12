@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>asynchrony: asynchrony - Add Asynchrony to Your C++ Applications</title>
+<title>asynchrony: Asynchrony - Add Asynchrony to Your C++ Applications</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -91,12 +91,13 @@ $(function(){initNavTree('index.html','',''); });
 </div>
 
 <div><div class="header">
-  <div class="headertitle"><div class="title">asynchrony - Add Asynchrony to Your C++ Applications </div></div>
+  <div class="headertitle"><div class="title">Asynchrony - Add Asynchrony to Your C++ Applications </div></div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><h1 class="doxsection"><a class="anchor" id="intro"></a>
 Introduction</h1>
-<p>The <b>asynchrony</b> library provides a set of modern C++20 utilities for building asynchronous and multi-threaded applications. It leverages standard library features like <span class="tt">std::jthread</span>, <span class="tt">std::semaphore</span>, <span class="tt">std::deque</span>, and <span class="tt">std::concepts</span> to provide clean, efficient abstractions for common asynchronous patterns.</p>
+<p>The <b>asynchrony</b> library provides a comprehensive set of modern C++20 utilities for building asynchronous and multi-threaded applications. It leverages standard library features like <span class="tt">std::jthread</span>, <span class="tt">std::semaphore</span>, <span class="tt">std::deque</span>, and <span class="tt">std::concepts</span> to provide clean, efficient abstractions for common asynchronous patterns.</p>
+<p>This header-only library eliminates boilerplate synchronization code and provides a simple, type-safe API for concurrent programming scenarios.</p>
 <h1 class="doxsection"><a class="anchor" id="features"></a>
 Key Features</h1>
 <ul>
@@ -108,6 +109,8 @@ Key Features</h1>
 <li><b>Modern C++20</b>: Uses only standard library features (no external dependencies for core functionality)</li>
 <li><b>Type-Safe</b>: Leverages C++ concepts for compile-time type checking</li>
 <li><b>Exception Safe</b>: Handles exceptions gracefully without thread termination</li>
+<li><b>Move Semantics</b>: Efficient resource transfer with perfect forwarding</li>
+<li><b>RAII</b>: Proper resource management through constructors and destructors</li>
 </ul>
 <h1 class="doxsection"><a class="anchor" id="requirements"></a>
 Requirements</h1>
@@ -120,32 +123,36 @@ Requirements</h1>
 </ul>
 </li>
 <li><b>Platform Support</b>: Windows, Linux, macOS</li>
+<li><b>Optional</b>: nlohmann/json for JSON serialization support</li>
 </ul>
 <h1 class="doxsection"><a class="anchor" id="components"></a>
 Main Components</h1>
 <table class="markdownTable">
 <tr class="markdownTableHead">
-<th class="markdownTableHeadNone">Component  </th><th class="markdownTableHeadNone">Description  </th></tr>
+<th class="markdownTableHeadNone">Component  </th><th class="markdownTableHeadNone">Description  </th><th class="markdownTableHeadNone">Use Case  </th></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><a class="el" href="structsiddiqsoft_1_1simple__worker.html" title="siddiqsoft::simple_worker">siddiqsoft::simple_worker</a>  </td><td class="markdownTableBodyNone">Single-threaded asynchronous processor  </td></tr>
+<td class="markdownTableBodyNone"><a class="el" href="structsiddiqsoft_1_1simple__worker.html" title="siddiqsoft::simple_worker">siddiqsoft::simple_worker</a>  </td><td class="markdownTableBodyNone">Single-threaded asynchronous processor  </td><td class="markdownTableBodyNone">Sequential async processing  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><a class="el" href="structsiddiqsoft_1_1simple__pool.html" title="siddiqsoft::simple_pool">siddiqsoft::simple_pool</a>  </td><td class="markdownTableBodyNone">Multi-threaded pool with shared queue  </td></tr>
+<td class="markdownTableBodyNone"><a class="el" href="structsiddiqsoft_1_1simple__pool.html" title="siddiqsoft::simple_pool">siddiqsoft::simple_pool</a>  </td><td class="markdownTableBodyNone">Multi-threaded pool with shared queue  </td><td class="markdownTableBodyNone">Parallel processing with load balancing  </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><a class="el" href="structsiddiqsoft_1_1roundrobin__pool.html" title="siddiqsoft::roundrobin_pool">siddiqsoft::roundrobin_pool</a>  </td><td class="markdownTableBodyNone">Multi-threaded pool with per-thread queues  </td></tr>
+<td class="markdownTableBodyNone"><a class="el" href="structsiddiqsoft_1_1roundrobin__pool.html" title="siddiqsoft::roundrobin_pool">siddiqsoft::roundrobin_pool</a>  </td><td class="markdownTableBodyNone">Multi-threaded pool with per-thread queues  </td><td class="markdownTableBodyNone">Parallel processing with reduced contention  </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><a class="el" href="structsiddiqsoft_1_1periodic__worker.html" title="siddiqsoft::periodic_worker">siddiqsoft::periodic_worker</a>  </td><td class="markdownTableBodyNone">Periodic task executor  </td></tr>
+<td class="markdownTableBodyNone"><a class="el" href="structsiddiqsoft_1_1periodic__worker.html" title="siddiqsoft::periodic_worker">siddiqsoft::periodic_worker</a>  </td><td class="markdownTableBodyNone">Periodic task executor  </td><td class="markdownTableBodyNone">Scheduled/recurring tasks  </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><a class="el" href="classsiddiqsoft_1_1resource__pool.html" title="siddiqsoft::resource_pool">siddiqsoft::resource_pool</a>  </td><td class="markdownTableBodyNone">Resource pool manager  </td></tr>
+<td class="markdownTableBodyNone"><a class="el" href="classsiddiqsoft_1_1resource__pool.html" title="siddiqsoft::resource_pool">siddiqsoft::resource_pool</a>  </td><td class="markdownTableBodyNone">Resource pool manager  </td><td class="markdownTableBodyNone">Connection/resource management  </td></tr>
 </table>
 <h1 class="doxsection"><a class="anchor" id="quickstart"></a>
 Quick Start</h1>
 <h2 class="doxsection"><a class="anchor" id="simple_worker_example"></a>
 Simple Worker Example</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;siddiqsoft/simple_worker.hpp&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
 <div class="line"> </div>
 <div class="line"><span class="keyword">struct </span>MyTask {</div>
 <div class="line">    std::string data;</div>
-<div class="line">    <span class="keywordtype">void</span> operator()() { <span class="comment">/* process data */</span> }</div>
+<div class="line">    <span class="keywordtype">void</span> operator()() { </div>
+<div class="line">        std::cout &lt;&lt; <span class="stringliteral">&quot;Processing: &quot;</span> &lt;&lt; data &lt;&lt; std::endl;</div>
+<div class="line">    }</div>
 <div class="line">};</div>
 <div class="line"> </div>
 <div class="line"><span class="keywordtype">int</span> main() {</div>
@@ -155,14 +162,14 @@ Simple Worker Example</h2>
 <div class="line"> </div>
 <div class="line">    <span class="comment">// Queue work</span></div>
 <div class="line">    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 100; ++i) {</div>
-<div class="line">        worker.<a class="code hl_function" href="structsiddiqsoft_1_1simple__worker.html#ac481c01cb965a4827b1ad009089c840f">queue</a>(MyTask{<span class="stringliteral">&quot;data-&quot;</span> + std::to_string(i)});</div>
+<div class="line">        worker.<a class="code hl_function" href="structsiddiqsoft_1_1simple__worker.html#a703d2d3aee550eeda92b8405fe1f5ed8">queue</a>(MyTask{<span class="stringliteral">&quot;data-&quot;</span> + std::to_string(i)});</div>
 <div class="line">    }</div>
 <div class="line"> </div>
 <div class="line">    std::this_thread::sleep_for(std::chrono::seconds(1));</div>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
-<div class="ttc" id="astructsiddiqsoft_1_1simple__worker_html"><div class="ttname"><a href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a></div><div class="ttdoc">Implements a simple queue + semaphore driven asynchronous processor.</div><div class="ttdef"><b>Definition</b> <a href="simple__worker_8hpp_source.html#l00072">simple_worker.hpp:73</a></div></div>
-<div class="ttc" id="astructsiddiqsoft_1_1simple__worker_html_ac481c01cb965a4827b1ad009089c840f"><div class="ttname"><a href="structsiddiqsoft_1_1simple__worker.html#ac481c01cb965a4827b1ad009089c840f">siddiqsoft::simple_worker::queue</a></div><div class="ttdeci">void queue(T &amp;&amp;item)</div><div class="ttdoc">Queue item into this worker thread&#39;s deque.</div><div class="ttdef"><b>Definition</b> <a href="simple__worker_8hpp_source.html#l00152">simple_worker.hpp:152</a></div></div>
+<div class="ttc" id="astructsiddiqsoft_1_1simple__worker_html"><div class="ttname"><a href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a></div><div class="ttdef"><b>Definition</b> <a href="simple__worker_8hpp_source.html#l00105">simple_worker.hpp:106</a></div></div>
+<div class="ttc" id="astructsiddiqsoft_1_1simple__worker_html_a703d2d3aee550eeda92b8405fe1f5ed8"><div class="ttname"><a href="structsiddiqsoft_1_1simple__worker.html#a703d2d3aee550eeda92b8405fe1f5ed8">siddiqsoft::simple_worker::queue</a></div><div class="ttdeci">void queue(T &amp;&amp;item) noexcept(false)</div><div class="ttdoc">Queue a work item for processing.</div><div class="ttdef"><b>Definition</b> <a href="simple__worker_8hpp_source.html#l00235">simple_worker.hpp:235</a></div></div>
 </div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="pool_example"></a>
 Thread Pool Example</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">#include &quot;siddiqsoft/simple_pool.hpp&quot;</span></div>
@@ -180,8 +187,70 @@ Thread Pool Example</h2>
 <div class="line">    std::this_thread::sleep_for(std::chrono::seconds(2));</div>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
-<div class="ttc" id="astructsiddiqsoft_1_1simple__pool_html"><div class="ttname"><a href="structsiddiqsoft_1_1simple__pool.html">siddiqsoft::simple_pool</a></div><div class="ttdoc">Implements a single deque based vector of jthreads. All threads wait on the next available item via s...</div><div class="ttdef"><b>Definition</b> <a href="simple__pool_8hpp_source.html#l00059">simple_pool.hpp:60</a></div></div>
-<div class="ttc" id="astructsiddiqsoft_1_1simple__pool_html_a54617da3643cfe09913ebe5647f172c7"><div class="ttname"><a href="structsiddiqsoft_1_1simple__pool.html#a54617da3643cfe09913ebe5647f172c7">siddiqsoft::simple_pool::queue</a></div><div class="ttdeci">void queue(T &amp;&amp;item)</div><div class="ttdoc">Queue item into the deque (takes &quot;ownership&quot; of the item).</div><div class="ttdef"><b>Definition</b> <a href="simple__pool_8hpp_source.html#l00121">simple_pool.hpp:121</a></div></div>
+<div class="ttc" id="astructsiddiqsoft_1_1simple__pool_html"><div class="ttname"><a href="structsiddiqsoft_1_1simple__pool.html">siddiqsoft::simple_pool</a></div><div class="ttdef"><b>Definition</b> <a href="simple__pool_8hpp_source.html#l00091">simple_pool.hpp:92</a></div></div>
+<div class="ttc" id="astructsiddiqsoft_1_1simple__pool_html_a54617da3643cfe09913ebe5647f172c7"><div class="ttname"><a href="structsiddiqsoft_1_1simple__pool.html#a54617da3643cfe09913ebe5647f172c7">siddiqsoft::simple_pool::queue</a></div><div class="ttdeci">void queue(T &amp;&amp;item)</div><div class="ttdoc">Queue a work item for processing.</div><div class="ttdef"><b>Definition</b> <a href="simple__pool_8hpp_source.html#l00202">simple_pool.hpp:202</a></div></div>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="roundrobin_example"></a>
+Round-Robin Pool Example</h2>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;siddiqsoft/roundrobin_pool.hpp&quot;</span></div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">int</span> main() {</div>
+<div class="line">    <a class="code hl_struct" href="structsiddiqsoft_1_1roundrobin__pool.html">siddiqsoft::roundrobin_pool&lt;MyTask&gt;</a> pool{[](<span class="keyword">auto</span>&amp; task) {</div>
+<div class="line">        task();  <span class="comment">// Execute the task</span></div>
+<div class="line">    }};</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Queue work with round-robin distribution</span></div>
+<div class="line">    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 1000; ++i) {</div>
+<div class="line">        pool.<a class="code hl_function" href="structsiddiqsoft_1_1roundrobin__pool.html#a4dbf3b9eb31bd74eb1dc446a40dbf2c8">queue</a>(MyTask{<span class="stringliteral">&quot;data-&quot;</span> + std::to_string(i)});</div>
+<div class="line">    }</div>
+<div class="line"> </div>
+<div class="line">    std::this_thread::sleep_for(std::chrono::seconds(2));</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+<div class="ttc" id="astructsiddiqsoft_1_1roundrobin__pool_html"><div class="ttname"><a href="structsiddiqsoft_1_1roundrobin__pool.html">siddiqsoft::roundrobin_pool</a></div><div class="ttdef"><b>Definition</b> <a href="roundrobin__pool_8hpp_source.html#l00090">roundrobin_pool.hpp:91</a></div></div>
+<div class="ttc" id="astructsiddiqsoft_1_1roundrobin__pool_html_a4dbf3b9eb31bd74eb1dc446a40dbf2c8"><div class="ttname"><a href="structsiddiqsoft_1_1roundrobin__pool.html#a4dbf3b9eb31bd74eb1dc446a40dbf2c8">siddiqsoft::roundrobin_pool::queue</a></div><div class="ttdeci">void queue(T &amp;&amp;item)</div><div class="ttdoc">Queue a work item for processing.</div><div class="ttdef"><b>Definition</b> <a href="roundrobin__pool_8hpp_source.html#l00158">roundrobin_pool.hpp:158</a></div></div>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="periodic_example"></a>
+Periodic Worker Example</h2>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;siddiqsoft/periodic_worker.hpp&quot;</span></div>
+<div class="line"><span class="preprocessor">#include &lt;iostream&gt;</span></div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">int</span> main() {</div>
+<div class="line">    <a class="code hl_struct" href="structsiddiqsoft_1_1periodic__worker.html">siddiqsoft::periodic_worker&lt;&gt;</a> timer{</div>
+<div class="line">        []() {</div>
+<div class="line">            std::cout &lt;&lt; <span class="stringliteral">&quot;Tick!&quot;</span> &lt;&lt; std::endl;</div>
+<div class="line">        },</div>
+<div class="line">        std::chrono::milliseconds(500)</div>
+<div class="line">    };</div>
+<div class="line"> </div>
+<div class="line">    std::this_thread::sleep_for(std::chrono::seconds(5));</div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+<div class="ttc" id="astructsiddiqsoft_1_1periodic__worker_html"><div class="ttname"><a href="structsiddiqsoft_1_1periodic__worker.html">siddiqsoft::periodic_worker</a></div><div class="ttdef"><b>Definition</b> <a href="periodic__worker_8hpp_source.html#l00102">periodic_worker.hpp:103</a></div></div>
+</div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="resource_example"></a>
+Resource Pool Example</h2>
+<div class="fragment"><div class="line"><span class="preprocessor">#include &quot;siddiqsoft/resource_pool.hpp&quot;</span></div>
+<div class="line"> </div>
+<div class="line"><span class="keyword">class </span>Connection {</div>
+<div class="line"><span class="keyword">public</span>:</div>
+<div class="line">    <span class="keywordtype">void</span> query(<span class="keyword">const</span> std::string&amp; sql) { <span class="comment">/* ... */</span> }</div>
+<div class="line">};</div>
+<div class="line"> </div>
+<div class="line"><span class="keywordtype">int</span> main() {</div>
+<div class="line">    <a class="code hl_class" href="classsiddiqsoft_1_1resource__pool.html">siddiqsoft::resource_pool&lt;Connection&gt;</a> pool;</div>
+<div class="line">    </div>
+<div class="line">    <span class="comment">// Populate pool</span></div>
+<div class="line">    <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i) {</div>
+<div class="line">        pool.checkin(Connection{});</div>
+<div class="line">    }</div>
+<div class="line"> </div>
+<div class="line">    <span class="comment">// Use resources</span></div>
+<div class="line">    <span class="keyword">auto</span> conn = pool.<a class="code hl_function" href="classsiddiqsoft_1_1resource__pool.html#a2eb2e2b5f122680c54aeb8b3508375c9">checkout</a>();</div>
+<div class="line">    conn.query(<span class="stringliteral">&quot;SELECT * FROM users&quot;</span>);</div>
+<div class="line">    pool.checkin(std::move(conn));</div>
+<div class="line"> </div>
+<div class="line">    <span class="keywordflow">return</span> 0;</div>
+<div class="line">}</div>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html">siddiqsoft::resource_pool</a></div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00318">resource_pool.hpp:319</a></div></div>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_a2eb2e2b5f122680c54aeb8b3508375c9"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#a2eb2e2b5f122680c54aeb8b3508375c9">siddiqsoft::resource_pool::checkout</a></div><div class="ttdeci">auto checkout() -&gt; resource_wrap&lt; T &gt;</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00424">resource_pool.hpp:424</a></div></div>
 </div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="design"></a>
 Design Principles</h1>
 <ul>
@@ -190,14 +259,78 @@ Design Principles</h1>
 <li><b>Exception Safety</b>: Exceptions in callbacks are caught and logged, not propagated</li>
 <li><b>Thread Safety</b>: Internal synchronization using mutexes and semaphores</li>
 <li><b>Zero-Copy</b>: Minimal data copying through perfect forwarding</li>
+<li><b>Type Safety</b>: C++20 concepts ensure compile-time type checking</li>
+<li><b>Simplicity</b>: Clean API that hides complexity of thread management</li>
 </ul>
+<h1 class="doxsection"><a class="anchor" id="comparison"></a>
+Comparison with Alternatives</h1>
+<table class="markdownTable">
+<tr class="markdownTableHead">
+<th class="markdownTableHeadNone">Feature  </th><th class="markdownTableHeadNone">asynchrony  </th><th class="markdownTableHeadNone">std::thread  </th><th class="markdownTableHeadNone">std::async  </th><th class="markdownTableHeadNone">Boost.Asio  </th></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Header-only  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">C++20  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Thread pool  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✓  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">Periodic tasks  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✓  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Resource pool  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone">No dependencies  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone">Simple API  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td></tr>
+</table>
+<h1 class="doxsection"><a class="anchor" id="documentation"></a>
+Documentation</h1>
+<ul>
+<li><a class="el" href="getting_started.html" title="Getting Started">Getting Started</a> - Installation and setup guide</li>
+<li><a class="el" href="usage_guide.html" title="Usage Guide">Usage Guide</a> - Detailed usage examples and best practices</li>
+<li><a class="el" href="examples.html" title="Examples">Examples</a> - Real-world code examples</li>
+<li><a class="el" href="quick_reference.html" title="Quick Reference">Quick Reference</a> - Quick lookup guide for common tasks</li>
+<li>api - Complete API reference</li>
+</ul>
+<h1 class="doxsection"><a class="anchor" id="installation"></a>
+Installation</h1>
+<h3 class="doxsection"><a class="anchor" id="autotoc_md67"></a>
+Using CMake (Recommended)</h3>
+<div class="fragment"><div class="line">include(FetchContent)</div>
+<div class="line">FetchContent_Declare(asynchrony</div>
+<div class="line">    GIT_REPOSITORY https://github.com/SiddiqSoft/asynchrony.git</div>
+<div class="line">    GIT_TAG main</div>
+<div class="line">)</div>
+<div class="line">FetchContent_MakeAvailable(asynchrony)</div>
+<div class="line"> </div>
+<div class="line">target_link_libraries(your_target PRIVATE asynchrony::asynchrony)</div>
+</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md68"></a>
+Using NuGet (Windows)</h3>
+<div class="fragment"><div class="line">nuget install SiddiqSoft.asynchrony</div>
+</div><!-- fragment --><h3 class="doxsection"><a class="anchor" id="autotoc_md69"></a>
+Manual Integration</h3>
+<p>Simply include the header files from <span class="tt">include/siddiqsoft/</span> in your project.</p>
 <h1 class="doxsection"><a class="anchor" id="license"></a>
 License</h1>
 <p>BSD 3-Clause License - See LICENSE file for details</p>
 <h1 class="doxsection"><a class="anchor" id="copyright"></a>
 Copyright</h1>
 <p>Copyright (c) 2021, Siddiq Software LLC. All rights reserved.</p>
-<dl class="section see"><dt>See also</dt><dd><a href="https://github.com/SiddiqSoft/asynchrony">https://github.com/SiddiqSoft/asynchrony</a> </dd></dl>
+<h1 class="doxsection"><a class="anchor" id="links"></a>
+Links</h1>
+<ul>
+<li><b>GitHub</b>: <a href="https://github.com/SiddiqSoft/asynchrony">https://github.com/SiddiqSoft/asynchrony</a></li>
+<li><b>NuGet</b>: <a href="https://www.nuget.org/packages/SiddiqSoft.asynchrony/">https://www.nuget.org/packages/SiddiqSoft.asynchrony/</a></li>
+<li><b>Documentation</b>: <a href="https://siddiqsoft.github.io/asynchrony/">https://siddiqsoft.github.io/asynchrony/</a></li>
+</ul>
+<h1 class="doxsection"><a class="anchor" id="see_also"></a>
+See Also</h1>
+<ul>
+<li><a class="el" href="getting_started.html" title="Getting Started">Getting Started</a></li>
+<li><a class="el" href="usage_guide.html" title="Usage Guide">Usage Guide</a></li>
+<li><a class="el" href="examples.html" title="Examples">Examples</a></li>
+<li><a class="el" href="quick_reference.html" title="Quick Reference">Quick Reference</a></li>
+<li>api </li>
+</ul>
 </div></div><!-- PageDoc -->
 <a href="doxygen_crawl.html"></a>
 </div><!-- contents -->
@@ -206,7 +339,7 @@ Copyright</h1>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
+    <li class="footer">Generated on <span class="timestamp"></span> for asynchrony by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>
 </body>

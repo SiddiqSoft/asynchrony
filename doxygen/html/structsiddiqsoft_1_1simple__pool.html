@@ -94,46 +94,40 @@ $(function(){initNavTree('structsiddiqsoft_1_1simple__pool.html','','structsiddi
   <div class="headertitle"><div class="title">siddiqsoft::simple_pool&lt; T, N &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>Implements a single deque based vector of jthreads. All threads wait on the next available item via semaphore and invoke the callback on the next item from the deque. Items in the deque are lock-accessed.  
- <a href="#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="simple__pool_8hpp_source.html">/opt/azure-agent/_work/14/s/include/siddiqsoft/simple_pool.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abee0250e77e77bc6f4cb8b19f221ce37" id="r_abee0250e77e77bc6f4cb8b19f221ce37"><td class="memItemLeft"><a id="abee0250e77e77bc6f4cb8b19f221ce37" name="abee0250e77e77bc6f4cb8b19f221ce37"></a>
 &#160;</td><td class="memItemRight"><b>simple_pool</b> (simple_pool &amp;&amp;)=delete</td></tr>
+<tr class="memdesc:abee0250e77e77bc6f4cb8b19f221ce37"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move constructor (deleted - pools are not movable). <br /></td></tr>
 <tr class="memitem:adc795592d3af5dc1889d055f21140968" id="r_adc795592d3af5dc1889d055f21140968"><td class="memItemLeft"><a id="adc795592d3af5dc1889d055f21140968" name="adc795592d3af5dc1889d055f21140968"></a>
-simple_pool &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (simple_pool &amp;&amp;)=delete</td></tr>
+<a class="el" href="#abee0250e77e77bc6f4cb8b19f221ce37">simple_pool</a> &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (<a class="el" href="#abee0250e77e77bc6f4cb8b19f221ce37">simple_pool</a> &amp;&amp;)=delete</td></tr>
+<tr class="memdesc:adc795592d3af5dc1889d055f21140968"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move assignment operator (deleted - pools are not movable). <br /></td></tr>
 <tr class="memitem:a98398ba635bebab4afde7a5bccae16bf" id="r_a98398ba635bebab4afde7a5bccae16bf"><td class="memItemLeft"><a id="a98398ba635bebab4afde7a5bccae16bf" name="a98398ba635bebab4afde7a5bccae16bf"></a>
 &#160;</td><td class="memItemRight"><b>simple_pool</b> (simple_pool &amp;)=delete</td></tr>
+<tr class="memdesc:a98398ba635bebab4afde7a5bccae16bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy constructor (deleted - pools are not copyable). <br /></td></tr>
 <tr class="memitem:a22342baef55637d8d904cd180ab4f5e2" id="r_a22342baef55637d8d904cd180ab4f5e2"><td class="memItemLeft"><a id="a22342baef55637d8d904cd180ab4f5e2" name="a22342baef55637d8d904cd180ab4f5e2"></a>
-simple_pool &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (simple_pool &amp;)=delete</td></tr>
+<a class="el" href="#abee0250e77e77bc6f4cb8b19f221ce37">simple_pool</a> &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (<a class="el" href="#abee0250e77e77bc6f4cb8b19f221ce37">simple_pool</a> &amp;)=delete</td></tr>
+<tr class="memdesc:a22342baef55637d8d904cd180ab4f5e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy assignment operator (deleted - pools are not copyable). <br /></td></tr>
 <tr class="memitem:add4cb9b1c5a2ba4e52c5f54835295b06" id="r_add4cb9b1c5a2ba4e52c5f54835295b06"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#add4cb9b1c5a2ba4e52c5f54835295b06">~simple_pool</a> ()</td></tr>
-<tr class="memdesc:add4cb9b1c5a2ba4e52c5f54835295b06"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor.  <br /></td></tr>
+<tr class="memdesc:add4cb9b1c5a2ba4e52c5f54835295b06"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor - gracefully shuts down all worker threads.  <br /></td></tr>
 <tr class="memitem:a971b4f64849d52928caab07ce5758090" id="r_a971b4f64849d52928caab07ce5758090"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a971b4f64849d52928caab07ce5758090">simple_pool</a> (std::function&lt; void(T &amp;&amp;)&gt; c)</td></tr>
-<tr class="memdesc:a971b4f64849d52928caab07ce5758090"><td class="mdescLeft">&#160;</td><td class="mdescRight">Contructs a threadpool with N threads with the given callback/worker function.  <br /></td></tr>
+<tr class="memdesc:a971b4f64849d52928caab07ce5758090"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a thread pool with N worker threads.  <br /></td></tr>
 <tr class="memitem:a54617da3643cfe09913ebe5647f172c7" id="r_a54617da3643cfe09913ebe5647f172c7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a54617da3643cfe09913ebe5647f172c7">queue</a> (T &amp;&amp;item)</td></tr>
-<tr class="memdesc:a54617da3643cfe09913ebe5647f172c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue item into the deque (takes "ownership" of the item).  <br /></td></tr>
+<tr class="memdesc:a54617da3643cfe09913ebe5647f172c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue a work item for processing.  <br /></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-static-attribs" class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:a5e5e0558bae8a9739f6578d8d11fe0ef" id="r_a5e5e0558bae8a9739f6578d8d11fe0ef"><td class="memItemLeft">static constexpr std::chrono::milliseconds&#160;</td><td class="memItemRight"><a class="el" href="#a5e5e0558bae8a9739f6578d8d11fe0ef">DEFAULT_WAIT_FOR_NEXT_ITEM_MS</a> {1500}</td></tr>
+<tr class="memdesc:a5e5e0558bae8a9739f6578d8d11fe0ef"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default wait interval for threads waiting on the semaphore.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename T, uint16_t N = 0&gt;<br />
 requires std::is_move_constructible_v&lt;T&gt;<br />
-struct siddiqsoft::simple_pool&lt; T, N &gt;</div><p>Implements a single deque based vector of jthreads. All threads wait on the next available item via semaphore and invoke the callback on the next item from the deque. Items in the deque are lock-accessed. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">T</td><td>Your datatype #tparam N Number of threads in the pool. Leave it to 0 to use the value returned by std::thread::hardware_concurrency() </td></tr>
-  </table>
-  </dd>
+struct siddiqsoft::simple_pool&lt; T, N &gt;</div><dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2simple_pool_8hpp-example.html#_a0">/opt/azure-agent/_work/18/s/include/siddiqsoft/simple_pool.hpp</a>.</dd>
 </dl>
-<dl class="section remark"><dt>Remarks</dt><dd>The number of threads in the pool is determined by the nature of your "work". If you're spending time against db then you might wish to use more threads as individual queries might take time and hog the thread. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00059">59</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00091">91</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="add4cb9b1c5a2ba4e52c5f54835295b06" name="add4cb9b1c5a2ba4e52c5f54835295b06"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#add4cb9b1c5a2ba4e52c5f54835295b06">&#9670;&#160;</a></span>~simple_pool()</h2>
@@ -147,7 +141,7 @@ template&lt;typename T, uint16_t N = 0&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structsiddiqsoft_1_1simple__pool.html">siddiqsoft::simple_pool</a>&lt; T, N &gt;::~simple_pool </td>
+          <td class="memname"><a class="el" href="structsiddiqsoft_1_1simple__pool.html">siddiqsoft::simple_pool</a>&lt; T, N &gt;::~<a class="el" href="#abee0250e77e77bc6f4cb8b19f221ce37">simple_pool</a> </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -160,10 +154,17 @@ template&lt;typename T, uint16_t N = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Destructor. </p>
-<dl class="section remark"><dt>Remarks</dt><dd>We need to make sure that the signal wait interval is reduced to 0ms to allow our threads (which are waiting on the signal) to be stopped. </dd></dl>
+<p>Destructor - gracefully shuts down all worker threads. </p>
+<p>Performs the following cleanup steps:</p><ol type="1">
+<li>Releases the semaphore to wake up waiting threads</li>
+<li>Requests all threads to stop via stop_token</li>
+<li>Joins all threads to ensure clean shutdown</li>
+</ol>
+<dl class="section remark"><dt>Remarks</dt><dd>This saves approximately 100ms of idle time compared to letting threads timeout naturally on the default 1500ms wait interval </dd></dl>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2simple_pool_8hpp-example.html#a5">/opt/azure-agent/_work/18/s/include/siddiqsoft/simple_pool.hpp</a>.</dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00072">72</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00120">120</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
 
 </div>
 </div>
@@ -192,15 +193,23 @@ template&lt;typename T, uint16_t N = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Contructs a threadpool with N threads with the given callback/worker function. </p>
+<p>Constructs a thread pool with N worker threads. </p>
+<p>Creates a pool of worker threads that process items from a shared queue. Each thread runs a loop that waits for items and invokes the callback.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">c</td><td>The worker function. </td></tr>
+    <tr><td class="paramname">c</td><td>The worker callback function with signature void(T&amp;&amp;) Called for each item dequeued from the pool</td></tr>
   </table>
   </dd>
 </dl>
+<ul>
+<li>Reserves space for all threads upfront to avoid relocations</li>
+<li>Creates N threads (or hardware_concurrency() if N is 0)</li>
+<li>Each thread waits on the semaphore with a 1500ms timeout</li>
+<li>Exceptions in callbacks are caught and logged to stderr</li>
+<li>Threads continue running until stop_requested() returns true </li>
+</ul>
 
-<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00086">86</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00152">152</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
 
 </div>
 </div>
@@ -230,15 +239,25 @@ template&lt;typename T, uint16_t N = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Queue item into the deque (takes "ownership" of the item). </p>
+<p>Queue a work item for processing. </p>
+<p>Adds an item to the shared queue and signals a waiting thread to process it. This method is thread-safe and can be called from multiple threads concurrently.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">item</td><td>Item to queue must be move'd </td></tr>
+    <tr><td class="paramname">item</td><td>The work item to queue (must be move-constructible) Ownership is transferred to the pool</td></tr>
   </table>
   </dd>
 </dl>
+<ul>
+<li>Uses perfect forwarding to minimize copies</li>
+<li>Increments the queue counter with release semantics for visibility</li>
+<li>Releases the semaphore to wake up a waiting thread</li>
+<li>Thread-safe for concurrent calls from multiple producers</li>
+</ul>
+<dl class="section note"><dt>Note</dt><dd>The item is moved into the internal queue, so the original is no longer valid </dd></dl>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2simple_pool_8hpp-example.html#a1">/opt/azure-agent/_work/18/s/include/siddiqsoft/simple_pool.hpp</a>.</dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00121">121</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00202">202</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
 
 </div>
 </div>
@@ -265,7 +284,11 @@ template&lt;typename T, uint16_t N = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00061">61</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
+<p>Default wait interval for threads waiting on the semaphore. </p>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2simple_pool_8hpp-example.html#a2">/opt/azure-agent/_work/18/s/include/siddiqsoft/simple_pool.hpp</a>.</dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="simple__pool_8hpp_source.html#l00094">94</a> of file <a class="el" href="simple__pool_8hpp_source.html">simple_pool.hpp</a>.</p>
 
 </div>
 </div>
@@ -286,7 +309,7 @@ template&lt;typename T, uint16_t N = 0&gt; </div>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><b>siddiqsoft</b></li><li class="navelem"><a href="structsiddiqsoft_1_1simple__pool.html">simple_pool</a></li>
-    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
+    <li class="footer">Generated on <span class="timestamp"></span> for asynchrony by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>
 </body>

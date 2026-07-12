@@ -94,47 +94,59 @@ $(function(){initNavTree('structsiddiqsoft_1_1simple__worker.html','','structsid
   <div class="headertitle"><div class="title">siddiqsoft::simple_worker&lt; T, Pri &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>Implements a simple queue + semaphore driven asynchronous processor.  
- <a href="#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="simple__worker_8hpp_source.html">/opt/azure-agent/_work/14/s/include/siddiqsoft/simple_worker.hpp</a>&gt;</code></p>
+<div id="dynsection-0" onclick="return dynsection.toggleVisibility(this)" class="dynheader closed" style="cursor:pointer;"><span class="dynarrow"><span class="arrowhead closed"></span></span>Collaboration diagram for siddiqsoft::simple_worker&lt; T, Pri &gt;:</div>
+<div id="dynsection-0-summary" class="dynsummary" style="display:block;">
+</div>
+<div id="dynsection-0-content" class="dyncontent" style="display:none;">
+<div class="center"><img src="structsiddiqsoft_1_1simple__worker__coll__graph.png" border="0" usemap="#asiddiqsoft_1_1simple__worker_3_01T_00_01Pri_01_4_coll__map" loading="lazy" alt="Collaboration graph"/></div>
+<map name="asiddiqsoft_1_1simple__worker_3_01T_00_01Pri_01_4_coll__map" id="asiddiqsoft_1_1simple__worker_3_01T_00_01Pri_01_4_coll__map">
+<area shape="rect" title=" " alt="" coords="11,152,175,213"/>
+<area shape="rect" title=" " alt="" coords="5,5,181,41"/>
+<area shape="poly" title=" " alt="" coords="95,55,96,152,90,151,91,58"/>
+</map>
+<center><span class="legend">[<a target="top" href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:abb7ac085dbe3665044798c8b4ed332bf" id="r_abb7ac085dbe3665044798c8b4ed332bf"><td class="memItemLeft"><a id="abb7ac085dbe3665044798c8b4ed332bf" name="abb7ac085dbe3665044798c8b4ed332bf"></a>
 &#160;</td><td class="memItemRight"><b>simple_worker</b> (const simple_worker &amp;)=delete</td></tr>
+<tr class="memdesc:abb7ac085dbe3665044798c8b4ed332bf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy constructor (deleted - workers are not copyable). <br /></td></tr>
 <tr class="memitem:a1bbe94e2108eb0cecdb400a2b76f6710" id="r_a1bbe94e2108eb0cecdb400a2b76f6710"><td class="memItemLeft"><a id="a1bbe94e2108eb0cecdb400a2b76f6710" name="a1bbe94e2108eb0cecdb400a2b76f6710"></a>
-simple_worker &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (const simple_worker &amp;)=delete</td></tr>
-<tr class="memitem:a34f81df0f3c6c32ecaf399b6bf9eaabb" id="r_a34f81df0f3c6c32ecaf399b6bf9eaabb"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a34f81df0f3c6c32ecaf399b6bf9eaabb">forceCleanupTerminate</a> (const std::source_location &amp;sl=std::source_location::current())</td></tr>
-<tr class="memdesc:a34f81df0f3c6c32ecaf399b6bf9eaabb"><td class="mdescLeft">&#160;</td><td class="mdescRight">This method is to be used by the user when they shutdown their application. This is best used for cases when the callback cannot be guaranteed to be "clean" or respect the stop_token.  <br /></td></tr>
+<a class="el" href="#abb7ac085dbe3665044798c8b4ed332bf">simple_worker</a> &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (const <a class="el" href="#abb7ac085dbe3665044798c8b4ed332bf">simple_worker</a> &amp;)=delete</td></tr>
+<tr class="memdesc:a1bbe94e2108eb0cecdb400a2b76f6710"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy assignment operator (deleted - workers are not copyable). <br /></td></tr>
+<tr class="memitem:af6b0595bf6cce3a4ae3b98fcdaa1629f" id="r_af6b0595bf6cce3a4ae3b98fcdaa1629f"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#af6b0595bf6cce3a4ae3b98fcdaa1629f">~simple_worker</a> ()</td></tr>
+<tr class="memdesc:af6b0595bf6cce3a4ae3b98fcdaa1629f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor - gracefully shuts down the worker thread.  <br /></td></tr>
+<tr class="memitem:a95693391faa57b56f6642532dafe3722" id="r_a95693391faa57b56f6642532dafe3722"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a95693391faa57b56f6642532dafe3722">shutdown</a> (std::chrono::milliseconds timeout=DEFAULT_SHUTDOWN_DRAIN_MS)</td></tr>
 <tr class="memitem:a43c53311ef0c6042c3ba32b7997f7878" id="r_a43c53311ef0c6042c3ba32b7997f7878"><td class="memItemLeft"><a id="a43c53311ef0c6042c3ba32b7997f7878" name="a43c53311ef0c6042c3ba32b7997f7878"></a>
 &#160;</td><td class="memItemRight"><b>simple_worker</b> (simple_worker &amp;&amp;)=delete</td></tr>
-<tr class="memdesc:a43c53311ef0c6042c3ba32b7997f7878"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move constructor and assignment are disallowed to avoid transferring thread ownership. <br /></td></tr>
+<tr class="memdesc:a43c53311ef0c6042c3ba32b7997f7878"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move constructor (deleted - workers are not movable). <br /></td></tr>
 <tr class="memitem:a1944a13ba9e929ca88e2e4383e018877" id="r_a1944a13ba9e929ca88e2e4383e018877"><td class="memItemLeft"><a id="a1944a13ba9e929ca88e2e4383e018877" name="a1944a13ba9e929ca88e2e4383e018877"></a>
-simple_worker &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (simple_worker &amp;&amp;)=delete</td></tr>
+<a class="el" href="#abb7ac085dbe3665044798c8b4ed332bf">simple_worker</a> &amp;&#160;</td><td class="memItemRight"><b>operator=</b> (<a class="el" href="#abb7ac085dbe3665044798c8b4ed332bf">simple_worker</a> &amp;&amp;)=delete</td></tr>
+<tr class="memdesc:a1944a13ba9e929ca88e2e4383e018877"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move assignment operator (deleted - workers are not movable). <br /></td></tr>
 <tr class="memitem:a6d219c68438f66008fd00d0fa6885e20" id="r_a6d219c68438f66008fd00d0fa6885e20"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a6d219c68438f66008fd00d0fa6885e20">simple_worker</a> (std::function&lt; void(T &amp;&amp;)&gt; c)</td></tr>
-<tr class="memdesc:a6d219c68438f66008fd00d0fa6885e20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor requires the callback for the thread.  <br /></td></tr>
-<tr class="memitem:ac481c01cb965a4827b1ad009089c840f" id="r_ac481c01cb965a4827b1ad009089c840f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac481c01cb965a4827b1ad009089c840f">queue</a> (T &amp;&amp;item)</td></tr>
-<tr class="memdesc:ac481c01cb965a4827b1ad009089c840f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue item into this worker thread's deque.  <br /></td></tr>
+<tr class="memdesc:a6d219c68438f66008fd00d0fa6885e20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a worker thread with the given callback.  <br /></td></tr>
+<tr class="memitem:a703d2d3aee550eeda92b8405fe1f5ed8" id="r_a703d2d3aee550eeda92b8405fe1f5ed8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a703d2d3aee550eeda92b8405fe1f5ed8">queue</a> (T &amp;&amp;item) noexcept(false)</td></tr>
+<tr class="memdesc:a703d2d3aee550eeda92b8405fe1f5ed8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue a work item for processing.  <br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-attribs" class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
+Public Attributes</h2></td></tr>
+<tr class="memitem:aabd1f2060aee6f0f656667e719b7edec" id="r_aabd1f2060aee6f0f656667e719b7edec"><td class="memItemLeft">std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight"><a class="el" href="#aabd1f2060aee6f0f656667e719b7edec">accepting_items</a> {true}</td></tr>
+<tr class="memitem:a5c7075520a48a2138ddedd2c675c63f7" id="r_a5c7075520a48a2138ddedd2c675c63f7"><td class="memItemLeft">std::atomic&lt; bool &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a5c7075520a48a2138ddedd2c675c63f7">shutdown_initiated</a> {false}</td></tr>
+<tr class="memitem:a08b3df06dac975fef1e1b22b3ab47912" id="r_a08b3df06dac975fef1e1b22b3ab47912"><td class="memItemLeft">std::once_flag&#160;</td><td class="memItemRight"><a class="el" href="#a08b3df06dac975fef1e1b22b3ab47912">shutdown_invoked</a></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-static-attribs" class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:ab38094454d269fa170c23fc0517a611f" id="r_ab38094454d269fa170c23fc0517a611f"><td class="memItemLeft">static constexpr std::chrono::milliseconds&#160;</td><td class="memItemRight"><a class="el" href="#ab38094454d269fa170c23fc0517a611f">DEFAULT_WAIT_FOR_NEXT_ITEM_MS</a> {1500}</td></tr>
+<tr class="memdesc:ab38094454d269fa170c23fc0517a611f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default wait interval for the worker thread waiting on items.  <br /></td></tr>
+<tr class="memitem:adf1bd4a8656e316e505d5734eb14b6e6" id="r_adf1bd4a8656e316e505d5734eb14b6e6"><td class="memItemLeft">static constexpr std::chrono::milliseconds&#160;</td><td class="memItemRight"><a class="el" href="#adf1bd4a8656e316e505d5734eb14b6e6">DEFAULT_SHUTDOWN_DRAIN_MS</a> {1000}</td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename T, int Pri = 0&gt;<br />
 requires ((Pri &gt;= -10) &amp;&amp; (Pri &lt;= 10)) &amp;&amp; std::move_constructible&lt;T&gt;<br />
-struct siddiqsoft::simple_worker&lt; T, Pri &gt;</div><p>Implements a simple queue + semaphore driven asynchronous processor. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">T</td><td>The data type for this processor </td></tr>
-    <tr><td class="paramname">Pri</td><td>Optional thread priority level. 0=Normal </td></tr>
-  </table>
-  </dd>
+struct siddiqsoft::simple_worker&lt; T, Pri &gt;</div><dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2simple_worker_8hpp-example.html#_a0">/opt/azure-agent/_work/18/s/include/siddiqsoft/simple_worker.hpp</a>.</dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00072">72</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00105">105</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="af6b0595bf6cce3a4ae3b98fcdaa1629f" name="af6b0595bf6cce3a4ae3b98fcdaa1629f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af6b0595bf6cce3a4ae3b98fcdaa1629f">&#9670;&#160;</a></span>~simple_worker()</h2>
@@ -148,7 +160,7 @@ template&lt;typename T, int Pri = 0&gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a>&lt; T, Pri &gt;::~simple_worker </td>
+          <td class="memname"><a class="el" href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a>&lt; T, Pri &gt;::~<a class="el" href="#abb7ac085dbe3665044798c8b4ed332bf">simple_worker</a> </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -161,7 +173,17 @@ template&lt;typename T, int Pri = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00081">81</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+<p>Destructor - gracefully shuts down the worker thread. </p>
+<p>Performs the following cleanup steps:</p><ol type="1">
+<li>Waits for the queue to be empty (all pending items processed)</li>
+<li>Requests the worker thread to stop via stop_token</li>
+<li>Joins the thread to ensure clean shutdown</li>
+</ol>
+<dl class="section remark"><dt>Remarks</dt><dd>In debug builds, logs the queue state before shutdown </dd></dl>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2simple_worker_8hpp-example.html#a5">/opt/azure-agent/_work/18/s/include/siddiqsoft/simple_worker.hpp</a>.</dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00133">133</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
 
 </div>
 </div>
@@ -190,52 +212,28 @@ template&lt;typename T, int Pri = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Constructor requires the callback for the thread. </p>
+<p>Constructs a worker thread with the given callback. </p>
+<p>Creates a single worker thread that will process items from the queue using the provided callback function.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">c</td><td>The callback which accepts the type T as reference and performs action. </td></tr>
+    <tr><td class="paramname">c</td><td>The worker callback function with signature void(T&amp;&amp;) Called for each item dequeued from the worker's queue</td></tr>
   </table>
   </dd>
 </dl>
+<ul>
+<li>The callback is stored and invoked by the worker thread</li>
+<li>The worker thread starts immediately and waits for items</li>
+<li>Thread priority is set if Pri != 0 (Windows only)</li>
+<li>Exceptions in callbacks are caught and logged to prevent thread termination </li>
+</ul>
 
-<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00144">144</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00212">212</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
 
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
-<a id="a34f81df0f3c6c32ecaf399b6bf9eaabb" name="a34f81df0f3c6c32ecaf399b6bf9eaabb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a34f81df0f3c6c32ecaf399b6bf9eaabb">&#9670;&#160;</a></span>forceCleanupTerminate()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;typename T, int Pri = 0&gt; </div>
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void <a class="el" href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a>&lt; T, Pri &gt;::forceCleanupTerminate </td>
-          <td>(</td>
-          <td class="paramtype">const std::source_location &amp;</td>          <td class="paramname"><span class="paramname"><em>sl</em></span><span class="paramdefsep"> = </span><span class="paramdefval">std::source_location::current()</span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>This method is to be used by the user when they shutdown their application. This is best used for cases when the callback cannot be guaranteed to be "clean" or respect the stop_token. </p>
-
-<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00102">102</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
-
-</div>
-</div>
-<a id="ac481c01cb965a4827b1ad009089c840f" name="ac481c01cb965a4827b1ad009089c840f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac481c01cb965a4827b1ad009089c840f">&#9670;&#160;</a></span>queue()</h2>
+<a id="a703d2d3aee550eeda92b8405fe1f5ed8" name="a703d2d3aee550eeda92b8405fe1f5ed8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a703d2d3aee550eeda92b8405fe1f5ed8">&#9670;&#160;</a></span>queue()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -259,19 +257,102 @@ template&lt;typename T, int Pri = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Queue item into this worker thread's deque. </p>
+<p>Queue a work item for processing. </p>
+<p>Adds an item to the worker's queue for asynchronous processing. The worker thread will process this item as soon as it becomes available.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">item</td><td>This is move'd into the internal deque </td></tr>
+    <tr><td class="paramname">item</td><td>The work item to queue (must be move-constructible) Ownership is transferred to the worker</td></tr>
   </table>
   </dd>
 </dl>
+<ul>
+<li>Thread-safe operation</li>
+<li>Increments the queue counter with release semantics</li>
+<li>Item is moved into the internal queue</li>
+<li>Worker thread is signaled to wake up if waiting</li>
+</ul>
+<dl class="section note"><dt>Note</dt><dd>The item is moved into the queue, so the original is no longer valid </dd></dl>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2simple_worker_8hpp-example.html#a1">/opt/azure-agent/_work/18/s/include/siddiqsoft/simple_worker.hpp</a>.</dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00152">152</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00235">235</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a95693391faa57b56f6642532dafe3722" name="a95693391faa57b56f6642532dafe3722"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95693391faa57b56f6642532dafe3722">&#9670;&#160;</a></span>shutdown()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, int Pri = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a>&lt; T, Pri &gt;::shutdown </td>
+          <td>(</td>
+          <td class="paramtype">std::chrono::milliseconds</td>          <td class="paramname"><span class="paramname"><em>timeout</em></span><span class="paramdefsep"> = </span><span class="paramdefval">DEFAULT_SHUTDOWN_DRAIN_MS</span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00142">142</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
 
 </div>
 </div>
 <a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
+<a id="aabd1f2060aee6f0f656667e719b7edec" name="aabd1f2060aee6f0f656667e719b7edec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aabd1f2060aee6f0f656667e719b7edec">&#9670;&#160;</a></span>accepting_items</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, int Pri = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;bool&gt; <a class="el" href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a>&lt; T, Pri &gt;::accepting_items {true}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00107">107</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+
+</div>
+</div>
+<a id="adf1bd4a8656e316e505d5734eb14b6e6" name="adf1bd4a8656e316e505d5734eb14b6e6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf1bd4a8656e316e505d5734eb14b6e6">&#9670;&#160;</a></span>DEFAULT_SHUTDOWN_DRAIN_MS</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, int Pri = 0&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">std::chrono::milliseconds <a class="el" href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a>&lt; T, Pri &gt;::DEFAULT_SHUTDOWN_DRAIN_MS {1000}</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel static">static</span><span class="mlabel constexpr">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00113">113</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+
+</div>
+</div>
 <a id="ab38094454d269fa170c23fc0517a611f" name="ab38094454d269fa170c23fc0517a611f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab38094454d269fa170c23fc0517a611f">&#9670;&#160;</a></span>DEFAULT_WAIT_FOR_NEXT_ITEM_MS</h2>
 
@@ -294,7 +375,47 @@ template&lt;typename T, int Pri = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00074">74</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+<p>Default wait interval for the worker thread waiting on items. </p>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2simple_worker_8hpp-example.html#a2">/opt/azure-agent/_work/18/s/include/siddiqsoft/simple_worker.hpp</a>.</dd>
+</dl>
+
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00112">112</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a5c7075520a48a2138ddedd2c675c63f7" name="a5c7075520a48a2138ddedd2c675c63f7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c7075520a48a2138ddedd2c675c63f7">&#9670;&#160;</a></span>shutdown_initiated</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, int Pri = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::atomic&lt;bool&gt; <a class="el" href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a>&lt; T, Pri &gt;::shutdown_initiated {false}</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00108">108</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
+
+</div>
+</div>
+<a id="a08b3df06dac975fef1e1b22b3ab47912" name="a08b3df06dac975fef1e1b22b3ab47912"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08b3df06dac975fef1e1b22b3ab47912">&#9670;&#160;</a></span>shutdown_invoked</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename T, int Pri = 0&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">std::once_flag <a class="el" href="structsiddiqsoft_1_1simple__worker.html">siddiqsoft::simple_worker</a>&lt; T, Pri &gt;::shutdown_invoked</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="simple__worker_8hpp_source.html#l00109">109</a> of file <a class="el" href="simple__worker_8hpp_source.html">simple_worker.hpp</a>.</p>
 
 </div>
 </div>
@@ -315,7 +436,7 @@ template&lt;typename T, int Pri = 0&gt; </div>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><b>siddiqsoft</b></li><li class="navelem"><a href="structsiddiqsoft_1_1simple__worker.html">simple_worker</a></li>
-    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
+    <li class="footer">Generated on <span class="timestamp"></span> for asynchrony by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>
 </body>

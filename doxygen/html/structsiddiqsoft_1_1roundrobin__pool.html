@@ -94,40 +94,33 @@ $(function(){initNavTree('structsiddiqsoft_1_1roundrobin__pool.html','','structs
   <div class="headertitle"><div class="title">siddiqsoft::roundrobin_pool&lt; T, N &gt; Struct Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
-
-<p>Implements a lock-free round robin work allocation into vector of <a class="el" href="structsiddiqsoft_1_1simple__worker.html" title="Implements a simple queue + semaphore driven asynchronous processor.">simple_worker&lt;T&gt;</a>.  
- <a href="#details">More...</a></p>
-
-<p><code>#include &lt;<a class="el" href="roundrobin__pool_8hpp_source.html">/opt/azure-agent/_work/14/s/include/siddiqsoft/roundrobin_pool.hpp</a>&gt;</code></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ada0325a6d61da0913204a7e4786d5ad6" id="r_ada0325a6d61da0913204a7e4786d5ad6"><td class="memItemLeft"><a id="ada0325a6d61da0913204a7e4786d5ad6" name="ada0325a6d61da0913204a7e4786d5ad6"></a>
 &#160;</td><td class="memItemRight"><b>roundrobin_pool</b> (roundrobin_pool &amp;&amp;)=delete</td></tr>
+<tr class="memdesc:ada0325a6d61da0913204a7e4786d5ad6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move constructor (deleted - pools are not movable). <br /></td></tr>
 <tr class="memitem:a86097434cb291c00756374b8aea6f4bc" id="r_a86097434cb291c00756374b8aea6f4bc"><td class="memItemLeft"><a id="a86097434cb291c00756374b8aea6f4bc" name="a86097434cb291c00756374b8aea6f4bc"></a>
-auto&#160;</td><td class="memItemRight"><b>operator=</b> (roundrobin_pool &amp;&amp;)=delete</td></tr>
+auto&#160;</td><td class="memItemRight"><b>operator=</b> (<a class="el" href="#ada0325a6d61da0913204a7e4786d5ad6">roundrobin_pool</a> &amp;&amp;)=delete</td></tr>
+<tr class="memdesc:a86097434cb291c00756374b8aea6f4bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Move assignment operator (deleted - pools are not movable). <br /></td></tr>
 <tr class="memitem:a37c8187ff48daf8a5c6609409b96261f" id="r_a37c8187ff48daf8a5c6609409b96261f"><td class="memItemLeft"><a id="a37c8187ff48daf8a5c6609409b96261f" name="a37c8187ff48daf8a5c6609409b96261f"></a>
 &#160;</td><td class="memItemRight"><b>roundrobin_pool</b> (roundrobin_pool &amp;)=delete</td></tr>
+<tr class="memdesc:a37c8187ff48daf8a5c6609409b96261f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy constructor (deleted - pools are not copyable). <br /></td></tr>
 <tr class="memitem:a9b69de85da7c2a7d9aaf9fa074a19b9d" id="r_a9b69de85da7c2a7d9aaf9fa074a19b9d"><td class="memItemLeft"><a id="a9b69de85da7c2a7d9aaf9fa074a19b9d" name="a9b69de85da7c2a7d9aaf9fa074a19b9d"></a>
-auto&#160;</td><td class="memItemRight"><b>operator=</b> (roundrobin_pool &amp;)=delete</td></tr>
+auto&#160;</td><td class="memItemRight"><b>operator=</b> (<a class="el" href="#ada0325a6d61da0913204a7e4786d5ad6">roundrobin_pool</a> &amp;)=delete</td></tr>
+<tr class="memdesc:a9b69de85da7c2a7d9aaf9fa074a19b9d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy assignment operator (deleted - pools are not copyable). <br /></td></tr>
 <tr class="memitem:a00d3146025ecfa8823259540c332fcf5" id="r_a00d3146025ecfa8823259540c332fcf5"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a00d3146025ecfa8823259540c332fcf5">roundrobin_pool</a> (std::function&lt; void(T &amp;&amp;)&gt; c)</td></tr>
-<tr class="memdesc:a00d3146025ecfa8823259540c332fcf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Consturcts a deque of <a class="el" href="structsiddiqsoft_1_1simple__worker.html" title="Implements a simple queue + semaphore driven asynchronous processor.">simple_worker&lt;T&gt;</a> with the given callback.  <br /></td></tr>
+<tr class="memdesc:a00d3146025ecfa8823259540c332fcf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructs a round-robin thread pool.  <br /></td></tr>
 <tr class="memitem:a4dbf3b9eb31bd74eb1dc446a40dbf2c8" id="r_a4dbf3b9eb31bd74eb1dc446a40dbf2c8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a4dbf3b9eb31bd74eb1dc446a40dbf2c8">queue</a> (T &amp;&amp;item)</td></tr>
-<tr class="memdesc:a4dbf3b9eb31bd74eb1dc446a40dbf2c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue item into one of the thread's queue.  <br /></td></tr>
+<tr class="memdesc:a4dbf3b9eb31bd74eb1dc446a40dbf2c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Queue a work item for processing.  <br /></td></tr>
 </table>
 <a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;typename T, uint16_t N = 0&gt;<br />
 requires std::is_move_constructible_v&lt;T&gt;<br />
-struct siddiqsoft::roundrobin_pool&lt; T, N &gt;</div><p>Implements a lock-free round robin work allocation into vector of <a class="el" href="structsiddiqsoft_1_1simple__worker.html" title="Implements a simple queue + semaphore driven asynchronous processor.">simple_worker&lt;T&gt;</a>. </p>
-<dl class="tparams"><dt>Template Parameters</dt><dd>
-  <table class="tparams">
-    <tr><td class="paramname">T</td><td>Your datatype #tparam N Number of threads in the pool. Leave it to 0 to use the value returned by std::thread::hardware_concurrency() </td></tr>
-  </table>
-  </dd>
+struct siddiqsoft::roundrobin_pool&lt; T, N &gt;</div><dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2roundrobin_pool_8hpp-example.html#_a0">/opt/azure-agent/_work/18/s/include/siddiqsoft/roundrobin_pool.hpp</a>.</dd>
 </dl>
-<dl class="section remark"><dt>Remarks</dt><dd>The number of threads in the pool is determined by the nature of your "work". If you're spending time against db then you might wish to use more threads as individual queries might take time and hog the thread. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="roundrobin__pool_8hpp_source.html#l00053">53</a> of file <a class="el" href="roundrobin__pool_8hpp_source.html">roundrobin_pool.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="roundrobin__pool_8hpp_source.html#l00090">90</a> of file <a class="el" href="roundrobin__pool_8hpp_source.html">roundrobin_pool.hpp</a>.</p>
 </div><a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a00d3146025ecfa8823259540c332fcf5" name="a00d3146025ecfa8823259540c332fcf5"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a00d3146025ecfa8823259540c332fcf5">&#9670;&#160;</a></span>roundrobin_pool()</h2>
@@ -154,15 +147,23 @@ template&lt;typename T, uint16_t N = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Consturcts a deque of <a class="el" href="structsiddiqsoft_1_1simple__worker.html" title="Implements a simple queue + semaphore driven asynchronous processor.">simple_worker&lt;T&gt;</a> with the given callback. </p>
+<p>Constructs a round-robin thread pool. </p>
+<p>Creates a deque of <a class="el" href="structsiddiqsoft_1_1simple__worker.html">simple_worker&lt;T&gt;</a> instances that will process work items using the provided callback function. Work items are distributed across workers using a round-robin algorithm.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">c</td><td>Callback worker function </td></tr>
+    <tr><td class="paramname">c</td><td>The worker callback function with signature void(T&amp;&amp;) Called for each item dequeued from a worker's queue</td></tr>
   </table>
   </dd>
 </dl>
+<ul>
+<li>Creates N worker threads (or hardware_concurrency() if N is 0)</li>
+<li>Uses std::deque to store workers (no relocation on growth)</li>
+<li>Caches the worker count for efficient round-robin calculation</li>
+<li>Each worker is initialized with the same callback</li>
+<li>Workers start immediately and wait for items </li>
+</ul>
 
-<p class="definition">Definition at line <a class="el" href="roundrobin__pool_8hpp_source.html#l00064">64</a> of file <a class="el" href="roundrobin__pool_8hpp_source.html">roundrobin_pool.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="roundrobin__pool_8hpp_source.html#l00123">123</a> of file <a class="el" href="roundrobin__pool_8hpp_source.html">roundrobin_pool.hpp</a>.</p>
 
 </div>
 </div>
@@ -192,16 +193,33 @@ template&lt;typename T, uint16_t N = 0&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Queue item into one of the thread's queue. </p>
+<p>Queue a work item for processing. </p>
+<p>Adds an item to one of the worker's queues using round-robin distribution. The choice of worker is determined by the queue counter modulo the number of workers.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">item</td><td>The item must be std::move'd </td></tr>
+    <tr><td class="paramname">item</td><td>The work item to queue (must be move-constructible) Ownership is transferred to the selected worker</td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section remark"><dt>Remarks</dt><dd>The choice of the roundrobin might mean that if one thread is blocked then the rest of the items for this queue would be blocked. The cost of the % is cheaper than the cost it takes to pay for locks. The round-robin approach ensures that the underlying deque isn't being pop'd and push'd by multiple threads as there is only one consumer for that deque (one per thread) while we may have any number of producers. </dd></dl>
+<ul>
+<li>Uses atomic fetch_add to get a unique index for each queued item</li>
+<li>Calculates worker index as (counter % workersSize)</li>
+<li>Distributes items evenly across all workers</li>
+<li>Thread-safe for concurrent calls from multiple producers</li>
+<li>Each worker only pops from its own queue (single consumer per queue)</li>
+</ul>
+<dl class="section remark"><dt>Remarks</dt><dd>The round-robin approach ensures:<ul>
+<li>Balanced load distribution across workers</li>
+<li>No lock contention on the shared queue (each worker has its own)</li>
+<li>Cost of modulo is cheaper than lock acquisition</li>
+<li>If one worker is blocked, others continue processing</li>
+</ul>
+</dd></dl>
+<dl class="section note"><dt>Note</dt><dd>The item is moved into the selected worker's queue </dd></dl>
+<dl class="section examples"><dt>Examples</dt><dd><a class="el" href="_2opt_2azure-agent_2_work_218_2s_2include_2siddiqsoft_2roundrobin_pool_8hpp-example.html#a1">/opt/azure-agent/_work/18/s/include/siddiqsoft/roundrobin_pool.hpp</a>.</dd>
+</dl>
 
-<p class="definition">Definition at line <a class="el" href="roundrobin__pool_8hpp_source.html#l00082">82</a> of file <a class="el" href="roundrobin__pool_8hpp_source.html">roundrobin_pool.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="roundrobin__pool_8hpp_source.html#l00158">158</a> of file <a class="el" href="roundrobin__pool_8hpp_source.html">roundrobin_pool.hpp</a>.</p>
 
 </div>
 </div>
@@ -222,7 +240,7 @@ template&lt;typename T, uint16_t N = 0&gt; </div>
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><b>siddiqsoft</b></li><li class="navelem"><a href="structsiddiqsoft_1_1roundrobin__pool.html">roundrobin_pool</a></li>
-    <li class="footer">Generated by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
+    <li class="footer">Generated on <span class="timestamp"></span> for asynchrony by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.16.1 </li>
   </ul>
 </div>
 </body>

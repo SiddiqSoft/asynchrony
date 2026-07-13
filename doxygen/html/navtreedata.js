@@ -26,64 +26,64 @@ var NAVTREE =
 [
   [ "asynchrony", "index.html", [
     [ "Asynchrony - Add Asynchrony to Your C++ Applications", "index.html", "index" ],
-    [ "API Reference", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html", [
-      [ "Table of Contents", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md1", null ],
-      [ "simple_worker", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md3", [
-        [ "Template Parameters", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md4", null ],
-        [ "Constructor", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md5", null ],
-        [ "Methods", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md6", [
-          [ "queue", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md7", null ],
-          [ "size", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md8", null ],
-          [ "addCounter", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md9", null ],
-          [ "removeCounter", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md10", null ]
+    [ "API Reference", "md_docs_2pages_2api.html", [
+      [ "Table of Contents", "md_docs_2pages_2api.html#autotoc_md1", null ],
+      [ "simple_worker", "md_docs_2pages_2api.html#autotoc_md3", [
+        [ "Template Parameters", "md_docs_2pages_2api.html#autotoc_md4", null ],
+        [ "Constructor", "md_docs_2pages_2api.html#autotoc_md5", null ],
+        [ "Methods", "md_docs_2pages_2api.html#autotoc_md6", [
+          [ "queue", "md_docs_2pages_2api.html#autotoc_md7", null ],
+          [ "size", "md_docs_2pages_2api.html#autotoc_md8", null ],
+          [ "addCounter", "md_docs_2pages_2api.html#autotoc_md9", null ],
+          [ "removeCounter", "md_docs_2pages_2api.html#autotoc_md10", null ]
         ] ]
       ] ],
-      [ "simple_pool", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md12", [
-        [ "Template Parameters", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md13", null ],
-        [ "Constructor", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md14", null ],
-        [ "Methods", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md15", [
-          [ "queue", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md16", null ],
-          [ "size", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md17", null ],
-          [ "addCounter", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md18", null ],
-          [ "removeCounter", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md19", null ]
+      [ "simple_pool", "md_docs_2pages_2api.html#autotoc_md12", [
+        [ "Template Parameters", "md_docs_2pages_2api.html#autotoc_md13", null ],
+        [ "Constructor", "md_docs_2pages_2api.html#autotoc_md14", null ],
+        [ "Methods", "md_docs_2pages_2api.html#autotoc_md15", [
+          [ "queue", "md_docs_2pages_2api.html#autotoc_md16", null ],
+          [ "size", "md_docs_2pages_2api.html#autotoc_md17", null ],
+          [ "addCounter", "md_docs_2pages_2api.html#autotoc_md18", null ],
+          [ "removeCounter", "md_docs_2pages_2api.html#autotoc_md19", null ]
         ] ]
       ] ],
-      [ "roundrobin_pool", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md21", [
-        [ "Template Parameters", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md22", null ],
-        [ "Constructor", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md23", null ],
-        [ "Methods", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md24", [
-          [ "queue", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md25", null ],
-          [ "size", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md26", null ],
-          [ "addCounter", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md27", null ],
-          [ "removeCounter", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md28", null ]
+      [ "roundrobin_pool", "md_docs_2pages_2api.html#autotoc_md21", [
+        [ "Template Parameters", "md_docs_2pages_2api.html#autotoc_md22", null ],
+        [ "Constructor", "md_docs_2pages_2api.html#autotoc_md23", null ],
+        [ "Methods", "md_docs_2pages_2api.html#autotoc_md24", [
+          [ "queue", "md_docs_2pages_2api.html#autotoc_md25", null ],
+          [ "size", "md_docs_2pages_2api.html#autotoc_md26", null ],
+          [ "addCounter", "md_docs_2pages_2api.html#autotoc_md27", null ],
+          [ "removeCounter", "md_docs_2pages_2api.html#autotoc_md28", null ]
         ] ]
       ] ],
-      [ "periodic_worker", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md30", [
-        [ "Template Parameters", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md31", null ],
-        [ "Constructor", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md32", null ],
-        [ "Behavior", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md33", null ]
+      [ "periodic_worker", "md_docs_2pages_2api.html#autotoc_md30", [
+        [ "Template Parameters", "md_docs_2pages_2api.html#autotoc_md31", null ],
+        [ "Constructor", "md_docs_2pages_2api.html#autotoc_md32", null ],
+        [ "Behavior", "md_docs_2pages_2api.html#autotoc_md33", null ]
       ] ],
-      [ "resource_pool", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md35", [
-        [ "Template Parameters", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md36", null ],
-        [ "Methods", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md37", [
-          [ "size", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md38", null ],
-          [ "checkout", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md39", null ],
-          [ "checkin", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md40", null ],
-          [ "clear", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md41", null ]
+      [ "resource_pool", "md_docs_2pages_2api.html#autotoc_md35", [
+        [ "Template Parameters", "md_docs_2pages_2api.html#autotoc_md36", null ],
+        [ "Methods", "md_docs_2pages_2api.html#autotoc_md37", [
+          [ "size", "md_docs_2pages_2api.html#autotoc_md38", null ],
+          [ "checkout", "md_docs_2pages_2api.html#autotoc_md39", null ],
+          [ "checkin", "md_docs_2pages_2api.html#autotoc_md40", null ],
+          [ "clear", "md_docs_2pages_2api.html#autotoc_md41", null ]
         ] ]
       ] ],
-      [ "Common Patterns", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md43", [
-        [ "Exception Handling", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md44", null ],
-        [ "Lifetime Management", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md45", null ],
-        [ "Resource Pooling Pattern", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md46", null ]
+      [ "Common Patterns", "md_docs_2pages_2api.html#autotoc_md43", [
+        [ "Exception Handling", "md_docs_2pages_2api.html#autotoc_md44", null ],
+        [ "Lifetime Management", "md_docs_2pages_2api.html#autotoc_md45", null ],
+        [ "Resource Pooling Pattern", "md_docs_2pages_2api.html#autotoc_md46", null ]
       ] ],
-      [ "Thread Safety", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md48", null ],
-      [ "Performance Considerations", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md50", [
-        [ "simple_worker vs simple_pool", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md51", null ],
-        [ "roundrobin_pool", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md52", null ],
-        [ "periodic_worker", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md53", null ]
+      [ "Thread Safety", "md_docs_2pages_2api.html#autotoc_md48", null ],
+      [ "Performance Considerations", "md_docs_2pages_2api.html#autotoc_md50", [
+        [ "simple_worker vs simple_pool", "md_docs_2pages_2api.html#autotoc_md51", null ],
+        [ "roundrobin_pool", "md_docs_2pages_2api.html#autotoc_md52", null ],
+        [ "periodic_worker", "md_docs_2pages_2api.html#autotoc_md53", null ]
       ] ],
-      [ "Concepts", "md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md55", null ]
+      [ "Concepts", "md_docs_2pages_2api.html#autotoc_md55", null ]
     ] ],
     [ "Examples", "examples.html", [
       [ "HTTP Request Queue", "examples.html#ex_http_requests", null ],

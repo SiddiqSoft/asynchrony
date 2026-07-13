@@ -8,7 +8,7 @@ var searchData=
   ['example_203_3a_20periodic_20monitoring_5',['Example 3: Periodic Monitoring',['../quick_reference.html#autotoc_md82',1,'']]],
   ['example_204_3a_20resource_20management_6',['Example 4: Resource Management',['../quick_reference.html#autotoc_md83',1,'']]],
   ['examples_7',['Examples',['../examples.html',1,'Examples'],['../quick_reference.html#qr_examples',1,'Quick Examples']]],
-  ['exception_20handling_8',['Exception Handling',['../md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md44',1,'Exception Handling'],['../security.html#exception_handling',1,'Exception Handling'],['../usage_guide.html#sw_exception',1,'Exception Handling']]],
+  ['exception_20handling_8',['Exception Handling',['../md_docs_2pages_2api.html#autotoc_md44',1,'Exception Handling'],['../security.html#exception_handling',1,'Exception Handling'],['../usage_guide.html#sw_exception',1,'Exception Handling']]],
   ['exception_20safety_9',['Exception Safety',['../security.html#autotoc_md86',1,'']]],
   ['exceptions_10',['Exceptions',['../security.html#autotoc_md96',1,'Callback Exceptions'],['../security.html#autotoc_md97',1,'Critical Exceptions']]],
   ['exhaustion_20prevention_11',['Resource Exhaustion Prevention',['../security.html#resource_exhaustion',1,'']]]

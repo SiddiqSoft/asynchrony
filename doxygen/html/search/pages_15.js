@@ -1,8 +1,8 @@
 var searchData=
 [
   ['recommended_0',['Recommended',['../getting_started.html#autotoc_md56',1,'Using CMake (Recommended)'],['../index.html#autotoc_md67',1,'Using CMake (Recommended)']]],
-  ['reference_1',['Reference',['../md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html',1,'API Reference'],['../quick_reference.html',1,'Quick Reference']]],
-  ['removecounter_2',['removeCounter',['../md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md10',1,'removeCounter'],['../md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md19',1,'removeCounter'],['../md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md28',1,'removeCounter']]],
+  ['reference_1',['Reference',['../md_docs_2pages_2api.html',1,'API Reference'],['../quick_reference.html',1,'Quick Reference']]],
+  ['removecounter_2',['removeCounter',['../md_docs_2pages_2api.html#autotoc_md10',1,'removeCounter'],['../md_docs_2pages_2api.html#autotoc_md19',1,'removeCounter'],['../md_docs_2pages_2api.html#autotoc_md28',1,'removeCounter']]],
   ['reporting_3',['Vulnerability Reporting',['../security.html#vulnerability_reporting',1,'']]],
   ['request_20queue_4',['HTTP Request Queue',['../examples.html#ex_http_requests',1,'']]],
   ['requirements_5',['Requirements',['../index.html#requirements',1,'Requirements'],['../quick_reference.html#qr_requirements',1,'Requirements']]],
@@ -13,8 +13,8 @@ var searchData=
   ['resource_20pool_20example_10',['Resource Pool Example',['../index.html#resource_example',1,'']]],
   ['resource_20pool_20methods_11',['Resource Pool Methods',['../usage_guide.html#rp_methods',1,'']]],
   ['resource_20pool_20operations_12',['Resource Pool Operations',['../security.html#autotoc_md99',1,'']]],
-  ['resource_20pooling_20pattern_13',['Resource Pooling Pattern',['../md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md46',1,'']]],
-  ['resource_5fpool_14',['resource_pool',['../md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md35',1,'resource_pool'],['../quick_reference.html#autotoc_md74',1,'resource_pool&amp;lt;T&amp;gt;']]],
+  ['resource_20pooling_20pattern_13',['Resource Pooling Pattern',['../md_docs_2pages_2api.html#autotoc_md46',1,'']]],
+  ['resource_5fpool_14',['resource_pool',['../md_docs_2pages_2api.html#autotoc_md35',1,'resource_pool'],['../quick_reference.html#autotoc_md74',1,'resource_pool&amp;lt;T&amp;gt;']]],
   ['resources_15',['Additional Resources',['../security.html#security_resources',1,'']]],
   ['robin_20pool_16',['Robin Pool',['../quick_reference.html#qr_pattern_roundrobin',1,'Round-Robin Pool'],['../usage_guide.html#roundrobin_pool',1,'Round-Robin Pool']]],
   ['robin_20pool_20example_17',['Round-Robin Pool Example',['../index.html#roundrobin_example',1,'']]],
@@ -22,6 +22,6 @@ var searchData=
   ['round_20robin_20pool_19',['Round Robin Pool',['../quick_reference.html#qr_pattern_roundrobin',1,'Round-Robin Pool'],['../usage_guide.html#roundrobin_pool',1,'Round-Robin Pool']]],
   ['round_20robin_20pool_20example_20',['Round-Robin Pool Example',['../index.html#roundrobin_example',1,'']]],
   ['round_20robin_20vs_20simple_20pool_21',['Round-Robin vs Simple Pool',['../usage_guide.html#rrp_vs_simple',1,'']]],
-  ['roundrobin_5fpool_22',['roundrobin_pool',['../md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md21',1,'roundrobin_pool'],['../md__2opt_2azure-agent_2__work_218_2s_2docs_2pages_2api.html#autotoc_md52',1,'roundrobin_pool'],['../quick_reference.html#autotoc_md72',1,'roundrobin_pool&amp;lt;T, N&amp;gt;']]],
+  ['roundrobin_5fpool_22',['roundrobin_pool',['../md_docs_2pages_2api.html#autotoc_md21',1,'roundrobin_pool'],['../md_docs_2pages_2api.html#autotoc_md52',1,'roundrobin_pool'],['../quick_reference.html#autotoc_md72',1,'roundrobin_pool&amp;lt;T, N&amp;gt;']]],
   ['runtime_20issues_23',['Runtime Issues',['../getting_started.html#autotoc_md66',1,'']]]
 ];

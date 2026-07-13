@@ -49,10 +49,16 @@ namespace siddiqsoft
 {
     /**
      * @brief RAII wrapper for checked-out resources with validity tracking
+     * Use the resource_pool as a sole owner of the resources/objects
      *
      * @warning CRITICAL SAFETY FEATURE: This wrapper tracks resource validity to prevent
      * returning uninitialized or moved-out resources to the pool. Only valid resources are
      * returned to the pool on destruction. This prevents pool corruption.
+     * @note When using shared_ptr remember that you have to std::move into the resource_pool
+     * and the original variable would be empty. You must no share ownership of the object/resource
+     * resource_pool. The move semantics ensure that the resource you're using is returned to the
+     * pool once the resource_wrap goes out of scope.
+     * The caller is responsible for tracking the validity of the resource (example closed or aborted connection.)
      *
      * @details
      * The resource_wrap class provides automatic resource management through RAII (Resource
@@ -292,13 +298,17 @@ namespace siddiqsoft
      * siddiqsoft::resource_pool<std::shared_ptr<DbConnection>> pool;
      *
      * // Add resources to the pool
-     * pool.checkin(std::make_shared<DbConnection>("localhost"));
-     * pool.checkin(std::make_shared<DbConnection>("localhost"));
+     * // IMPORTANT: Use std::move when checking in shared_ptr to transfer ownership
+     * auto conn1 = std::make_shared<DbConnection>("localhost");
+     * pool.checkin(std::move(conn1));  // conn1 is now empty
+     *
+     * auto conn2 = std::make_shared<DbConnection>("localhost");
+     * pool.checkin(std::move(conn2));  // conn2 is now empty
      *
      * // Check out and use a resource
      * {
      *     auto connection = pool.checkout();
-     *     connection->executeQuery("SELECT * FROM users");
+     *     (*connection)->executeQuery("SELECT * FROM users");
      *     // Connection automatically returned to pool when scope exits
      * }
      *
@@ -309,6 +319,17 @@ namespace siddiqsoft
      * catch (const std::runtime_error& e) {
      *     std::cerr << "Pool is empty: " << e.what() << std::endl;
      * }
+     *
+     * // IMPORTANT: When using shared_ptr, the pool becomes the sole owner
+     * // Do NOT keep external references to the pooled objects:
+     * // WRONG:
+     * // auto conn = std::make_shared<DbConnection>("localhost");
+     * // pool.checkin(conn);  // BAD: conn still holds a reference!
+     * // This creates a reference cycle and prevents proper resource reuse
+     *
+     * // CORRECT:
+     * // auto conn = std::make_shared<DbConnection>("localhost");
+     * // pool.checkin(std::move(conn));  // GOOD: pool is sole owner
      * @endcode
      *
      * @see resource_wrap
@@ -464,6 +485,7 @@ namespace siddiqsoft
          * @note Resources are added to the back of the deque (FIFO)
          * @note This method is typically not called directly; use checkout() instead
          * @note Only valid resources should be checked in (not moved-out or invalid)
+         * @note When using shared_ptr, always use std::move to transfer ownership to the pool
          *
          * @example
          * @code
@@ -477,6 +499,10 @@ namespace siddiqsoft
          * auto resource = pool.checkout();
          * // ... use resource ...
          * pool.checkin(std::move(*resource));
+         *
+         * // For shared_ptr: Always use std::move
+         * auto conn = std::make_shared<DbConnection>("localhost");
+         * pool.checkin(std::move(conn));  // Transfer ownership to pool
          * @endcode
          */
         void checkin(T&& rsrc)

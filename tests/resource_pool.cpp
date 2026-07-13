@@ -576,34 +576,6 @@ TEST(resource_pool, concurrent_unique_ptr)
 }
 
 
-/// @brief Test shared_ptr reference counting with pool
-/// Validates that shared_ptr reference counts are properly maintained
-/// when resources are checked in/out of the pool
-TEST(resource_pool, shared_ptr_reference_counting)
-{
-    siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
-
-    auto ptr = std::make_shared<std::string>("test-data");
-    EXPECT_EQ(1, ptr.use_count());
-
-    rp.checkin(std::move(ptr));
-    // After checkin, the pool holds a copy, so use_count should be 2
-    EXPECT_EQ(2, ptr.use_count());
-
-    {
-        auto item = rp.checkout();
-        // Now we have: original ptr, pool's copy, and the checked-out item
-        EXPECT_EQ(3, ptr.use_count());
-    }
-    // After checkout goes out of scope, it's returned to pool
-    EXPECT_EQ(2, ptr.use_count());
-
-    rp.clear();
-    // After clear, only the original ptr remains
-    EXPECT_EQ(1, ptr.use_count());
-}
-
-
 /// @brief Test multiple shared_ptr items in pool
 /// Validates that multiple shared_ptr resources can coexist in the pool
 TEST(resource_pool, multiple_shared_ptr_items)

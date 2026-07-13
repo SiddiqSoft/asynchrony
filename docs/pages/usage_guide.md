@@ -244,6 +244,11 @@ int main() {
 
 @subsection rp_methods Resource Pool Methods
 
+The objects you store in the `resource_pool<T>` are returned via a `resource_wrap<T>` object which is designed to offer you easy conversion to the underlying stored type `T`.
+The `resource_wrap<T>` when it goes out of scope will return the object to the pool.
+
+You must use move semantics to allow the resource_pool to hold the resource. If you're using a `shared_ptr` then make sure you understand that you're going to std::move into the pool.
+
 ```cpp
 siddiqsoft::resource_pool<T> pool;
 

@@ -504,7 +504,7 @@ TEST(resource_pool_file, file_handle_concurrent_access)
 
     siddiqsoft::resource_pool<FileHandle> file_pool;
 
-    std::cerr << std::format("About to add file {} to the pool..\n",  temp_file );
+    std::cerr << std::format("About to add file `{}` to the pool..\n",  temp_file );
     // Add a file to the pool
     FileHandle f {std::fopen(temp_file.c_str(), "w+")};
     ASSERT_TRUE(f);

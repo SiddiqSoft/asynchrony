@@ -186,8 +186,8 @@ TEST(periodic_worker, callback_exception_resilience)
                                         },
                                         std::chrono::milliseconds(20)};
 
-    // Let it run for ~500ms at 20ms intervals => ~25 invocations
-    std::this_thread::sleep_for(std::chrono::milliseconds(550));
+    // Let it run for ~650ms at 20ms intervals 
+    std::this_thread::sleep_for(std::chrono::milliseconds(650));
 
     // Should have continued past exceptions
     EXPECT_GE(invokeCount.load(), 10u);

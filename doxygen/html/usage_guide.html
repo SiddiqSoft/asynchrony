@@ -300,10 +300,12 @@ Basic Usage</h2>
 <div class="line"> </div>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
-<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html">siddiqsoft::resource_pool</a></div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00318">resource_pool.hpp:319</a></div></div>
-<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_a2eb2e2b5f122680c54aeb8b3508375c9"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#a2eb2e2b5f122680c54aeb8b3508375c9">siddiqsoft::resource_pool::checkout</a></div><div class="ttdeci">auto checkout() -&gt; resource_wrap&lt; T &gt;</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00424">resource_pool.hpp:424</a></div></div>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html">siddiqsoft::resource_pool</a></div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00339">resource_pool.hpp:340</a></div></div>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_a2eb2e2b5f122680c54aeb8b3508375c9"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#a2eb2e2b5f122680c54aeb8b3508375c9">siddiqsoft::resource_pool::checkout</a></div><div class="ttdeci">auto checkout() -&gt; resource_wrap&lt; T &gt;</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00445">resource_pool.hpp:445</a></div></div>
 </div><!-- fragment --><h2 class="doxsection"><a class="anchor" id="rp_methods"></a>
 Resource Pool Methods</h2>
+<p>The objects you store in the <span class="tt">resource_pool&lt;T&gt;</span> are returned via a <span class="tt">resource_wrap&lt;T&gt;</span> object which is designed to offer you easy conversion to the underlying stored type <span class="tt">T</span>. The <span class="tt">resource_wrap&lt;T&gt;</span> when it goes out of scope will return the object to the pool.</p>
+<p>You must use move semantics to allow the resource_pool to hold the resource. If you're using a <span class="tt">shared_ptr</span> then make sure you understand that you're going to std::move into the pool.</p>
 <div class="fragment"><div class="line"><a class="code hl_class" href="classsiddiqsoft_1_1resource__pool.html">siddiqsoft::resource_pool&lt;T&gt;</a> pool;</div>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Get current pool size</span></div>
@@ -317,8 +319,8 @@ Resource Pool Methods</h2>
 <div class="line"> </div>
 <div class="line"><span class="comment">// Clear all resources</span></div>
 <div class="line">pool.<a class="code hl_function" href="classsiddiqsoft_1_1resource__pool.html#ab8874f3f51f8f1643a2d5ccbd55134c0">clear</a>();</div>
-<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_a166bd8bffea67e82923c8c80f343b558"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#a166bd8bffea67e82923c8c80f343b558">siddiqsoft::resource_pool::size</a></div><div class="ttdeci">auto size()</div><div class="ttdoc">Get the current size of the pool.</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00381">resource_pool.hpp:381</a></div></div>
-<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_ab8874f3f51f8f1643a2d5ccbd55134c0"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#ab8874f3f51f8f1643a2d5ccbd55134c0">siddiqsoft::resource_pool::clear</a></div><div class="ttdeci">void clear()</div><div class="ttdoc">Clear all items from the pool.</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00362">resource_pool.hpp:362</a></div></div>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_a166bd8bffea67e82923c8c80f343b558"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#a166bd8bffea67e82923c8c80f343b558">siddiqsoft::resource_pool::size</a></div><div class="ttdeci">auto size()</div><div class="ttdoc">Get the current size of the pool.</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00402">resource_pool.hpp:402</a></div></div>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_ab8874f3f51f8f1643a2d5ccbd55134c0"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#ab8874f3f51f8f1643a2d5ccbd55134c0">siddiqsoft::resource_pool::clear</a></div><div class="ttdeci">void clear()</div><div class="ttdoc">Clear all items from the pool.</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00383">resource_pool.hpp:383</a></div></div>
 </div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="best_practices"></a>
 Best Practices</h1>
 <h2 class="doxsection"><a class="anchor" id="bp_lifetime"></a>

@@ -141,6 +141,26 @@ Main Components</h1>
 <tr class="markdownTableRowOdd">
 <td class="markdownTableBodyNone"><a class="el" href="classsiddiqsoft_1_1resource__pool.html" title="siddiqsoft::resource_pool">siddiqsoft::resource_pool</a>  </td><td class="markdownTableBodyNone">Resource pool manager  </td><td class="markdownTableBodyNone">Connection/resource management  </td></tr>
 </table>
+<h1 class="doxsection"><a class="anchor" id="design"></a>
+Design Principles</h1>
+<ul>
+<li><b>Move Semantics</b>: All components use move semantics for efficient resource transfer</li>
+<li><b>RAII</b>: Proper resource management through constructors and destructors</li>
+<li><b>Exception Safety</b>: Exceptions in callbacks are caught and logged, not propagated</li>
+<li><b>Thread Safety</b>: Internal synchronization using mutexes and semaphores</li>
+<li><b>Zero-Copy</b>: Minimal data copying through perfect forwarding</li>
+<li><b>Type Safety</b>: C++20 concepts ensure compile-time type checking</li>
+<li><b>Simplicity</b>: Clean API that hides complexity of thread management</li>
+</ul>
+<h1 class="doxsection"><a class="anchor" id="documentation"></a>
+Documentation</h1>
+<ul>
+<li><a class="el" href="getting_started.html" title="Getting Started">Getting Started</a> - Installation and setup guide</li>
+<li><a class="el" href="usage_guide.html" title="Usage Guide">Usage Guide</a> - Detailed usage examples and best practices</li>
+<li><a class="el" href="examples.html" title="Examples">Examples</a> - Real-world code examples</li>
+<li><a class="el" href="quick_reference.html" title="Quick Reference">Quick Reference</a> - Quick lookup guide for common tasks</li>
+<li>api - Complete API reference</li>
+</ul>
 <h1 class="doxsection"><a class="anchor" id="quickstart"></a>
 Quick Start</h1>
 <h2 class="doxsection"><a class="anchor" id="simple_worker_example"></a>
@@ -249,49 +269,9 @@ Resource Pool Example</h2>
 <div class="line"> </div>
 <div class="line">    <span class="keywordflow">return</span> 0;</div>
 <div class="line">}</div>
-<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html">siddiqsoft::resource_pool</a></div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00318">resource_pool.hpp:319</a></div></div>
-<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_a2eb2e2b5f122680c54aeb8b3508375c9"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#a2eb2e2b5f122680c54aeb8b3508375c9">siddiqsoft::resource_pool::checkout</a></div><div class="ttdeci">auto checkout() -&gt; resource_wrap&lt; T &gt;</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00424">resource_pool.hpp:424</a></div></div>
-</div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="design"></a>
-Design Principles</h1>
-<ul>
-<li><b>Move Semantics</b>: All components use move semantics for efficient resource transfer</li>
-<li><b>RAII</b>: Proper resource management through constructors and destructors</li>
-<li><b>Exception Safety</b>: Exceptions in callbacks are caught and logged, not propagated</li>
-<li><b>Thread Safety</b>: Internal synchronization using mutexes and semaphores</li>
-<li><b>Zero-Copy</b>: Minimal data copying through perfect forwarding</li>
-<li><b>Type Safety</b>: C++20 concepts ensure compile-time type checking</li>
-<li><b>Simplicity</b>: Clean API that hides complexity of thread management</li>
-</ul>
-<h1 class="doxsection"><a class="anchor" id="comparison"></a>
-Comparison with Alternatives</h1>
-<table class="markdownTable">
-<tr class="markdownTableHead">
-<th class="markdownTableHeadNone">Feature  </th><th class="markdownTableHeadNone">asynchrony  </th><th class="markdownTableHeadNone">std::thread  </th><th class="markdownTableHeadNone">std::async  </th><th class="markdownTableHeadNone">Boost.Asio  </th></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">Header-only  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">C++20  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">Thread pool  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✓  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">Periodic tasks  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✓  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">Resource pool  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✗  </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">No dependencies  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">Simple API  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td><td class="markdownTableBodyNone">✓  </td><td class="markdownTableBodyNone">✗  </td></tr>
-</table>
-<h1 class="doxsection"><a class="anchor" id="documentation"></a>
-Documentation</h1>
-<ul>
-<li><a class="el" href="getting_started.html" title="Getting Started">Getting Started</a> - Installation and setup guide</li>
-<li><a class="el" href="usage_guide.html" title="Usage Guide">Usage Guide</a> - Detailed usage examples and best practices</li>
-<li><a class="el" href="examples.html" title="Examples">Examples</a> - Real-world code examples</li>
-<li><a class="el" href="quick_reference.html" title="Quick Reference">Quick Reference</a> - Quick lookup guide for common tasks</li>
-<li>api - Complete API reference</li>
-</ul>
-<h1 class="doxsection"><a class="anchor" id="installation"></a>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html">siddiqsoft::resource_pool</a></div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00339">resource_pool.hpp:340</a></div></div>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_a2eb2e2b5f122680c54aeb8b3508375c9"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#a2eb2e2b5f122680c54aeb8b3508375c9">siddiqsoft::resource_pool::checkout</a></div><div class="ttdeci">auto checkout() -&gt; resource_wrap&lt; T &gt;</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00445">resource_pool.hpp:445</a></div></div>
+</div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="installation"></a>
 Installation</h1>
 <h3 class="doxsection"><a class="anchor" id="autotoc_md67"></a>
 Using CMake (Recommended)</h3>

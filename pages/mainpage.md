@@ -39,6 +39,25 @@ This header-only library eliminates boilerplate synchronization code and provide
 | @ref siddiqsoft::periodic_worker | Periodic task executor | Scheduled/recurring tasks |
 | @ref siddiqsoft::resource_pool | Resource pool manager | Connection/resource management |
 
+
+@section design Design Principles
+
+- **Move Semantics**: All components use move semantics for efficient resource transfer
+- **RAII**: Proper resource management through constructors and destructors
+- **Exception Safety**: Exceptions in callbacks are caught and logged, not propagated
+- **Thread Safety**: Internal synchronization using mutexes and semaphores
+- **Zero-Copy**: Minimal data copying through perfect forwarding
+- **Type Safety**: C++20 concepts ensure compile-time type checking
+- **Simplicity**: Clean API that hides complexity of thread management
+
+@section documentation Documentation
+
+- @ref getting_started - Installation and setup guide
+- @ref usage_guide - Detailed usage examples and best practices
+- @ref examples - Real-world code examples
+- @ref quick_reference - Quick lookup guide for common tasks
+- @ref api - Complete API reference
+
 @section quickstart Quick Start
 
 @subsection simple_worker_example Simple Worker Example
@@ -154,36 +173,6 @@ int main() {
     return 0;
 }
 ```
-
-@section design Design Principles
-
-- **Move Semantics**: All components use move semantics for efficient resource transfer
-- **RAII**: Proper resource management through constructors and destructors
-- **Exception Safety**: Exceptions in callbacks are caught and logged, not propagated
-- **Thread Safety**: Internal synchronization using mutexes and semaphores
-- **Zero-Copy**: Minimal data copying through perfect forwarding
-- **Type Safety**: C++20 concepts ensure compile-time type checking
-- **Simplicity**: Clean API that hides complexity of thread management
-
-@section comparison Comparison with Alternatives
-
-| Feature | asynchrony | std::thread | std::async | Boost.Asio |
-|---------|-----------|------------|-----------|-----------|
-| Header-only | ✓ | ✗ | ✓ | ✗ |
-| C++20 | ✓ | ✗ | ✗ | ✗ |
-| Thread pool | ✓ | ✗ | ✗ | ✓ |
-| Periodic tasks | ✓ | ✗ | ✗ | ✓ |
-| Resource pool | ✓ | ✗ | ✗ | ✗ |
-| No dependencies | ✓ | ✓ | ✓ | ✗ |
-| Simple API | ✓ | ✗ | ✓ | ✗ |
-
-@section documentation Documentation
-
-- @ref getting_started - Installation and setup guide
-- @ref usage_guide - Detailed usage examples and best practices
-- @ref examples - Real-world code examples
-- @ref quick_reference - Quick lookup guide for common tasks
-- @ref api - Complete API reference
 
 @section installation Installation
 

@@ -263,7 +263,7 @@ Resource Pool Capacity</h3>
 <div class="line"><span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; std::thread::hardware_concurrency(); ++i) {</div>
 <div class="line">    pool.checkin(Connection{});</div>
 <div class="line">}</div>
-<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html">siddiqsoft::resource_pool</a></div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00318">resource_pool.hpp:319</a></div></div>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html">siddiqsoft::resource_pool</a></div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00339">resource_pool.hpp:340</a></div></div>
 </div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="exception_handling"></a>
 Exception Handling</h1>
 <h3 class="doxsection"><a class="anchor" id="autotoc_md96"></a>
@@ -306,7 +306,7 @@ Resource Pool Operations</h3>
 <div class="line">std::thread t2([&amp;]() { <span class="keyword">auto</span> res = pool.<a class="code hl_function" href="classsiddiqsoft_1_1resource__pool.html#a2eb2e2b5f122680c54aeb8b3508375c9">checkout</a>(); });</div>
 <div class="line">t1.join();</div>
 <div class="line">t2.join();</div>
-<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_a2eb2e2b5f122680c54aeb8b3508375c9"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#a2eb2e2b5f122680c54aeb8b3508375c9">siddiqsoft::resource_pool::checkout</a></div><div class="ttdeci">auto checkout() -&gt; resource_wrap&lt; T &gt;</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00424">resource_pool.hpp:424</a></div></div>
+<div class="ttc" id="aclasssiddiqsoft_1_1resource__pool_html_a2eb2e2b5f122680c54aeb8b3508375c9"><div class="ttname"><a href="classsiddiqsoft_1_1resource__pool.html#a2eb2e2b5f122680c54aeb8b3508375c9">siddiqsoft::resource_pool::checkout</a></div><div class="ttdeci">auto checkout() -&gt; resource_wrap&lt; T &gt;</div><div class="ttdef"><b>Definition</b> <a href="resource__pool_8hpp_source.html#l00445">resource_pool.hpp:445</a></div></div>
 </div><!-- fragment --><h1 class="doxsection"><a class="anchor" id="shutdown_safety"></a>
 Shutdown Safety</h1>
 <h3 class="doxsection"><a class="anchor" id="autotoc_md100"></a>

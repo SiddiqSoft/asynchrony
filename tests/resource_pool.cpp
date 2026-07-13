@@ -575,4 +575,244 @@ TEST(resource_pool, concurrent_unique_ptr)
     EXPECT_GT(totalCheckouts.load(), 0);
 }
 
+
+/// @brief Test shared_ptr reference counting with pool
+/// Validates that shared_ptr reference counts are properly maintained
+/// when resources are checked in/out of the pool
+TEST(resource_pool, shared_ptr_reference_counting)
+{
+    siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
+
+    auto ptr = std::make_shared<std::string>("test-data");
+    EXPECT_EQ(1, ptr.use_count());
+
+    rp.checkin(std::move(ptr));
+    // After checkin, the pool holds a copy, so use_count should be 2
+    EXPECT_EQ(2, ptr.use_count());
+
+    {
+        auto item = rp.checkout();
+        // Now we have: original ptr, pool's copy, and the checked-out item
+        EXPECT_EQ(3, ptr.use_count());
+    }
+    // After checkout goes out of scope, it's returned to pool
+    EXPECT_EQ(2, ptr.use_count());
+
+    rp.clear();
+    // After clear, only the original ptr remains
+    EXPECT_EQ(1, ptr.use_count());
+}
+
+
+/// @brief Test multiple shared_ptr items in pool
+/// Validates that multiple shared_ptr resources can coexist in the pool
+TEST(resource_pool, multiple_shared_ptr_items)
+{
+    siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
+
+    auto ptr1 = std::make_shared<std::string>("resource-1");
+    auto ptr2 = std::make_shared<std::string>("resource-2");
+    auto ptr3 = std::make_shared<std::string>("resource-3");
+
+    rp.checkin(std::move(ptr1));
+    rp.checkin(std::move(ptr2));
+    rp.checkin(std::move(ptr3));
+
+    EXPECT_EQ(3u, rp.size());
+
+    // Checkout in FIFO order
+    {
+        auto item1 = rp.checkout();
+        EXPECT_EQ("resource-1", **item1);
+        EXPECT_EQ(2u, rp.size());
+
+        auto item2 = rp.checkout();
+        EXPECT_EQ("resource-2", **item2);
+        EXPECT_EQ(1u, rp.size());
+
+        auto item3 = rp.checkout();
+        EXPECT_EQ("resource-3", **item3);
+        EXPECT_EQ(0u, rp.size());
+    }
+    // All items returned to pool
+    EXPECT_EQ(3u, rp.size());
+}
+
+
+/// @brief Test shared_ptr with custom deleter
+/// Validates that shared_ptr with custom deleters work correctly in the pool
+TEST(resource_pool, shared_ptr_custom_deleter)
+{
+    std::atomic_int deleteCount {0};
+
+    {
+        siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
+
+        auto ptr = std::shared_ptr<std::string>(
+            new std::string("custom-deleter-test"),
+            [&deleteCount](std::string* p) {
+                deleteCount++;
+                delete p;
+            }
+        );
+
+        rp.checkin(std::move(ptr));
+        EXPECT_EQ(0, deleteCount.load());
+
+        {
+            auto item = rp.checkout();
+            EXPECT_EQ("custom-deleter-test", **item);
+        }
+        // Item returned to pool
+        EXPECT_EQ(0, deleteCount.load());
+    }
+    // Pool destroyed, custom deleter should be called
+    EXPECT_EQ(1, deleteCount.load());
+}
+
+
+/// @brief Test shared_ptr modification persistence
+/// Validates that modifications to shared_ptr objects persist across checkout/checkin cycles
+TEST(resource_pool, shared_ptr_modification_persistence)
+{
+    siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
+
+    rp.checkin(std::make_shared<std::string>("initial"));
+    EXPECT_EQ(1u, rp.size());
+
+    {
+        auto item = rp.checkout();
+        **item += "-modified";
+        EXPECT_EQ("initial-modified", **item);
+    }
+    // Item returned to pool
+    EXPECT_EQ(1u, rp.size());
+
+    {
+        auto item2 = rp.checkout();
+        EXPECT_EQ("initial-modified", **item2);
+        **item2 += "-again";
+    }
+    // Item returned to pool
+    EXPECT_EQ(1u, rp.size());
+
+    {
+        auto item3 = rp.checkout();
+        EXPECT_EQ("initial-modified-again", **item3);
+    }
+}
+
+
+/// @brief Test concurrent access with shared_ptr
+/// Multiple threads checkout/checkin shared_ptr resources concurrently
+TEST(resource_pool, concurrent_shared_ptr_access)
+{
+    constexpr int                                           POOL_SIZE    = 4;
+    constexpr int                                           THREAD_COUNT = 4;
+    constexpr int                                           CYCLES       = 100;
+
+    siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
+    for (int i = 0; i < POOL_SIZE; i++) {
+        rp.checkin(std::make_shared<std::string>(std::format("shared-resource-{}", i)));
+    }
+
+    std::atomic_int           totalCheckouts {0};
+    std::barrier              startBarrier {THREAD_COUNT};
+
+    std::vector<std::jthread> threads;
+    for (int t = 0; t < THREAD_COUNT; t++) {
+        threads.emplace_back([&]() {
+            startBarrier.arrive_and_wait();
+            for (int c = 0; c < CYCLES; c++) {
+                try {
+                    {
+                        auto item = rp.checkout();
+                        EXPECT_NE(nullptr, *item);
+                        EXPECT_FALSE((**item).empty());
+                        totalCheckouts++;
+                    }
+                    // item is automatically returned to pool
+                }
+                catch (const std::runtime_error&) {
+                    // Pool was momentarily empty
+                }
+            }
+        });
+    }
+
+    threads.clear();
+
+    EXPECT_EQ(static_cast<size_t>(POOL_SIZE), rp.size());
+    EXPECT_GT(totalCheckouts.load(), 0);
+}
+
+
+/// @brief Test shared_ptr clear with multiple references
+/// Validates that clear properly handles shared_ptr with external references
+TEST(resource_pool, shared_ptr_clear_with_external_refs)
+{
+    siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
+
+    auto external_ref = std::make_shared<std::string>("external");
+    rp.checkin(std::move(external_ref));
+
+    EXPECT_EQ(2, external_ref.use_count());  // external_ref + pool
+
+    rp.clear();
+
+    // After clear, only external_ref remains
+    EXPECT_EQ(1, external_ref.use_count());
+    EXPECT_EQ("external", *external_ref);
+    EXPECT_EQ(0u, rp.size());
+}
+
+
+/// @brief Test shared_ptr with starvation scenario
+/// Multiple threads compete for limited shared_ptr resources
+TEST(resource_pool, shared_ptr_starvation_under_contention)
+{
+    constexpr int                                           POOL_SIZE      = 2;
+    constexpr int                                           THREAD_COUNT   = 6;
+    constexpr int                                           OPS_PER_THREAD = 50;
+
+    siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
+    for (int i = 0; i < POOL_SIZE; i++) {
+        rp.checkin(std::make_shared<std::string>(std::format("shared-{}", i)));
+    }
+
+    std::atomic_int           successCount {0};
+    std::atomic_int           failCount {0};
+    std::barrier              startBarrier {THREAD_COUNT};
+
+    std::vector<std::jthread> threads;
+    for (int t = 0; t < THREAD_COUNT; t++) {
+        threads.emplace_back([&]() {
+            startBarrier.arrive_and_wait();
+            for (int i = 0; i < OPS_PER_THREAD; i++) {
+                try {
+                    {
+                        auto item = rp.checkout();
+                        successCount++;
+                        EXPECT_NE(nullptr, *item);
+                        std::this_thread::sleep_for(std::chrono::microseconds(50));
+                    }
+                    // item is automatically returned to pool
+                }
+                catch (const std::runtime_error&) {
+                    failCount++;
+                }
+            }
+        });
+    }
+
+    threads.clear();
+
+    // All resources should be back in the pool
+    EXPECT_EQ(static_cast<size_t>(POOL_SIZE), rp.size());
+    // At least some operations should have succeeded
+    EXPECT_GT(successCount.load(), 0);
+    // Total operations = successes + failures
+    EXPECT_EQ(THREAD_COUNT * OPS_PER_THREAD, successCount.load() + failCount.load());
+}
+
 // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

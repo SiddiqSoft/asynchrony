@@ -59,12 +59,12 @@ FULL_PATH_NAMES        = NO
 
 # If the STRIP_FROM_PATH tag is not specified, the files are displayed with full
 # path.
-STRIP_FROM_PATH        = /Users/maas/source/asynchrony/
+STRIP_FROM_PATH        = ./
 
 # The STRIP_FROM_INC_PATH tag can be used to strip a user-defined part of
 # the path mentioned in the documentation of a class, which tells
 # the reader which header file to include in order to use a class.
-STRIP_FROM_INC_PATH    = /Users/maas/source/asynchrony/include/
+STRIP_FROM_INC_PATH    = ./include/
 
 # If the SHORT_NAMES tag is set to YES, doxygen will generate much shorter
 # (but still unique) names for the generated HTML files.

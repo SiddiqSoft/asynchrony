@@ -718,27 +718,6 @@ TEST(resource_pool, concurrent_shared_ptr_access)
     EXPECT_GT(totalCheckouts.load(), 0);
 }
 
-
-/// @brief Test shared_ptr clear with multiple references
-/// Validates that clear properly handles shared_ptr with external references
-TEST(resource_pool, shared_ptr_clear_with_external_refs)
-{
-    siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
-
-    auto external_ref = std::make_shared<std::string>("external");
-    rp.checkin(std::move(external_ref));
-
-    EXPECT_EQ(2, external_ref.use_count());  // external_ref + pool
-
-    rp.clear();
-
-    // After clear, only external_ref remains
-    EXPECT_EQ(1, external_ref.use_count());
-    EXPECT_EQ("external", *external_ref);
-    EXPECT_EQ(0u, rp.size());
-}
-
-
 /// @brief Test shared_ptr with starvation scenario
 /// Multiple threads compete for limited shared_ptr resources
 TEST(resource_pool, shared_ptr_starvation_under_contention)

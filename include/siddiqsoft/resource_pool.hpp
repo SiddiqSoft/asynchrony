@@ -131,11 +131,6 @@ namespace siddiqsoft
         /// - false: resource will NOT be returned to pool on destruction
         bool _isValid {false};
 
-        auto setCallbackToCheckin(std::function<void(T&&)>&& f)
-        {
-            _putbackCallback= std::move(f);
-            return *this;
-        }
     public:
         /// @brief Default constructor is deleted
         /// Resources must be explicitly constructed with a valid resource
@@ -153,13 +148,12 @@ namespace siddiqsoft
          *
          * @note This constructor is typically called by resource_pool::checkout()
          */
-        explicit resource_wrap(T&& src, std::function<void(T&&)>&& f={})
+        explicit resource_wrap(T&& src, std::function<void(T&&)>&& f = {})
             : _rsrc(std::move(src))
             , _putbackCallback(std::move(f))
             , _isValid(true)
         {
         }
-
 
 
         /// @brief Copy constructor is deleted
@@ -485,14 +479,14 @@ namespace siddiqsoft
 
         /**
          * @brief Make a resource_wrap from the src. It does not add to the pool.
-         * 
+         *
          * @param src R-value reference to the resource to wrap
          * @return A resource wrapper with auto-checkin configured
          *
          * @details
          * The intention is to allow for creation of the resource and wire it up
          * to auto-checkin to the pool when the scope exits.
-         * 
+         *
          * This method supports both base resource_wrap and derived classes.
          * For derived classes with custom constructors, it:
          * 1. Constructs the derived class with just the resource
@@ -503,7 +497,7 @@ namespace siddiqsoft
          * @code
          * // With base resource_wrap
          * auto wrapped = pool.wrapResource(std::move(resource));
-         * 
+         *
          * // With derived class (e.g., FileHandle)
          * auto file_wrapped = pool.wrapResource(std::fopen("file.txt", "r"));
          * @endcode
@@ -524,12 +518,12 @@ namespace siddiqsoft
             // has a different constructor signature than the base class.
             // We construct the derived class first, then set the callback.
             RW wrapper(std::move(src));
-            
+
             // Set the callback and validity on the base class members
             // resource_pool is a friend of resource_wrap, so we can access protected members
             wrapper._putbackCallback = std::move(autoReturnResource);
-            wrapper._isValid = true;
-            
+            wrapper._isValid         = true;
+
             return wrapper;
         }
 

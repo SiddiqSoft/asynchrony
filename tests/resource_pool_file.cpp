@@ -189,11 +189,10 @@ TEST(resource_pool_file, basic_file_pool)
     {
         auto fp = file_pool.wrapResource(std::fopen(temp_file.c_str(), "w+"));
 
-        //EXPECT_EQ(0, file_pool.size());
+        EXPECT_EQ(0, file_pool.size());
         std::cerr << std::format(" >> The pool is now {}\n", file_pool.size());
-    }
+    } // once the scope ends, the newly created resource should be added back to pool!
 
-    // file_pool.checkin(std::move(f));
     EXPECT_EQ(1u, file_pool.size());
 
     // Checkout the file

@@ -257,9 +257,7 @@ namespace siddiqsoft
          * // Resource is NOT returned to pool
          * @endcode
          */
-#if defined(DEBUG)
         void invalidate() { isValid = false; }
-#endif
     };
 
     /**

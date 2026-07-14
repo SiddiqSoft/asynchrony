@@ -76,6 +76,7 @@ namespace siddiqsoft
      * - Pointer-like access to underlying resource
      * - Move-only semantics (no copying)
      * - Thread-safe when used with resource_pool
+     * - Support for derived classes with custom behavior
      *
      * Validity Tracking:
      * - Resources are marked as valid when constructed
@@ -84,6 +85,102 @@ namespace siddiqsoft
      * - Use invalidate() to prevent automatic return
      *
      * @tparam T The resource type (must be move-constructible)
+     *
+     * @section derived_classes Creating Derived Classes
+     *
+     * You can create custom wrapper classes by deriving from resource_wrap to add
+     * domain-specific functionality. This is useful for resources that need special
+     * handling, cleanup, or convenience methods.
+     *
+     * @subsection derived_example Example: FileHandle Wrapper
+     *
+     * Here's a complete example of a derived class for FILE* resources:
+     *
+     * @code
+     * class FileHandle : public siddiqsoft::resource_wrap<FILE*>
+     * {
+     * public:
+     *     // Delete default constructor
+     *     FileHandle() = delete;
+     *
+     *     // Constructor from FILE*
+     *     explicit FileHandle(FILE*&& f) noexcept
+     *         : resource_wrap(std::move(f))
+     *     {
+     *     }
+     *
+     *     // Move constructor
+     *     FileHandle(FileHandle&& other) noexcept
+     *         : resource_wrap(std::move(other))
+     *     {
+     *     }
+     *
+     *     // Move assignment
+     *     FileHandle& operator=(FileHandle&& other) noexcept
+     *     {
+     *         if (this != &other) {
+     *             close();
+     *             _rsrc = std::move(other._rsrc);
+     *         }
+     *         return *this;
+     *     }
+     *
+     *     // Delete copy operations
+     *     FileHandle(const FileHandle&)            = delete;
+     *     FileHandle& operator=(const FileHandle&) = delete;
+     *
+     *     // Custom methods
+     *     void close()
+     *     {
+     *         if (_rsrc != nullptr) {
+     *             std::fclose(_rsrc);
+     *             _rsrc = nullptr;
+     *         }
+     *     }
+     *
+     *     FILE* operator->() const { return _rsrc; }
+     *     explicit operator bool() const { return _rsrc != nullptr; }
+     * };
+     * @endcode
+     *
+     * @subsection derived_usage Using Derived Classes with resource_pool
+     *
+     * @code
+     * // Create a pool with the derived wrapper type
+     * siddiqsoft::resource_pool<FILE*, FileHandle> file_pool;
+     *
+     * // Create and wrap a resource
+     * auto wrapped = file_pool.wrapResource(std::fopen("file.txt", "r"));
+     * // wrapped is now a FileHandle with auto-checkin configured
+     *
+     * // When wrapped goes out of scope, it automatically returns to pool
+     * @endcode
+     *
+     * @subsection derived_guidelines Guidelines for Derived Classes
+     *
+     * 1. **Constructor Pattern**: Derived classes should have their own constructor
+     *    that takes `T&&` (the resource type). Call the base constructor with the resource.
+     *    The base class constructor has an optional callback parameter that defaults to empty.
+     *
+     * 2. **Move Semantics**: Implement move constructor and move assignment operator.
+     *    Delete copy constructor and copy assignment operator to maintain move-only semantics.
+     *
+     * 3. **Protected Members**: Access protected members (_rsrc, _isValid, _putbackCallback)
+     *    directly in your derived class for custom behavior. These are accessible because
+     *    resource_pool is declared as a friend class.
+     *
+     * 4. **Custom Methods**: Add domain-specific methods (e.g., close(), flush(), etc.)
+     *    to provide a convenient interface for your resource type.
+     *
+     * 5. **Destructor**: If you need custom cleanup, implement a destructor. The base
+     *    class destructor will still handle returning the resource to the pool if valid.
+     *
+     * 6. **Compatibility**: Derived classes work seamlessly with resource_pool::wrapResource()
+     *    which handles setting up the auto-checkin callback through friend access.
+     *
+     * 7. **Constructor Flexibility**: Unlike the base class which requires a callback parameter,
+     *    derived classes can have custom constructors that only take the resource type.
+     *    The pool will set up the callback after construction.
      *
      * @example
      * @code
@@ -100,6 +197,14 @@ namespace siddiqsoft
      *     auto ptr = std::move(*resource);
      *     resource.invalidate();  // Don't return the moved-out resource
      *     // Resource is NOT returned to pool
+     * }
+     *
+     * // Using derived class
+     * {
+     *     siddiqsoft::resource_pool<FILE*, FileHandle> file_pool;
+     *     auto file = file_pool.wrapResource(std::fopen("data.txt", "r"));
+     *     // Use file with custom FileHandle methods
+     *     file.close();  // Custom method
      * }
      * @endcode
      *
@@ -144,9 +249,12 @@ namespace siddiqsoft
          *
          * @details
          * The resource is marked as valid upon construction. The callback is typically
-         * provided by resource_pool::checkout() to automatically return the resource.
+         * provided by resource_pool::wrapResource() to automatically return the resource.
          *
-         * @note This constructor is typically called by resource_pool::checkout()
+         * For derived classes, the callback parameter can be omitted and will be set
+         * by resource_pool::wrapResource() through friend access to protected members.
+         *
+         * @note This constructor is typically called by resource_pool::wrapResource()
          */
         explicit resource_wrap(T&& src, std::function<void(T&&)>&& f = {})
             : _rsrc(std::move(src))
@@ -168,6 +276,7 @@ namespace siddiqsoft
          * @details
          * Moves the resource and callback from another wrapper.
          * This is essential for returning wrapped resources from functions.
+         * Derived classes should call this constructor in their move constructor.
          */
         resource_wrap(resource_wrap&& src) noexcept
             : _rsrc(std::move(src._rsrc))

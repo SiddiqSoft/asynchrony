@@ -33,15 +33,16 @@
  */
 
 #pragma once
-#include <cstdint>
 #ifndef RESOURCE_POOL_HPP
 #define RESOURCE_POOL_HPP
 
+#include <cstdint>
 #include <stdexcept>
 #include <mutex>
 #include <shared_mutex>
 #include <deque>
 #include <format>
+#include <concepts>
 
 #include "siddiqsoft/RunOnEnd.hpp"
 
@@ -290,6 +291,7 @@ namespace siddiqsoft
      *
      * @tparam T The resource type (must be move-constructible)
      *           Examples: std::shared_ptr<Connection>, std::unique_ptr<Buffer>, FILE*
+     * @tparam RW The resource wrapper type (default: resource_wrap<T>)
      * @tparam InitCapacity Initial capacity hint (default: 1 byte, max: 65535)
      *
      * @example
@@ -334,8 +336,8 @@ namespace siddiqsoft
      *
      * @see resource_wrap
      */
-    template <typename T, uint16_t InitCapacity = sizeof(uint8_t)>
-        requires((InitCapacity <= sizeof(uint16_t))) && std::move_constructible<T>
+    template <typename T, typename RW = resource_wrap<T>, uint16_t InitCapacity = sizeof(uint8_t)>
+        requires((InitCapacity <= sizeof(uint16_t))) && std::move_constructible<T> && std::derived_from<RW, resource_wrap<T>>
     class resource_pool
     {
     private:
@@ -442,7 +444,7 @@ namespace siddiqsoft
          * }
          * @endcode
          */
-        [[nodiscard]] auto checkout() -> resource_wrap<T> /* throw() */
+        [[nodiscard]] auto checkout() -> RW /* throw() */
         {
             {
                 std::scoped_lock<std::mutex> l(_poolLock);

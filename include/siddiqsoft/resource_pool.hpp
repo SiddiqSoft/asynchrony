@@ -143,7 +143,7 @@ namespace siddiqsoft
          *
          * @note This constructor is typically called by resource_pool::checkout()
          */
-        resource_wrap(T&& src, std::function<void(T&&)>&& f = {})
+        explicit resource_wrap(T&& src, std::function<void(T&&)>&& f = {})
             : _rsrc(std::move(src))
             , _putbackCallback(std::move(f))
             , _isValid(true)
@@ -152,7 +152,7 @@ namespace siddiqsoft
 
         /// @brief Copy constructor is deleted
         /// Resources are move-only to maintain clear ownership semantics
-        resource_wrap(const T&) = delete;
+        explicit resource_wrap(const T&) = delete;
 
         /**
          * @brief Move assignment operator

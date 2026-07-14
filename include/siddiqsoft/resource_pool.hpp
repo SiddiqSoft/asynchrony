@@ -443,15 +443,7 @@ namespace siddiqsoft
                 if (!_pool.empty()) {
                     RunOnEnd roe([&]() { _pool.pop_front(); });
 
-                    /// @brief Lambda that returns the resource back to the pool
-                    /// Captures 'this' to access the pool's checkin method
-                    /// Called by resource_wrap destructor to ensure automatic return
-                    /// even if an exception occurs
-                    auto autoReturnResource = [this](T&& rsrc) {
-                        this->checkin(std::move(rsrc));
-                    };
-
-                    return {std::move(_pool.front()), autoReturnResource};
+                    return makeResourceWrap(std::move(_pool.front()));
                     // The pop_front() happens within this scope and
                     // within the lock!
                 }
@@ -469,13 +461,13 @@ namespace siddiqsoft
             /// Captures 'this' to access the pool's checkin method
             /// Called by resource_wrap destructor to ensure automatic return
             /// even if an exception occurs
-            auto autoReturnResource = [this](T&& rsrc) {
-                this->checkin(std::move(rsrc));
+            auto autoReturnResource = [this](T&& src) {
+                this->checkin(std::move(src));
             };
 
             // We return the resource back to the caller as a wrapper that has
             // the auto-checkin wired up to our pool.
-            return {std::move(src), autoReturnResource};
+            return RW(std::move(src), autoReturnResource);
         }
 
         /**

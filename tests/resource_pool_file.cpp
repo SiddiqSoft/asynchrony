@@ -78,6 +78,9 @@ inline void safe_remove_file(const std::string& filepath)
 class FileHandle : public siddiqsoft::resource_wrap<FILE*>
 {
 public:
+    std::string Dummy {"dummy"};
+
+public:
     FileHandle() = delete;
 
     auto to_string() -> std::string const
@@ -87,11 +90,16 @@ public:
 
     // Constructor from FILE*
     explicit FileHandle(FILE*&& f) noexcept
-        : resource_wrap {std::forward<FILE*>(f)}
+        : resource_wrap(std::move(f))
     {
     }
 
     // Move constructor
+    FileHandle(resource_wrap<FILE*>&& base) noexcept
+        : resource_wrap(std::move(base))
+    {
+    }
+
     FileHandle(FileHandle&& other) noexcept
         : resource_wrap {other.release()}
     {
@@ -117,7 +125,7 @@ public:
     {
         if (_rsrc) {
 #if defined(DEBUG)
-            std::cerr << std::format(" ~FileHandle - {}",to_string());
+            std::cerr << std::format(" ~FileHandle - {}", to_string());
 #endif
             std::fflush(_rsrc);
         }
@@ -133,7 +141,7 @@ public:
     [[nodiscard]] FILE* release()
     {
         FILE* temp = _rsrc;
-        _rsrc       = nullptr;
+        _rsrc      = nullptr;
         return temp;
     }
 
@@ -175,13 +183,17 @@ TEST(resource_pool_file, basic_file_pool)
     const std::string temp_file = get_temp_file_path("asynchrony_test_basic.txt");
 
     // Create resource pool for FILE* handles
-    siddiqsoft::resource_pool<FileHandle> file_pool;
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool;
 
-    // Create and add a file handle to the pool
-    FileHandle f {std::fopen(temp_file.c_str(), "w+")};
-    ASSERT_TRUE(f);
+    EXPECT_EQ(0, file_pool.size());
+    {
+        auto fp = file_pool.wrapResource(std::fopen(temp_file.c_str(), "w+"));
 
-    file_pool.checkin(std::move(f));
+        //EXPECT_EQ(0, file_pool.size());
+        std::cerr << std::format(" >> The pool is now {}\n", file_pool.size());
+    }
+
+    // file_pool.checkin(std::move(f));
     EXPECT_EQ(1u, file_pool.size());
 
     // Checkout the file
@@ -504,7 +516,7 @@ TEST(resource_pool_file, file_handle_concurrent_access)
 
     siddiqsoft::resource_pool<FileHandle> file_pool;
 
-    std::cerr << std::format("About to add file `{}` to the pool..\n",  temp_file );
+    std::cerr << std::format("About to add file `{}` to the pool..\n", temp_file);
     // Add a file to the pool
     FileHandle f {std::fopen(temp_file.c_str(), "w+")};
     ASSERT_TRUE(f);

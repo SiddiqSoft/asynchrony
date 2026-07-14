@@ -109,6 +109,11 @@ namespace siddiqsoft
         requires NonNumericMoveConstructible<T>
     class resource_wrap
     {
+        // Allow resource_pool to access protected members
+        template <typename U, typename RW, uint16_t IC>
+            requires((IC <= sizeof(uint16_t))) && NonNumericMoveConstructible<U> && std::derived_from<RW, resource_wrap<U>>
+        friend class resource_pool;
+
     protected:
         /// @brief The actual resource being wrapped
         T _rsrc {};
@@ -126,6 +131,11 @@ namespace siddiqsoft
         /// - false: resource will NOT be returned to pool on destruction
         bool _isValid {false};
 
+        auto setCallbackToCheckin(std::function<void(T&&)>&& f)
+        {
+            _putbackCallback= std::move(f);
+            return *this;
+        }
     public:
         /// @brief Default constructor is deleted
         /// Resources must be explicitly constructed with a valid resource
@@ -143,16 +153,35 @@ namespace siddiqsoft
          *
          * @note This constructor is typically called by resource_pool::checkout()
          */
-        explicit resource_wrap(T&& src, std::function<void(T&&)>&& f = {})
+        explicit resource_wrap(T&& src, std::function<void(T&&)>&& f={})
             : _rsrc(std::move(src))
             , _putbackCallback(std::move(f))
             , _isValid(true)
         {
         }
 
+
+
         /// @brief Copy constructor is deleted
         /// Resources are move-only to maintain clear ownership semantics
         explicit resource_wrap(const T&) = delete;
+
+        /**
+         * @brief Move constructor
+         *
+         * @param src R-value reference to another resource_wrap to move from
+         *
+         * @details
+         * Moves the resource and callback from another wrapper.
+         * This is essential for returning wrapped resources from functions.
+         */
+        resource_wrap(resource_wrap&& src) noexcept
+            : _rsrc(std::move(src._rsrc))
+            , _debugId(src._debugId)
+            , _putbackCallback(std::move(src._putbackCallback))
+            , _isValid(src._isValid)
+        {
+        }
 
         /**
          * @brief Move assignment operator
@@ -268,6 +297,7 @@ namespace siddiqsoft
      * - FIFO (First-In-First-Out) ordering for resource retrieval
      * - Automatic resource cleanup on pool destruction
      * - Validity tracking prevents pool corruption
+     * - Support for derived wrapper classes with custom constructors
      *
      * Thread Safety:
      * - All public methods are thread-safe
@@ -283,6 +313,7 @@ namespace siddiqsoft
      * @tparam T The resource type (must be move-constructible)
      *           Examples: std::shared_ptr<Connection>, std::unique_ptr<Buffer>, FILE*
      * @tparam RW The resource wrapper type (default: resource_wrap<T>)
+     *            Can be a derived class with custom behavior
      * @tparam InitCapacity Initial capacity hint (default: 1 byte, max: 65535)
      *
      * @example
@@ -443,7 +474,7 @@ namespace siddiqsoft
                 if (!_pool.empty()) {
                     RunOnEnd roe([&]() { _pool.pop_front(); });
 
-                    return makeResourceWrap(std::move(_pool.front()));
+                    return wrapResource(std::move(_pool.front()));
                     // The pop_front() happens within this scope and
                     // within the lock!
                 }
@@ -452,10 +483,32 @@ namespace siddiqsoft
             throw std::runtime_error("Empty pool; add something first!");
         }
 
-        /// @brief Make a resource_wrap from the src. It does not add to the pool.
-        /// The intention is to allow for creation of the resource and wire it up
-        /// to auto-checkin to the pool when the scope exits.
-        [[nodiscard]] auto makeResourceWrap(T&& src) -> RW
+        /**
+         * @brief Make a resource_wrap from the src. It does not add to the pool.
+         * 
+         * @param src R-value reference to the resource to wrap
+         * @return A resource wrapper with auto-checkin configured
+         *
+         * @details
+         * The intention is to allow for creation of the resource and wire it up
+         * to auto-checkin to the pool when the scope exits.
+         * 
+         * This method supports both base resource_wrap and derived classes.
+         * For derived classes with custom constructors, it:
+         * 1. Constructs the derived class with just the resource
+         * 2. Sets up the callback and validity through friend access
+         * 3. Returns the fully configured wrapper
+         *
+         * @example
+         * @code
+         * // With base resource_wrap
+         * auto wrapped = pool.wrapResource(std::move(resource));
+         * 
+         * // With derived class (e.g., FileHandle)
+         * auto file_wrapped = pool.wrapResource(std::fopen("file.txt", "r"));
+         * @endcode
+         */
+        [[nodiscard]] auto wrapResource(T&& src) -> RW
         {
             /// @brief Lambda that returns the resource back to the pool
             /// Captures 'this' to access the pool's checkin method
@@ -467,7 +520,17 @@ namespace siddiqsoft
 
             // We return the resource back to the caller as a wrapper that has
             // the auto-checkin wired up to our pool.
-            return RW(std::move(src), autoReturnResource);
+            // For derived classes, we need to handle the case where the derived class
+            // has a different constructor signature than the base class.
+            // We construct the derived class first, then set the callback.
+            RW wrapper(std::move(src));
+            
+            // Set the callback and validity on the base class members
+            // resource_pool is a friend of resource_wrap, so we can access protected members
+            wrapper._putbackCallback = std::move(autoReturnResource);
+            wrapper._isValid = true;
+            
+            return wrapper;
         }
 
         /**

@@ -33,6 +33,7 @@
  */
 
 #pragma once
+#include <type_traits>
 #ifndef RESOURCE_POOL_HPP
 #define RESOURCE_POOL_HPP
 
@@ -48,6 +49,9 @@
 
 namespace siddiqsoft
 {
+    template <typename T>
+    concept NonNumericMoveConstructible = std::move_constructible<T> && !std::is_arithmetic_v<T>;
+
     /**
      * @brief RAII wrapper for checked-out resources with validity tracking
      * Use the resource_pool as a sole owner of the resources/objects
@@ -102,7 +106,7 @@ namespace siddiqsoft
      * @see resource_pool
      */
     template <typename T>
-        requires std::move_constructible<T>
+        requires NonNumericMoveConstructible<T>
     class resource_wrap
     {
     protected:
@@ -335,7 +339,7 @@ namespace siddiqsoft
      * @see resource_wrap
      */
     template <typename T, typename RW = resource_wrap<T>, uint16_t InitCapacity = sizeof(uint8_t)>
-        requires((InitCapacity <= sizeof(uint16_t))) && std::move_constructible<T> && std::derived_from<RW, resource_wrap<T>>
+        requires((InitCapacity <= sizeof(uint16_t))) && NonNumericMoveConstructible<T> && std::derived_from<RW, resource_wrap<T>>
     class resource_pool
     {
     private:

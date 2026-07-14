@@ -28,8 +28,8 @@
  */
 TEST(resource_wrap_validity, valid_resource_returned)
 {
-    siddiqsoft::resource_pool<int> pool;
-    pool.checkin(42);
+    siddiqsoft::resource_pool<std::string> pool;
+    pool.checkin(std::string("42"));
 
     EXPECT_EQ(1u, pool.size());
 
@@ -43,7 +43,7 @@ TEST(resource_wrap_validity, valid_resource_returned)
     EXPECT_EQ(1u, pool.size());
 
     auto item = pool.checkout();
-    EXPECT_EQ(42, *item);
+    EXPECT_EQ("42", *item);
 }
 
 /**
@@ -51,9 +51,9 @@ TEST(resource_wrap_validity, valid_resource_returned)
  */
 TEST(resource_wrap_validity, assignment_maintains_validity)
 {
-    siddiqsoft::resource_pool<int> pool;
-    pool.checkin(42);
-    pool.checkin(99);
+    siddiqsoft::resource_pool<std::string> pool;
+    pool.checkin(std::string("42"));
+    pool.checkin(std::string("99"));
 
     {
         auto wrap1 = pool.checkout();
@@ -76,8 +76,8 @@ TEST(resource_wrap_validity, assignment_maintains_validity)
  */
 TEST(resource_wrap_validity, destructor_returns_valid_resource)
 {
-    siddiqsoft::resource_pool<int> pool;
-    pool.checkin(100);
+    siddiqsoft::resource_pool<std::string> pool;
+    pool.checkin(std::string("100"));
 
     {
         auto wrap = pool.checkout();
@@ -88,7 +88,7 @@ TEST(resource_wrap_validity, destructor_returns_valid_resource)
     // Resource should be back in pool
     EXPECT_EQ(1u, pool.size());
     auto item = pool.checkout();
-    EXPECT_EQ(100, *item);
+    EXPECT_EQ("100", *item);
 }
 
 #if defined(DEBUG)
@@ -105,8 +105,8 @@ TEST(resource_wrap_validity, destructor_returns_valid_resource)
  */
 TEST(resource_wrap_validity, no_corruption_on_invalid_resource)
 {
-    siddiqsoft::resource_pool<int> pool;
-    pool.checkin(42);
+    siddiqsoft::resource_pool<std::string> pool;
+    pool.checkin(std::string("42"));
 
     EXPECT_EQ(1u, pool.size());
 
@@ -130,8 +130,8 @@ TEST(resource_wrap_validity, no_corruption_on_invalid_resource)
  */
 TEST(resource_wrap_validity, unique_ptr_invalidation)
 {
-    siddiqsoft::resource_pool<std::unique_ptr<int>> pool;
-    pool.checkin(std::make_unique<int>(42));
+    siddiqsoft::resource_pool<std::unique_ptr<std::string>> pool;
+    pool.checkin(std::make_unique<std::string>("42"));
 
     EXPECT_EQ(1u, pool.size());
 
@@ -154,8 +154,8 @@ TEST(resource_wrap_validity, unique_ptr_invalidation)
  */
 TEST(resource_wrap_validity, multiple_invalidations)
 {
-    siddiqsoft::resource_pool<int> pool;
-    pool.checkin(42);
+    siddiqsoft::resource_pool<std::string> pool;
+    pool.checkin(std::string("42"));
 
     {
         auto wrap = pool.checkout();
@@ -180,12 +180,12 @@ TEST(resource_wrap_validity, multiple_invalidations)
  */
 TEST(resource_wrap_validity, concurrent_with_invalidation)
 {
-    siddiqsoft::resource_pool<int> pool;
+    siddiqsoft::resource_pool<std::string> pool;
 
     // Pre-fill the pool with enough resources
     // We use 100 to ensure no contention
     for (int i = 0; i < 100; i++) {
-        pool.checkin(std::move(i));
+        pool.checkin(std::format("resource-{}", i));
     }
 
     EXPECT_EQ(100u, pool.size());
@@ -245,8 +245,8 @@ TEST(resource_wrap_validity, concurrent_with_invalidation)
  */
 TEST(resource_wrap_validity, destructor_skips_invalid_resource)
 {
-    siddiqsoft::resource_pool<int> pool;
-    pool.checkin(200);
+    siddiqsoft::resource_pool<std::string> pool;
+    pool.checkin(std::string("200"));
 
     {
         auto wrap = pool.checkout();
@@ -266,11 +266,11 @@ TEST(resource_wrap_validity, destructor_skips_invalid_resource)
  */
 TEST(resource_wrap_validity, mixed_valid_invalid_concurrent)
 {
-    siddiqsoft::resource_pool<int> pool;
+    siddiqsoft::resource_pool<std::string> pool;
 
     // Pre-fill with 20 items
     for (int i = 0; i < 20; i++) {
-        pool.checkin(std::move(i));
+        pool.checkin(std::format("resource-{}", i));
     }
 
     std::atomic_int           valid_count {0};

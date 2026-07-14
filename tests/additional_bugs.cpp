@@ -172,12 +172,12 @@ TEST(additional_bugs, roundrobin_pool_uninitialized_workers_size)
 /// The condition !_pool.empty() is unnecessary and could cause issues
 TEST(additional_bugs, resource_pool_clear_semantics)
 {
-    siddiqsoft::resource_pool<int> pool {};
+    siddiqsoft::resource_pool<std::string> pool {};
 
     // Add items
-    pool.checkin(1);
-    pool.checkin(2);
-    pool.checkin(3);
+    pool.checkin(std::string("1"));
+    pool.checkin(std::string("2"));
+    pool.checkin(std::string("3"));
     EXPECT_EQ(3u, pool.size());
 
     // Clear

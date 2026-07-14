@@ -7,6 +7,7 @@
 - [roundrobin_pool](#roundrobin_pool)
 - [periodic_worker](#periodic_worker)
 - [resource_pool](#resource_pool)
+- [Concepts](#concepts)
 
 ---
 
@@ -286,11 +287,23 @@ siddiqsoft::periodic_worker<> timer{
 
 ## resource_pool
 
-Manages a pool of reusable resources for checkout/checkin operations.
+Manages a pool of reusable resources for checkout/checkin operations. Designed for expensive resources like database connections, file handles, and buffers.
 
 ### Template Parameters
 
-- `T` - The type of resources to manage
+- `T` - The type of resources to manage (must satisfy `NonNumericMoveConstructible` concept)
+- `RW` - The resource wrapper type (default: `resource_wrap<T>`)
+- `InitCapacity` - Initial capacity hint in bytes (default: 1, max: 65535)
+
+**Important:** `T` must be move-constructible and NOT an arithmetic type (int, float, double, etc.). See [Concepts](#concepts) section for details.
+
+### Constructor
+
+```cpp
+resource_pool();
+```
+
+Creates an empty resource pool.
 
 ### Methods
 
@@ -304,23 +317,30 @@ Returns the current number of resources in the pool.
 
 **Returns:** Number of available resources
 
+**Thread Safety:** Thread-safe atomic read
+
 #### checkout
 
 ```cpp
-T checkout();
+[[nodiscard]] resource_wrap<T> checkout();
 ```
 
-Checks out a resource from the pool.
+Checks out a resource from the pool, wrapping it in a `resource_wrap` that automatically returns it when destroyed.
 
-**Returns:** A resource of type `T`
+**Returns:** A `resource_wrap<T>` containing the checked-out resource
 
 **Throws:** `std::runtime_error` if the pool is empty
 
 **Example:**
 ```cpp
-auto resource = pool.checkout();
-// Use resource...
-pool.checkin(std::move(resource));
+try {
+    auto resource = pool.checkout();
+    // Use resource via *resource or resource->method()
+    // Automatically returned to pool when scope exits
+}
+catch (const std::runtime_error& e) {
+    std::cerr << "Pool is empty: " << e.what() << std::endl;
+}
 ```
 
 #### checkin
@@ -336,7 +356,8 @@ Returns a resource to the pool.
 
 **Example:**
 ```cpp
-pool.checkin(std::move(resource));
+auto conn = std::make_shared<DatabaseConnection>("localhost");
+pool.checkin(std::move(conn));  // conn is now empty
 ```
 
 #### clear
@@ -350,6 +371,71 @@ Removes all resources from the pool.
 **Example:**
 ```cpp
 pool.clear();
+```
+
+---
+
+## resource_wrap
+
+RAII wrapper for checked-out resources with validity tracking. Automatically returns resources to the pool when destroyed.
+
+### Template Parameters
+
+- `T` - The resource type (must satisfy `NonNumericMoveConstructible` concept)
+
+### Key Features
+
+- **Automatic Return:** Resources are automatically returned to the pool via RAII
+- **Validity Tracking:** Prevents returning uninitialized or moved-out resources
+- **Move-Only Semantics:** No copying to maintain clear ownership
+- **Pointer-Like Access:** Use `*wrap` to access the resource
+
+### Methods
+
+#### operator*
+
+```cpp
+T& operator*();
+```
+
+Dereferences the wrapped resource.
+
+**Returns:** Reference to the wrapped resource
+
+**Example:**
+```cpp
+auto wrap = pool.checkout();
+(*wrap)->doSomething();  // Access via dereference
+```
+
+#### operator T
+
+```cpp
+operator T();
+```
+
+Implicit conversion to the resource type.
+
+**Returns:** Copy of the wrapped resource
+
+#### invalidate
+
+```cpp
+void invalidate();
+```
+
+Marks the resource as invalid to prevent automatic return to the pool.
+
+**Use Cases:**
+- You've moved the resource out and it's no longer valid
+- You want to take ownership and prevent automatic return
+- You're implementing custom resource management
+
+**Example:**
+```cpp
+auto wrap = pool.checkout();
+auto ptr = std::move(*wrap);
+wrap.invalidate();  // Don't return the moved-out resource
 ```
 
 ---
@@ -387,18 +473,18 @@ Worker objects use RAII principles. The worker stops when the object is destroye
 ### Resource Pooling Pattern
 
 ```cpp
-siddiqsoft::resource_pool<DatabaseConnection> pool;
+siddiqsoft::resource_pool<std::shared_ptr<DatabaseConnection>> pool;
 
 // Populate pool
 for (int i = 0; i < 10; ++i) {
-    pool.checkin(DatabaseConnection{"localhost"});
+    pool.checkin(std::make_shared<DatabaseConnection>("localhost"));
 }
 
 // Use in worker
 siddiqsoft::simple_pool<Query> queryPool{[&pool](auto& query) {
     auto conn = pool.checkout();
-    query.execute(conn);
-    pool.checkin(std::move(conn));
+    query.execute(*conn);
+    // conn automatically returned to pool when scope exits
 }};
 ```
 
@@ -410,6 +496,7 @@ All classes are thread-safe for their public interfaces:
 
 - `queue()` can be called from multiple threads
 - `size()`, `addCounter()`, and `removeCounter()` are atomic reads
+- `checkout()` and `checkin()` are thread-safe
 - Internal synchronization uses `std::mutex` and `std::semaphore`
 
 ---
@@ -433,15 +520,73 @@ All classes are thread-safe for their public interfaces:
 - Interval is approximate; actual execution may vary based on system load
 - Exceptions in callbacks are logged but don't stop the worker
 
+### resource_pool
+
+- Ideal capacity should match `std::thread::hardware_concurrency()`
+- Each checkout/checkin operation acquires a lock
+- Resources are stored in a deque for efficient FIFO access
+- There is overhead from the `resource_wrap` wrapper
+
 ---
 
 ## Concepts
 
-The library uses C++20 concepts to ensure type safety:
+The library uses C++20 concepts to ensure type safety and prevent misuse.
+
+### NonNumericMoveConstructible
+
+This concept is used by `resource_pool` and `resource_wrap` to enforce proper resource management:
 
 ```cpp
 template<typename T>
-concept MoveConstructible = std::is_move_constructible_v<T>;
+concept NonNumericMoveConstructible = 
+    std::move_constructible<T> && !std::is_arithmetic_v<T>;
 ```
 
-All template parameters must satisfy this concept.
+**Requirements:**
+1. Type `T` must be move-constructible
+2. Type `T` must NOT be an arithmetic type (int, float, double, bool, etc.)
+
+**Rationale:**
+
+The constraint prevents using arithmetic types directly with `resource_pool` because:
+
+- Arithmetic types are cheap to copy and don't benefit from pooling
+- Pooling is designed for expensive resources (connections, file handles, buffers)
+- The constraint encourages proper resource management patterns
+- It prevents accidental misuse of the library
+
+**Valid Types:**
+
+- `std::string` - Strings are non-numeric and move-constructible
+- `std::shared_ptr<T>` - Smart pointers for shared ownership
+- `std::unique_ptr<T>` - Smart pointers for exclusive ownership
+- `std::vector<T>` - Dynamic arrays
+- Custom classes and structs
+- File handles wrapped in classes
+- Database connections
+- Network sockets
+
+**Invalid Types:**
+
+- `int`, `float`, `double`, `bool` - Arithmetic types
+- `std::array<int, 10>` - Arrays of arithmetic types
+- Any type where `std::is_arithmetic_v<T>` is true
+
+**Examples:**
+
+```cpp
+// CORRECT: Use std::string instead of int
+siddiqsoft::resource_pool<std::string> pool;
+pool.checkin(std::string("resource-1"));
+
+// CORRECT: Use shared_ptr for managed resources
+siddiqsoft::resource_pool<std::shared_ptr<DatabaseConnection>> pool;
+pool.checkin(std::make_shared<DatabaseConnection>("localhost"));
+
+// INCORRECT: int is arithmetic
+// siddiqsoft::resource_pool<int> pool;  // Compilation error!
+// error: constraints not satisfied for class template 'resource_pool'
+// because 'int' does not satisfy 'NonNumericMoveConstructible'
+```
+

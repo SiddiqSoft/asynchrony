@@ -111,20 +111,20 @@ namespace siddiqsoft
     {
     protected:
         /// @brief The actual resource being wrapped
-        T rsrc {};
+        T _rsrc {};
 
         /// @brief Debug identifier for tracking (used in DEBUG builds)
-        uint64_t debugId {static_cast<uint64_t>(std::rand())};
+        uint64_t _debugId {static_cast<uint64_t>(std::rand())};
 
         /// @brief Callback function to return the resource to the pool
         /// Called by destructor when resource is valid
-        std::function<void(T&&)> putbackCallback {};
+        std::function<void(T&&)> _putbackCallback {};
 
         /// @brief Tracks whether the resource is valid and should be returned to pool
         /// Prevents returning uninitialized or moved-out resources
         /// - true: resource will be returned to pool on destruction
         /// - false: resource will NOT be returned to pool on destruction
-        bool isValid {false};
+        bool _isValid {false};
 
     public:
         /// @brief Default constructor is deleted
@@ -144,21 +144,10 @@ namespace siddiqsoft
          * @note This constructor is typically called by resource_pool::checkout()
          */
         resource_wrap(T&& src, std::function<void(T&&)>&& f = {})
-            : rsrc(std::move(src))
-            , putbackCallback(std::move(f))
-            , isValid(true)
+            : _rsrc(std::move(src))
+            , _putbackCallback(std::move(f))
+            , _isValid(true)
         {
-#if defined(DEBUG)
-            if constexpr (std::is_pointer_v<T>) {
-                std::cerr << std::format("  - resource_wrap: debugId:{} {:p}\n", debugId, static_cast<void*>(rsrc));
-            }
-            else if constexpr (std::is_integral_v<T>) {
-                std::cerr << std::format("  - resource_wrap: debugId:{} {}\n", debugId, rsrc);
-            }
-            else {
-                std::cerr << std::format("  - resource_wrap: debugId:{}\n", debugId);
-            }
-#endif
         }
 
         /// @brief Copy constructor is deleted
@@ -178,10 +167,10 @@ namespace siddiqsoft
         resource_wrap& operator=(T&& src)
         {
 #if defined(DEBUG)
-            std::cerr << std::format("  - resource_wrap: move into debugId:{}\n", debugId);
+            std::cerr << std::format("  - resource_wrap: move into debugId:{}\n", _debugId);
 #endif
-            rsrc    = std::move(src);
-            isValid = true;
+            _rsrc    = std::move(src);
+            _isValid = true;
             return *this;
         };
 
@@ -199,7 +188,7 @@ namespace siddiqsoft
          * (*resource)->doSomething();  // Access via dereference
          * @endcode
          */
-        auto operator*() -> T& { return rsrc; }
+        auto operator*() -> T& { return _rsrc; }
 
         /**
          * @brief Type conversion operator
@@ -210,7 +199,7 @@ namespace siddiqsoft
          * Allows implicit conversion to the resource type.
          * Useful for passing to functions expecting the resource type.
          */
-        operator T() { return rsrc; }
+        operator T() { return _rsrc; }
 
         /**
          * @brief Destructor - automatically returns resource to pool if valid
@@ -227,13 +216,13 @@ namespace siddiqsoft
         ~resource_wrap()
         {
 #if defined(DEBUG)
-            std::cerr << std::format("  - ~resource_wrap: putback debugId:{}  isValid:{}\n", debugId, isValid);
+            std::cerr << std::format("  - ~resource_wrap: putback debugId:{}  isValid:{}\n", _debugId, _isValid);
 #endif
             // Only return resource if it's valid and callback exists
             // This prevents returning uninitialized or moved-out resources to the pool
-            if (isValid && putbackCallback) {
-                putbackCallback(std::move(rsrc));
-                isValid = false;
+            if (_isValid && _putbackCallback) {
+                _putbackCallback(std::move(_rsrc));
+                _isValid = false;
             }
         }
 
@@ -261,7 +250,7 @@ namespace siddiqsoft
          * // Resource is NOT returned to pool
          * @endcode
          */
-        void invalidate() { isValid = false; }
+        void invalidate() { _isValid = false; }
     };
 
     /**
@@ -469,6 +458,24 @@ namespace siddiqsoft
             } // scope end
 
             throw std::runtime_error("Empty pool; add something first!");
+        }
+
+        /// @brief Make a resource_wrap from the src. It does not add to the pool.
+        /// The intention is to allow for creation of the resource and wire it up
+        /// to auto-checkin to the pool when the scope exits.
+        [[nodiscard]] auto makeResourceWrap(T&& src) -> RW
+        {
+            /// @brief Lambda that returns the resource back to the pool
+            /// Captures 'this' to access the pool's checkin method
+            /// Called by resource_wrap destructor to ensure automatic return
+            /// even if an exception occurs
+            auto autoReturnResource = [this](T&& rsrc) {
+                this->checkin(std::move(rsrc));
+            };
+
+            // We return the resource back to the caller as a wrapper that has
+            // the auto-checkin wired up to our pool.
+            return {std::move(src), autoReturnResource};
         }
 
         /**

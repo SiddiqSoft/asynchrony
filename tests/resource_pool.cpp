@@ -49,12 +49,12 @@
 
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
-TEST(resource_pool, T_int)
+TEST(resource_pool, T_string)
 {
     bool passTest {false};
 
     EXPECT_NO_THROW({
-        siddiqsoft::resource_pool<int> rp {};
+        siddiqsoft::resource_pool<std::string> rp {};
         std::cerr << std::format("{} - Capacity:{}\n", __func__, rp.size());
         passTest = true;
     });
@@ -200,7 +200,7 @@ TEST(resource_pool, T_checkin_checkout_vector_string)
 /// @brief Test that checkout on an empty pool throws
 TEST(resource_pool, checkout_empty_throws)
 {
-    siddiqsoft::resource_pool<int> rp {};
+    siddiqsoft::resource_pool<std::string> rp {};
     EXPECT_THROW({ [[maybe_unused]] auto v = rp.checkout(); }, std::runtime_error);
 }
 
@@ -208,10 +208,10 @@ TEST(resource_pool, checkout_empty_throws)
 /// @brief Test clear empties the pool
 TEST(resource_pool, clear)
 {
-    siddiqsoft::resource_pool<int> rp {};
-    rp.checkin(1);
-    rp.checkin(2);
-    rp.checkin(3);
+    siddiqsoft::resource_pool<std::string> rp {};
+    rp.checkin(std::string("1"));
+    rp.checkin(std::string("2"));
+    rp.checkin(std::string("3"));
     EXPECT_EQ(3u, rp.size());
 
     rp.clear();
@@ -225,17 +225,17 @@ TEST(resource_pool, clear)
 /// @brief Test multiple checkin/checkout cycles
 TEST(resource_pool, multiple_items)
 {
-    siddiqsoft::resource_pool<int> rp {};
+    siddiqsoft::resource_pool<std::string> rp {};
 
     for (int i = 0; i < 10; i++) {
-        rp.checkin(std::move(i));
+        rp.checkin(std::format("{}", i));
     }
     EXPECT_EQ(10u, rp.size());
 
     // Checkout all items (FIFO order)
     for (int i = 0; i < 10; i++) {
         auto item = rp.checkout();
-        EXPECT_EQ(i, *item);
+        EXPECT_EQ(std::format("{}", i), *item);
     }
     EXPECT_EQ(10u, rp.size());
 }
@@ -280,13 +280,13 @@ TEST(resource_pool, json_type)
 /// @brief Test concurrent checkin/checkout from multiple threads
 TEST(resource_pool, concurrent_access)
 {
-    siddiqsoft::resource_pool<int> rp {};
-    constexpr int                  ITERATIONS = 100;
-    std::atomic_int                checkoutCount {0};
+    siddiqsoft::resource_pool<std::string> rp {};
+    constexpr int                          ITERATIONS = 100;
+    std::atomic_int                        checkoutCount {0};
 
     // Pre-fill the pool
     for (int i = 0; i < ITERATIONS; i++) {
-        rp.checkin(std::move(i));
+        rp.checkin(std::format("resource-{}", i));
     }
 
     std::vector<std::jthread> threads;
@@ -320,8 +320,8 @@ TEST(resource_pool, concurrent_access)
 /// @brief Test that double clear is safe
 TEST(resource_pool, double_clear)
 {
-    siddiqsoft::resource_pool<int> rp {};
-    rp.checkin(42);
+    siddiqsoft::resource_pool<std::string> rp {};
+    rp.checkin(std::string("42"));
     rp.clear();
     EXPECT_EQ(0u, rp.size());
 
@@ -336,13 +336,13 @@ TEST(resource_pool, double_clear)
 /// All resources must be returned to the pool at the end.
 TEST(resource_pool, starvation_under_contention)
 {
-    constexpr int                  POOL_SIZE      = 3;
-    constexpr int                  THREAD_COUNT   = 8;
-    constexpr int                  OPS_PER_THREAD = 50;
+    constexpr int                          POOL_SIZE      = 3;
+    constexpr int                          THREAD_COUNT   = 8;
+    constexpr int                          OPS_PER_THREAD = 50;
 
-    siddiqsoft::resource_pool<int> rp {};
+    siddiqsoft::resource_pool<std::string> rp {};
     for (int i = 0; i < POOL_SIZE; i++) {
-        rp.checkin(std::move(i));
+        rp.checkin(std::format("resource-{}", i));
     }
 
     std::atomic_int           successCount {0};
@@ -387,11 +387,11 @@ TEST(resource_pool, starvation_under_contention)
 /// No crashes or deadlocks should occur.
 TEST(resource_pool, concurrent_clear_with_operations)
 {
-    siddiqsoft::resource_pool<int> rp {};
-    constexpr int                  INITIAL_SIZE = 20;
+    siddiqsoft::resource_pool<std::string> rp {};
+    constexpr int                          INITIAL_SIZE = 20;
 
     for (int i = 0; i < INITIAL_SIZE; i++) {
-        rp.checkin(std::move(i));
+        rp.checkin(std::format("resource-{}", i));
     }
 
     std::atomic_bool done {false};
@@ -405,7 +405,7 @@ TEST(resource_pool, concurrent_clear_with_operations)
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
             // Re-populate
             for (int i = 0; i < 5; i++) {
-                rp.checkin(std::move(i));
+                rp.checkin(std::format("resource-{}", i));
             }
         }
     });
@@ -487,9 +487,9 @@ TEST(resource_pool, high_throughput_cycling)
 /// Validates the exception path after legitimate use, not just on a fresh empty pool.
 TEST(resource_pool, checkout_after_drain_throws)
 {
-    siddiqsoft::resource_pool<int> rp {};
-    rp.checkin(1);
-    rp.checkin(2);
+    siddiqsoft::resource_pool<std::string> rp {};
+    rp.checkin(std::string("1"));
+    rp.checkin(std::string("2"));
 
     {
         [[maybe_unused]] auto a = rp.checkout();
@@ -509,18 +509,18 @@ TEST(resource_pool, checkout_after_drain_throws)
 /// Multiple threads checkin while the main thread polls size().
 TEST(resource_pool, size_accuracy_under_concurrency)
 {
-    siddiqsoft::resource_pool<int> rp {};
-    constexpr int                  ITEMS_PER_THREAD = 50;
-    constexpr int                  THREAD_COUNT     = 4;
+    siddiqsoft::resource_pool<std::string> rp {};
+    constexpr int                          ITEMS_PER_THREAD = 50;
+    constexpr int                          THREAD_COUNT     = 4;
 
-    std::barrier                   startBarrier {THREAD_COUNT};
-    std::vector<std::jthread>      threads;
+    std::barrier                           startBarrier {THREAD_COUNT};
+    std::vector<std::jthread>              threads;
 
     for (int t = 0; t < THREAD_COUNT; t++) {
         threads.emplace_back([&, t]() {
             startBarrier.arrive_and_wait();
             for (int i = 0; i < ITEMS_PER_THREAD; i++) {
-                int val = t * ITEMS_PER_THREAD + i;
+                std::string val = std::format("resource-{}-{}", t, i);
                 rp.checkin(std::move(val));
             }
         });

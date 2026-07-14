@@ -82,7 +82,7 @@ public:
 
     auto to_string() -> std::string const
     {
-        return std::format("FileHandle - FILE* {:p} debugId:{}  isValid:{}\n", static_cast<void*>(rsrc), debugId, isValid);
+        return std::format("FileHandle - FILE* {:p} debugId:{}  isValid:{}\n", static_cast<void*>(_rsrc), _debugId, _isValid);
     }
 
     // Constructor from FILE*
@@ -102,7 +102,7 @@ public:
     {
         if (this != &other) {
             close();
-            rsrc = std::move(other.release());
+            _rsrc = std::move(other.release());
         }
         std::cerr << std::format("  Assigned: {}", to_string());
         return *this;
@@ -115,11 +115,11 @@ public:
     // Destructor
     ~FileHandle()
     {
-        if (rsrc) {
+        if (_rsrc) {
 #if defined(DEBUG)
             std::cerr << std::format(" ~FileHandle - {}",to_string());
 #endif
-            std::fflush(rsrc);
+            std::fflush(_rsrc);
         }
         else {
             std::cerr << std::format("FileHandle - No/empty resource!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! {}\n", to_string());
@@ -132,22 +132,22 @@ public:
     // Release ownership
     [[nodiscard]] FILE* release()
     {
-        FILE* temp = rsrc;
-        rsrc       = nullptr;
+        FILE* temp = _rsrc;
+        _rsrc       = nullptr;
         return temp;
     }
 
     // Close the file
     void close()
     {
-        if (rsrc != nullptr) {
-            std::fclose(rsrc);
-            rsrc = nullptr;
+        if (_rsrc != nullptr) {
+            std::fclose(_rsrc);
+            _rsrc = nullptr;
         }
     }
 
     // Operator-> for convenience
-    FILE* operator->() const { return rsrc; }
+    FILE* operator->() const { return _rsrc; }
 
     auto& operator=(FILE* f)
     {
@@ -155,12 +155,12 @@ public:
         close();
         release();
         // Now we can accept the new one..
-        rsrc = f;
+        _rsrc = f;
         return *this;
     }
 
     // Boolean conversion
-    explicit operator bool() const { return rsrc != nullptr; }
+    explicit operator bool() const { return _rsrc != nullptr; }
 };
 
 /**

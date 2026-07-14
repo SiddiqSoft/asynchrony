@@ -1,4 +1,3 @@
-
 @page quick_reference Quick Reference
 
 @section qr_components Components at a Glance
@@ -62,7 +61,7 @@ siddiqsoft::periodic_worker<> timer{
 @subsection qr_pattern_resource Resource Pool
 
 ```cpp
-siddiqsoft::resource_pool<Resource> pool;
+siddiqsoft::resource_pool<std::shared_ptr<Resource>> pool;
 auto res = pool.checkout();
 // use resource
 pool.checkin(std::move(res));
@@ -85,8 +84,10 @@ pool.checkin(std::move(res));
 ### periodic_worker<Pri>
 - `Pri`: Thread priority (-10 to +10, default 0)
 
-### resource_pool<T>
-- `T`: Resource type (must be move-constructible)
+### resource_pool<T, RW, InitCapacity>
+- `T`: Resource type (must satisfy NonNumericMoveConstructible)
+- `RW`: Resource wrapper type (default: resource_wrap<T>)
+- `InitCapacity`: Initial capacity hint in bytes (default: 1, max: 65535)
 
 @section qr_methods Common Methods
 
@@ -159,6 +160,37 @@ target_link_libraries(your_target PRIVATE asynchrony::asynchrony)
 6. **Lifetime management** - Keep worker/pool alive while queuing
 7. **Thread priority** - Use carefully, may affect system performance
 8. **Resource pool capacity** - Set to match thread pool size for optimal performance
+9. **Resource pool types** - Use std::shared_ptr or std::unique_ptr for resources
+
+@section qr_constraints Type Constraints
+
+### NonNumericMoveConstructible Concept
+
+The `resource_pool` and `resource_wrap` require types that satisfy the `NonNumericMoveConstructible` concept:
+
+```cpp
+template<typename T>
+concept NonNumericMoveConstructible = 
+    std::move_constructible<T> && !std::is_arithmetic_v<T>;
+```
+
+**Valid types for resource_pool:**
+- `std::string`
+- `std::shared_ptr<T>` (where T is non-numeric)
+- `std::unique_ptr<T>` (where T is non-numeric)
+- `std::vector<T>`
+- Custom classes and structs
+- File handles wrapped in classes
+- Database connections
+
+**Invalid types for resource_pool:**
+- `int`, `float`, `double`, `bool` (arithmetic types)
+- Use `std::string` or wrapper classes instead
+
+**Why this constraint?**
+- Arithmetic types are cheap to copy and don't benefit from pooling
+- Pooling is designed for expensive resources
+- The constraint prevents accidental misuse
 
 @section qr_troubleshooting Common Issues
 
@@ -171,6 +203,7 @@ target_link_libraries(your_target PRIVATE asynchrony::asynchrony)
 | Memory leak | Ensure proper RAII cleanup |
 | `checkout()` throws | Pool is empty, add resources first |
 | Clang compilation fails | Add `-fexperimental-library` flag |
+| `resource_pool<int>` compilation error | Use `std::string` or wrapper class instead |
 
 @section qr_performance Performance Tips
 
@@ -180,6 +213,7 @@ target_link_libraries(your_target PRIVATE asynchrony::asynchrony)
 - **Use roundrobin**: For variable-duration tasks
 - **Monitor metrics**: Use toJson() to track queue depth
 - **Avoid blocking**: Keep callbacks fast and non-blocking
+- **Resource pool**: Set capacity to match thread pool size
 
 @section qr_examples Quick Examples
 
@@ -212,9 +246,10 @@ std::this_thread::sleep_for(std::chrono::seconds(10));
 
 ### Example 4: Resource Management
 ```cpp
-siddiqsoft::resource_pool<Connection> pool;
+siddiqsoft::resource_pool<std::shared_ptr<Connection>> pool;
+pool.checkin(std::make_shared<Connection>("localhost"));
 auto conn = pool.checkout();
-conn.query("SELECT * FROM users");
+conn->query("SELECT * FROM users");
 pool.checkin(std::move(conn));
 ```
 
@@ -235,4 +270,3 @@ When calling `toJson()` on workers, the output includes:
   "waitInterval": 1500
 }
 ```
-

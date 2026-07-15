@@ -151,9 +151,9 @@ namespace siddiqsoft
         /// The client cannot add a resource to the pool and must instead craft a callback
         /// that the resource_pool will invoke when the pool needs a resource and is within
         /// the maximum capacity.
-        std::function<T && (resource_pool & pool)> _onNewResourceCallback {};
+        std::function<RW && (resource_pool & pool)> _onNewResourceCallback {};
         /// @brief This callback is invoked when the resource is invalidated
-        std::function<void(T&&)> _onResourceInvalidatedCallback {};
+        std::function<void(RW&&)> _onResourceInvalidatedCallback {};
         /// @brief This callback is invoked when the pool is about to shutdown
         std::function<void()> _onPoolShutdownCallback {};
 
@@ -162,11 +162,11 @@ namespace siddiqsoft
         /// Creates an empty pool ready to accept resources
         resource_pool() = default;
 
-        resource_pool(std::function<T && (resource_pool & pool)>&& new_resource_callback)
+        resource_pool(std::function<RW && (resource_pool & pool)>&& new_resource_callback)
             : _onNewResourceCallback(std::move(new_resource_callback))
         {
         }
-        
+
         /// @brief Copy constructor (deleted - pools are not copyable)
         /// Each pool manages its own resources independently
         resource_pool(resource_pool&) = delete;
@@ -261,7 +261,7 @@ namespace siddiqsoft
          * }
          * @endcode
          */
-        [[nodiscard]] auto checkout() -> RW /* throw() */
+        [[nodiscard]] auto checkout() -> RW&& /* throw() */
         {
             try {
                 // @note We use a unique_lock vs a scoped_lock to allow ourselves
@@ -286,7 +286,7 @@ namespace siddiqsoft
                     l.unlock();
                     // ..delegate the new resource acquisition
                     // outside the lock.
-                    return wrapResource(_onNewResourceCallback(*this));
+                    return wrapResource(std::move(_onNewResourceCallback(*this)));
                 }
             } // scope end
             catch (std::exception&) {
@@ -321,7 +321,7 @@ namespace siddiqsoft
          * auto file_wrapped = pool.wrapResource(std::fopen("file.txt", "r"));
          * @endcode
          */
-        [[nodiscard]] auto wrapResource(T&& src) -> RW
+        [[nodiscard]] auto wrapResource(T&& src) -> RW&&
         {
             /// @brief Lambda that returns the resource back to the pool
             /// Captures 'this' to access the pool's checkin method
@@ -343,7 +343,24 @@ namespace siddiqsoft
             wrapper._putbackCallback = std::move(autoReturnResource);
             wrapper._isValid         = true;
 
-            return wrapper;
+            return std::move(wrapper);
+        }
+
+
+        [[nodiscard]] auto wrapResource(RW&& src) -> RW&&
+        {
+            /// @brief Lambda that returns the resource back to the pool
+            /// Captures 'this' to access the pool's checkin method
+            /// Called by resource_wrap destructor to ensure automatic return
+            /// even if an exception occurs
+            /// Set the callback and validity on the base class members
+            /// resource_pool is a friend of resource_wrap, so we can access protected members
+            src._putbackCallback = [this](T&& src) {
+                this->checkin(std::move(src));
+            };
+            src._isValid = true;
+
+            return std::move(src);
         }
 
         /**

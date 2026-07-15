@@ -331,7 +331,7 @@ namespace siddiqsoft
          * Allows implicit conversion to the resource type.
          * Useful for passing to functions expecting the resource type.
          */
-        operator T() { return _rsrc; }
+        operator T&() { return _rsrc; }
 
         /**
          * @brief Destructor - automatically returns resource to pool if valid

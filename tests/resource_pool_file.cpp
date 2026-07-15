@@ -78,19 +78,24 @@ inline void safe_remove_file(const std::string& filepath)
 class FileHandle : public siddiqsoft::resource_wrap<FILE*>
 {
 public:
-    std::string Dummy {"dummy"};
+    std::string FileName {"dummy"};
 
 public:
     FileHandle() = delete;
 
     auto to_string() -> std::string const
     {
-        return std::format("FileHandle - FILE* {:p} debugId:{}  isValid:{}\n", static_cast<void*>(_rsrc), _debugId, _isValid);
+        return std::format("FileHandle - fn:{}   FILE* {:p} debugId:{}  isValid:{}\n",
+                           FileName,
+                           static_cast<void*>(_rsrc),
+                           _debugId,
+                           _isValid);
     }
 
     // Constructor from FILE*
-    explicit FileHandle(FILE*&& f) noexcept
+    explicit FileHandle(FILE*&& f, const std::string& fn = {}) noexcept
         : resource_wrap(std::move(f))
+        , FileName(fn)
     {
     }
 
@@ -553,6 +558,336 @@ TEST(resource_pool_file, file_handle_concurrent_access)
 
     EXPECT_GE(write_count, 1);
     EXPECT_EQ(1u, file_pool.size());
+
+    // Cleanup
+    safe_remove_file(temp_file);
+}
+
+
+/**
+ * @brief Test resource pool with new resource callback constructor
+ *
+ * Tests the constructor that takes a callback to create resources on demand.
+ * The callback is invoked when the pool needs a new resource and hasn't reached capacity.
+ */
+TEST(resource_pool_file, pool_with_new_resource_callback)
+{
+    const std::string temp_file = get_temp_file_path("asynchrony_test_callback.txt");
+
+    std::atomic<int>  resource_creation_count {0};
+
+    // Create a pool with a callback that creates FILE* resources on demand
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+        resource_creation_count++;
+        std::cerr << std::format(". . Adding new on-demand: {}...\n", temp_file.c_str());
+        return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+")), temp_file.c_str()};
+    });
+
+    // Pool should be empty initially
+    EXPECT_EQ(0u, file_pool.size());
+    EXPECT_EQ(0, resource_creation_count);
+
+    // First checkout should trigger resource creation via callback
+    {
+        auto file_wrapper = file_pool.checkout();
+        EXPECT_EQ(1, resource_creation_count);
+        EXPECT_EQ(0u, file_pool.size());
+
+        // Write to the file
+        std::fprintf(*file_wrapper, "Created via callback\n");
+    }
+    // File is automatically returned to pool
+
+    EXPECT_EQ(1u, file_pool.size());
+    EXPECT_EQ(1, resource_creation_count);
+
+    // Second checkout should reuse the resource from pool (no new creation)
+    {
+        auto file_wrapper = file_pool.checkout();
+        EXPECT_EQ(1, resource_creation_count); // No new creation
+        EXPECT_EQ(0u, file_pool.size());
+
+        // Verify content from previous write
+        std::rewind(*file_wrapper);
+        char buffer[100] = {};
+        ASSERT_NE(nullptr, std::fgets(buffer, sizeof(buffer), *file_wrapper));
+        EXPECT_STREQ("Created via callback\n", buffer);
+    }
+
+    EXPECT_EQ(1u, file_pool.size());
+    EXPECT_EQ(1, resource_creation_count);
+
+    // Cleanup
+    safe_remove_file(temp_file);
+}
+
+/**
+ * @brief Test resource pool callback respects capacity limits
+ *
+ * Verifies that the callback is only invoked when the pool is under capacity.
+ * Once capacity is reached, no new resources are created.
+ */
+TEST(resource_pool_file, pool_callback_respects_capacity)
+{
+    const std::string temp_file1 = get_temp_file_path("asynchrony_test_cap1.txt");
+    const std::string temp_file2 = get_temp_file_path("asynchrony_test_cap2.txt");
+
+    std::atomic<int>  resource_creation_count {0};
+
+
+    // Create pool with capacity of 2
+    siddiqsoft::resource_pool<FILE*, FileHandle, 2> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle, 2>& pool) {
+        resource_creation_count++;
+        // Alternate between two files
+        if (resource_creation_count % 2 == 1) {
+            return FileHandle {std::move(std::fopen(temp_file1.c_str(), "w+"))};
+        }
+        else {
+            return FileHandle {std::move(std::fopen(temp_file2.c_str(), "w+"))};
+        }
+    });
+
+    EXPECT_EQ(0u, file_pool.size());
+    EXPECT_EQ(0, resource_creation_count);
+
+    // First checkout creates resource 1
+    auto file1 = file_pool.checkout();
+    EXPECT_EQ(1, resource_creation_count);
+
+    // Second checkout creates resource 2 (still under capacity)
+    auto file2 = file_pool.checkout();
+    EXPECT_EQ(2, resource_creation_count);
+
+    // Return both resources
+    file1 = nullptr; // This will trigger checkin via destructor
+    file2 = nullptr;
+
+    EXPECT_EQ(2u, file_pool.size());
+    EXPECT_EQ(2, resource_creation_count);
+
+    // Cleanup
+    safe_remove_file(temp_file1);
+    safe_remove_file(temp_file2);
+}
+
+/**
+ * @brief Test resource pool callback with multiple concurrent checkouts
+ *
+ * Verifies that the callback is invoked correctly when multiple threads
+ * checkout resources concurrently.
+ */
+TEST(resource_pool_file, pool_callback_concurrent_checkouts)
+{
+    const std::string                            temp_file = get_temp_file_path("asynchrony_test_concurrent_cb.txt");
+
+    std::atomic<int>                             resource_creation_count {0};
+
+
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+        resource_creation_count++;
+        return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+"))};
+    });
+
+    std::atomic<int>                             successful_checkouts {0};
+    std::vector<std::thread>                     threads;
+
+    // Create multiple threads that checkout resources
+    for (int i = 0; i < 3; ++i) {
+        threads.emplace_back([&file_pool, &successful_checkouts]() {
+            try {
+                auto fw = file_pool.checkout();
+                std::fprintf(*fw, "Thread checkout\n");
+                successful_checkouts++;
+            }
+            catch (const std::exception& ex) {
+                std::cerr << std::format("Checkout failed: {}\n", ex.what());
+            }
+        });
+    }
+
+    // Wait for all threads to complete
+    for (auto& t : threads) {
+        t.join();
+    }
+
+    // At least one thread should have successfully checked out
+    EXPECT_GE(successful_checkouts, 1);
+    // At least one resource should have been created
+    EXPECT_GE(resource_creation_count, 1);
+
+    // Cleanup
+    safe_remove_file(temp_file);
+}
+
+
+/**
+ * @brief Test resource pool callback with manual checkin
+ *
+ * Verifies that resources created via callback can be manually checked in.
+ */
+TEST(resource_pool_file, pool_callback_manual_checkin)
+{
+    const std::string                            temp_file = get_temp_file_path("asynchrony_test_manual_cb.txt");
+    std::atomic<int>                             resource_creation_count {0};
+
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+        resource_creation_count++;
+        return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+")), temp_file.c_str()};
+    });
+
+    // Checkout a resource
+    auto file_wrapper = file_pool.checkout();
+    EXPECT_EQ(1, resource_creation_count);
+    EXPECT_EQ(0u, file_pool.size());
+
+    // Write to file
+    std::fprintf(*file_wrapper, "Manual checkin test\n");
+
+    // Manually checkin the resource
+    file_pool.checkin(std::move(*file_wrapper));
+    EXPECT_EQ(1u, file_pool.size());
+
+    // Cleanup
+    safe_remove_file(temp_file);
+}
+
+/**
+ * @brief Test resource pool callback creates multiple resources sequentially
+ *
+ * Verifies that the callback creates new resources as needed when previous
+ * resources are checked out.
+ */
+TEST(resource_pool_file, pool_callback_sequential_creation)
+{
+    const std::string                            temp_file = get_temp_file_path("asynchrony_test_seq_cb.txt");
+
+    std::atomic<int>                             resource_creation_count {0};
+
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+        resource_creation_count++;
+        return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+")), temp_file.c_str()};
+    });
+
+    // Checkout first resource
+    auto file1 = file_pool.checkout();
+    EXPECT_EQ(1, resource_creation_count);
+    std::fprintf(*file1, "Resource 1\n");
+
+    // Checkout second resource (first is still checked out)
+    auto file2 = file_pool.checkout();
+    EXPECT_EQ(2, resource_creation_count);
+    std::fprintf(*file2, "Resource 2\n");
+
+    // Return first resource
+    file1 = nullptr;
+    EXPECT_EQ(1u, file_pool.size());
+
+    // Checkout again - should reuse first resource
+    auto file3 = file_pool.checkout();
+    EXPECT_EQ(2, resource_creation_count); // No new creation
+    EXPECT_EQ(0u, file_pool.size());
+
+    // Cleanup
+    file2 = nullptr;
+    file3 = nullptr;
+    safe_remove_file(temp_file);
+}
+
+/**
+ * @brief Test resource pool callback with FileHandle derived class
+ *
+ * Verifies that the callback works correctly with derived resource_wrap classes
+ * like FileHandle that have custom constructors.
+ */
+TEST(resource_pool_file, pool_callback_with_derived_wrapper)
+{
+    const std::string                            temp_file = get_temp_file_path("asynchrony_test_derived_cb.txt");
+    std::atomic<int>                             resource_creation_count {0};
+
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) -> FileHandle&& {
+        resource_creation_count++;
+        return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+")), temp_file.c_str()};
+    });
+
+    // Checkout should create a FileHandle via callback
+    {
+        auto file_handle = file_pool.checkout();
+        EXPECT_EQ(1, resource_creation_count);
+
+        // Verify we can use FileHandle-specific methods
+        std::fprintf(*file_handle, "Derived wrapper test\n");
+        std::fflush(*file_handle);
+    }
+
+    // Resource should be back in pool
+    EXPECT_EQ(1u, file_pool.size());
+    EXPECT_EQ(1, resource_creation_count);
+
+    // Cleanup
+    safe_remove_file(temp_file);
+}
+
+/**
+ * @brief Test resource pool callback reuses resources efficiently
+ *
+ * Verifies that resources created via callback are properly reused
+ * and not recreated unnecessarily.
+ */
+TEST(resource_pool_file, pool_callback_resource_reuse)
+{
+    const std::string                            temp_file = get_temp_file_path("asynchrony_test_reuse_cb.txt");
+    std::atomic<int>                             resource_creation_count {0};
+
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+        resource_creation_count++;
+        return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+"))};
+    });
+
+    // Perform multiple checkout/checkin cycles
+    for (int i = 0; i < 5; ++i) {
+        auto file_wrapper = file_pool.checkout();
+        std::fprintf(*file_wrapper, "Cycle %d\n", i);
+    }
+
+    // Should only have created one resource
+    EXPECT_EQ(1, resource_creation_count);
+    EXPECT_EQ(1u, file_pool.size());
+
+    // Cleanup
+    safe_remove_file(temp_file);
+}
+
+/**
+ * @brief Test resource pool callback with capacity constraint
+ *
+ * Verifies that callback respects the capacity limit and doesn't create
+ * more resources than allowed.
+ */
+TEST(resource_pool_file, pool_callback_capacity_constraint)
+{
+    const std::string temp_file = get_temp_file_path("asynchrony_test_cap_constraint.txt");
+    std::atomic<int>  resource_creation_count {0};
+
+
+    // Create pool with capacity of 3
+    siddiqsoft::resource_pool<FILE*, FileHandle, 3> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle, 3>& pool) {
+        resource_creation_count++;
+        return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+"))};
+    });
+
+    // Checkout 3 resources (should create all 3)
+    auto file1 = file_pool.checkout();
+    EXPECT_EQ(1, resource_creation_count);
+
+    auto file2 = file_pool.checkout();
+    EXPECT_EQ(2, resource_creation_count);
+
+    auto file3 = file_pool.checkout();
+    EXPECT_EQ(3, resource_creation_count);
+
+    // Try to checkout 4th resource - should fail because at capacity
+    EXPECT_THROW(file_pool.checkout(), std::runtime_error);
+    EXPECT_EQ(3, resource_creation_count); // No new creation
 
     // Cleanup
     safe_remove_file(temp_file);

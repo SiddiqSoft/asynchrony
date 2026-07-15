@@ -577,7 +577,7 @@ TEST(resource_pool_file, pool_with_new_resource_callback)
     std::atomic<int>  resource_creation_count {0};
 
     // Create a pool with a callback that creates FILE* resources on demand
-    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) -> FileHandle&& {
         resource_creation_count++;
         std::cerr << std::format(". . Adding new on-demand: {}...\n", temp_file.c_str());
         return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+")), temp_file.c_str()};
@@ -636,16 +636,17 @@ TEST(resource_pool_file, pool_callback_respects_capacity)
 
 
     // Create pool with capacity of 2
-    siddiqsoft::resource_pool<FILE*, FileHandle, 2> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle, 2>& pool) {
-        resource_creation_count++;
-        // Alternate between two files
-        if (resource_creation_count % 2 == 1) {
-            return FileHandle {std::move(std::fopen(temp_file1.c_str(), "w+"))};
-        }
-        else {
-            return FileHandle {std::move(std::fopen(temp_file2.c_str(), "w+"))};
-        }
-    });
+    siddiqsoft::resource_pool<FILE*, FileHandle, 2> file_pool(
+            [&](siddiqsoft::resource_pool<FILE*, FileHandle, 2>& pool) -> FileHandle&& {
+                resource_creation_count++;
+                // Alternate between two files
+                if (resource_creation_count % 2 == 1) {
+                    return FileHandle {std::move(std::fopen(temp_file1.c_str(), "w+"))};
+                }
+                else {
+                    return FileHandle {std::move(std::fopen(temp_file2.c_str(), "w+"))};
+                }
+            });
 
     EXPECT_EQ(0u, file_pool.size());
     EXPECT_EQ(0, resource_creation_count);
@@ -683,7 +684,7 @@ TEST(resource_pool_file, pool_callback_concurrent_checkouts)
     std::atomic<int>                             resource_creation_count {0};
 
 
-    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) -> FileHandle&& {
         resource_creation_count++;
         return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+"))};
     });
@@ -730,7 +731,7 @@ TEST(resource_pool_file, pool_callback_manual_checkin)
     const std::string                            temp_file = get_temp_file_path("asynchrony_test_manual_cb.txt");
     std::atomic<int>                             resource_creation_count {0};
 
-    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) -> FileHandle&& {
         resource_creation_count++;
         return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+")), temp_file.c_str()};
     });
@@ -763,7 +764,7 @@ TEST(resource_pool_file, pool_callback_sequential_creation)
 
     std::atomic<int>                             resource_creation_count {0};
 
-    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) -> FileHandle&& {
         resource_creation_count++;
         return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+")), temp_file.c_str()};
     });
@@ -838,7 +839,7 @@ TEST(resource_pool_file, pool_callback_resource_reuse)
     const std::string                            temp_file = get_temp_file_path("asynchrony_test_reuse_cb.txt");
     std::atomic<int>                             resource_creation_count {0};
 
-    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) {
+    siddiqsoft::resource_pool<FILE*, FileHandle> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle>& pool) -> FileHandle&& {
         resource_creation_count++;
         return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+"))};
     });
@@ -870,10 +871,11 @@ TEST(resource_pool_file, pool_callback_capacity_constraint)
 
 
     // Create pool with capacity of 3
-    siddiqsoft::resource_pool<FILE*, FileHandle, 3> file_pool([&](siddiqsoft::resource_pool<FILE*, FileHandle, 3>& pool) {
-        resource_creation_count++;
-        return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+"))};
-    });
+    siddiqsoft::resource_pool<FILE*, FileHandle, 3> file_pool(
+            [&](siddiqsoft::resource_pool<FILE*, FileHandle, 3>& pool) -> FileHandle&& {
+                resource_creation_count++;
+                return FileHandle {std::move(std::fopen(temp_file.c_str(), "w+"))};
+            });
 
     // Checkout 3 resources (should create all 3)
     auto file1 = file_pool.checkout();

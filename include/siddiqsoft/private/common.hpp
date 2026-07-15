@@ -7,6 +7,19 @@
 
 namespace siddiqsoft
 {
+    /// @brief The resource_pool_limits is used to determine the initial size
+    /// of the resource_pool.
+    /// The resource_pool will add resources until the limits are reached.
+    /// Do not use large values as this defeats the purpose of a resource_pool
+    /// and shared across multiple threads.
+    ///
+    /// @note Values selected here have no special meaning and are only guides.
+    enum resource_pool_limits : uint8_t
+    {
+        DefaultCapacity = 8,
+        MaxCapacity     = 128
+    };
+
     /**
      * @brief Helper function to determine if an exception is critical and should be rethrown
      *

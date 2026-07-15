@@ -33,6 +33,7 @@
  */
 
 #pragma once
+#include <atomic>
 #include <type_traits>
 #ifndef RESOURCE_POOL_HPP
 #define RESOURCE_POOL_HPP
@@ -46,345 +47,11 @@
 #include <concepts>
 
 #include "siddiqsoft/RunOnEnd.hpp"
+#include "private/common.hpp"
+#include "private/resource_wrap.hpp"
 
 namespace siddiqsoft
 {
-    template <typename T>
-    concept NonNumericMoveConstructible = std::move_constructible<T> && !std::is_arithmetic_v<T>;
-
-    /**
-     * @brief RAII wrapper for checked-out resources with validity tracking
-     * Use the resource_pool as a sole owner of the resources/objects
-     *
-     * @warning CRITICAL SAFETY FEATURE: This wrapper tracks resource validity to prevent
-     * returning uninitialized or moved-out resources to the pool. Only valid resources are
-     * returned to the pool on destruction. This prevents pool corruption.
-     * @note When using shared_ptr remember that you have to std::move into the resource_pool
-     * and the original variable would be empty. You must no share ownership of the object/resource
-     * resource_pool. The move semantics ensure that the resource you're using is returned to the
-     * pool once the resource_wrap goes out of scope.
-     * The caller is responsible for tracking the validity of the resource (example closed or aborted connection.)
-     *
-     * @details
-     * The resource_wrap class provides automatic resource management through RAII (Resource
-     * Acquisition Is Initialization). When a resource is checked out from a resource_pool,
-     * it is wrapped in a resource_wrap that automatically returns it to the pool when destroyed.
-     *
-     * Key Features:
-     * - Automatic resource return via RAII pattern
-     * - Validity tracking prevents pool corruption
-     * - Pointer-like access to underlying resource
-     * - Move-only semantics (no copying)
-     * - Thread-safe when used with resource_pool
-     * - Support for derived classes with custom behavior
-     *
-     * Validity Tracking:
-     * - Resources are marked as valid when constructed
-     * - Destructor only returns valid resources to the pool
-     * - Invalid resources are discarded (not returned)
-     * - Use invalidate() to prevent automatic return
-     *
-     * @tparam T The resource type (must be move-constructible)
-     *
-     * @section derived_classes Creating Derived Classes
-     *
-     * You can create custom wrapper classes by deriving from resource_wrap to add
-     * domain-specific functionality. This is useful for resources that need special
-     * handling, cleanup, or convenience methods.
-     *
-     * @subsection derived_example Example: FileHandle Wrapper
-     *
-     * Here's a complete example of a derived class for FILE* resources:
-     *
-     * @code
-     * class FileHandle : public siddiqsoft::resource_wrap<FILE*>
-     * {
-     * public:
-     *     // Delete default constructor
-     *     FileHandle() = delete;
-     *
-     *     // Constructor from FILE*
-     *     explicit FileHandle(FILE*&& f) noexcept
-     *         : resource_wrap(std::move(f))
-     *     {
-     *     }
-     *
-     *     // Move constructor
-     *     FileHandle(FileHandle&& other) noexcept
-     *         : resource_wrap(std::move(other))
-     *     {
-     *     }
-     *
-     *     // Move assignment
-     *     FileHandle& operator=(FileHandle&& other) noexcept
-     *     {
-     *         if (this != &other) {
-     *             close();
-     *             _rsrc = std::move(other._rsrc);
-     *         }
-     *         return *this;
-     *     }
-     *
-     *     // Delete copy operations
-     *     FileHandle(const FileHandle&)            = delete;
-     *     FileHandle& operator=(const FileHandle&) = delete;
-     *
-     *     // Custom methods
-     *     void close()
-     *     {
-     *         if (_rsrc != nullptr) {
-     *             std::fclose(_rsrc);
-     *             _rsrc = nullptr;
-     *         }
-     *     }
-     *
-     *     FILE* operator->() const { return _rsrc; }
-     *     explicit operator bool() const { return _rsrc != nullptr; }
-     * };
-     * @endcode
-     *
-     * @subsection derived_usage Using Derived Classes with resource_pool
-     *
-     * @code
-     * // Create a pool with the derived wrapper type
-     * siddiqsoft::resource_pool<FILE*, FileHandle> file_pool;
-     *
-     * // Create and wrap a resource
-     * auto wrapped = file_pool.wrapResource(std::fopen("file.txt", "r"));
-     * // wrapped is now a FileHandle with auto-checkin configured
-     *
-     * // When wrapped goes out of scope, it automatically returns to pool
-     * @endcode
-     *
-     * @subsection derived_guidelines Guidelines for Derived Classes
-     *
-     * 1. **Constructor Pattern**: Derived classes should have their own constructor
-     *    that takes `T&&` (the resource type). Call the base constructor with the resource.
-     *    The base class constructor has an optional callback parameter that defaults to empty.
-     *
-     * 2. **Move Semantics**: Implement move constructor and move assignment operator.
-     *    Delete copy constructor and copy assignment operator to maintain move-only semantics.
-     *
-     * 3. **Protected Members**: Access protected members (_rsrc, _isValid, _putbackCallback)
-     *    directly in your derived class for custom behavior. These are accessible because
-     *    resource_pool is declared as a friend class.
-     *
-     * 4. **Custom Methods**: Add domain-specific methods (e.g., close(), flush(), etc.)
-     *    to provide a convenient interface for your resource type.
-     *
-     * 5. **Destructor**: If you need custom cleanup, implement a destructor. The base
-     *    class destructor will still handle returning the resource to the pool if valid.
-     *
-     * 6. **Compatibility**: Derived classes work seamlessly with resource_pool::wrapResource()
-     *    which handles setting up the auto-checkin callback through friend access.
-     *
-     * 7. **Constructor Flexibility**: Unlike the base class which requires a callback parameter,
-     *    derived classes can have custom constructors that only take the resource type.
-     *    The pool will set up the callback after construction.
-     *
-     * @example
-     * @code
-     * // Typical usage (automatic return)
-     * {
-     *     auto resource = pool.checkout();
-     *     resource->doSomething();
-     *     // Resource automatically returned to pool when scope exits
-     * }
-     *
-     * // Advanced usage (prevent return)
-     * {
-     *     auto resource = pool.checkout();
-     *     auto ptr = std::move(*resource);
-     *     resource.invalidate();  // Don't return the moved-out resource
-     *     // Resource is NOT returned to pool
-     * }
-     *
-     * // Using derived class
-     * {
-     *     siddiqsoft::resource_pool<FILE*, FileHandle> file_pool;
-     *     auto file = file_pool.wrapResource(std::fopen("data.txt", "r"));
-     *     // Use file with custom FileHandle methods
-     *     file.close();  // Custom method
-     * }
-     * @endcode
-     *
-     * @see resource_pool
-     */
-    template <typename T>
-        requires NonNumericMoveConstructible<T>
-    class resource_wrap
-    {
-        // Allow resource_pool to access protected members
-        template <typename U, typename RW, uint16_t IC>
-            requires((IC <= sizeof(uint16_t))) && NonNumericMoveConstructible<U> && std::derived_from<RW, resource_wrap<U>>
-        friend class resource_pool;
-
-    protected:
-        /// @brief The actual resource being wrapped
-        T _rsrc {};
-
-        /// @brief Debug identifier for tracking (used in DEBUG builds)
-        uint64_t _debugId {static_cast<uint64_t>(std::rand())};
-
-        /// @brief Callback function to return the resource to the pool
-        /// Called by destructor when resource is valid
-        std::function<void(T&&)> _putbackCallback {};
-
-        /// @brief Tracks whether the resource is valid and should be returned to pool
-        /// Prevents returning uninitialized or moved-out resources
-        /// - true: resource will be returned to pool on destruction
-        /// - false: resource will NOT be returned to pool on destruction
-        bool _isValid {false};
-
-    public:
-        /// @brief Default constructor is deleted
-        /// Resources must be explicitly constructed with a valid resource
-        resource_wrap() = delete;
-
-        /**
-         * @brief Construct a resource_wrap with a resource and optional callback
-         *
-         * @param src R-value reference to the resource to wrap
-         * @param f Optional callback function to return resource to pool
-         *
-         * @details
-         * The resource is marked as valid upon construction. The callback is typically
-         * provided by resource_pool::wrapResource() to automatically return the resource.
-         *
-         * For derived classes, the callback parameter can be omitted and will be set
-         * by resource_pool::wrapResource() through friend access to protected members.
-         *
-         * @note This constructor is typically called by resource_pool::wrapResource()
-         */
-        explicit resource_wrap(T&& src, std::function<void(T&&)>&& f = {})
-            : _rsrc(std::move(src))
-            , _putbackCallback(std::move(f))
-            , _isValid(true)
-        {
-        }
-
-
-        /// @brief Copy constructor is deleted
-        /// Resources are move-only to maintain clear ownership semantics
-        explicit resource_wrap(const T&) = delete;
-
-        /**
-         * @brief Move constructor
-         *
-         * @param src R-value reference to another resource_wrap to move from
-         *
-         * @details
-         * Moves the resource and callback from another wrapper.
-         * This is essential for returning wrapped resources from functions.
-         * Derived classes should call this constructor in their move constructor.
-         */
-        resource_wrap(resource_wrap&& src) noexcept
-            : _rsrc(std::move(src._rsrc))
-            , _debugId(src._debugId)
-            , _putbackCallback(std::move(src._putbackCallback))
-            , _isValid(src._isValid)
-        {
-        }
-
-        /**
-         * @brief Move assignment operator
-         *
-         * @param src R-value reference to the resource to assign
-         * @return Reference to this resource_wrap
-         *
-         * @details
-         * Assigns a new resource to this wrapper and marks it as valid.
-         * The previous resource (if any) is discarded.
-         */
-        resource_wrap& operator=(T&& src)
-        {
-#if defined(DEBUG)
-            std::cerr << std::format("  - resource_wrap: move into debugId:{}\n", _debugId);
-#endif
-            _rsrc    = std::move(src);
-            _isValid = true;
-            return *this;
-        };
-
-        /// @brief Copy assignment is deleted
-        resource_wrap& operator=(const resource_wrap&) = delete;
-
-        /**
-         * @brief Dereference operator to access the underlying resource
-         *
-         * @return Reference to the wrapped resource
-         *
-         * @example
-         * @code
-         * auto resource = pool.checkout();
-         * (*resource)->doSomething();  // Access via dereference
-         * @endcode
-         */
-        auto operator*() -> T& { return _rsrc; }
-
-        /**
-         * @brief Type conversion operator
-         *
-         * @return Copy of the wrapped resource
-         *
-         * @details
-         * Allows implicit conversion to the resource type.
-         * Useful for passing to functions expecting the resource type.
-         */
-        operator T() { return _rsrc; }
-
-        /**
-         * @brief Destructor - automatically returns resource to pool if valid
-         *
-         * @details
-         * The destructor implements the RAII pattern:
-         * - If isValid is true and putbackCallback exists: returns resource to pool
-         * - If isValid is false: resource is discarded (not returned)
-         *
-         * This ensures resources are always properly managed, even if an exception occurs.
-         *
-         * @note This is called automatically when the resource_wrap goes out of scope
-         */
-        ~resource_wrap()
-        {
-#if defined(DEBUG)
-            std::cerr << std::format("  - ~resource_wrap: putback debugId:{}  isValid:{}\n", _debugId, _isValid);
-#endif
-            // Only return resource if it's valid and callback exists
-            // This prevents returning uninitialized or moved-out resources to the pool
-            if (_isValid && _putbackCallback) {
-                _putbackCallback(std::move(_rsrc));
-                _isValid = false;
-            }
-        }
-
-        /**
-         * @brief Invalidate the resource to prevent it from being returned to pool
-         *
-         * @details
-         * Call this method when you've moved the resource out or want to prevent
-         * automatic return to the pool. After calling this, the destructor will NOT
-         * return the resource to the pool.
-         *
-         * Use Cases:
-         * - You've moved the resource out and it's no longer valid
-         * - You want to take ownership and prevent automatic return
-         * - You're implementing custom resource management
-         *
-         * @note Safe to call multiple times
-         * @note This is primarily for advanced scenarios; normal usage doesn't need this
-         *
-         * @example
-         * @code
-         * auto resource = pool.checkout();
-         * auto ptr = std::move(*resource);
-         * resource.invalidate();  // Don't return the moved-out resource
-         * // Resource is NOT returned to pool
-         * @endcode
-         */
-        void invalidate() { _isValid = false; }
-    };
-
     /**
      * @brief Thread-safe resource pool for managing reusable objects
      *
@@ -461,24 +128,45 @@ namespace siddiqsoft
      *
      * @see resource_wrap
      */
-    template <typename T, typename RW = resource_wrap<T>, uint16_t InitCapacity = sizeof(uint8_t)>
-        requires((InitCapacity <= sizeof(uint16_t))) && NonNumericMoveConstructible<T> && std::derived_from<RW, resource_wrap<T>>
+    template <typename T, typename RW = resource_wrap<T>, uint8_t InitCapacity = resource_pool_limits::DefaultCapacity>
+        requires((InitCapacity <= resource_pool_limits::MaxCapacity)) && NonNumericMoveConstructible<T> &&
+                std::derived_from<RW, resource_wrap<T>>
     class resource_pool
     {
     private:
+        uint8_t  _capacity {InitCapacity};
+        uint16_t _resourcesCheckedout {0};
+        uint16_t _invalidatedResources {0};
+
         /// @brief Internal deque storing the pooled resources
         /// Uses FIFO ordering: resources are added to back, retrieved from front
         std::deque<T> _pool {};
 
         /// @brief Mutex protecting access to the resource pool
         /// Uses a regular mutex (not recursive) since no recursive locking is needed
-        std::mutex _poolLock {};
+        /// @note Marked as mutable to allow usage within const methods
+        mutable std::mutex _poolLock {};
+
+        /// @brief This callback is invoked when a new resource is to be added to the pool.
+        /// The client cannot add a resource to the pool and must instead craft a callback
+        /// that the resource_pool will invoke when the pool needs a resource and is within
+        /// the maximum capacity.
+        std::function<T && (resource_pool & pool)> _onNewResourceCallback {};
+        /// @brief This callback is invoked when the resource is invalidated
+        std::function<void(T&&)> _onResourceInvalidatedCallback {};
+        /// @brief This callback is invoked when the pool is about to shutdown
+        std::function<void()> _onPoolShutdownCallback {};
 
     public:
         /// @brief Default constructor
         /// Creates an empty pool ready to accept resources
         resource_pool() = default;
 
+        resource_pool(std::function<T && (resource_pool & pool)>&& new_resource_callback)
+            : _onNewResourceCallback(std::move(new_resource_callback))
+        {
+        }
+        
         /// @brief Copy constructor (deleted - pools are not copyable)
         /// Each pool manages its own resources independently
         resource_pool(resource_pool&) = delete;
@@ -495,7 +183,11 @@ namespace siddiqsoft
 
         /// @brief Destructor - clears all resources from the pool
         /// All remaining resources are destroyed
-        ~resource_pool() { clear(); }
+        ~resource_pool()
+        {
+            if (_onPoolShutdownCallback) _onPoolShutdownCallback();
+            clear();
+        }
 
         /**
          * @brief Clear all items from the pool
@@ -571,19 +263,37 @@ namespace siddiqsoft
          */
         [[nodiscard]] auto checkout() -> RW /* throw() */
         {
-            {
-                std::scoped_lock<std::mutex> l(_poolLock);
+            try {
+                // @note We use a unique_lock vs a scoped_lock to allow ourselves
+                // to create the resource outside the lock!
+                std::unique_lock<std::mutex> l(_poolLock);
 
                 if (!_pool.empty()) {
                     RunOnEnd roe([&]() { _pool.pop_front(); });
 
+                    _resourcesCheckedout++;
                     return wrapResource(std::move(_pool.front()));
                     // The pop_front() happens within this scope and
                     // within the lock!
                 }
+                else if (_capacity > _pool.size() + _resourcesCheckedout && _onNewResourceCallback) {
+                    // We have no more items in the pool (we're starting up or everything is checked out)
+                    // but we have not reached the limit.
+                    // The limit is number of resourcesCheckedout + pool.size() < _capacity
+                    // We are under-capacity.. so we can return to the caller an new item..
+                    _resourcesCheckedout++;
+                    // We should unlock the resource and ..
+                    l.unlock();
+                    // ..delegate the new resource acquisition
+                    // outside the lock.
+                    return wrapResource(_onNewResourceCallback(*this));
+                }
             } // scope end
+            catch (std::exception&) {
+            }
 
-            throw std::runtime_error("Empty pool; add something first!");
+            auto msg = std::format("Pool Size:{}  checkedout:{}  capacity:{}", _pool.size(), _resourcesCheckedout, _capacity);
+            throw std::runtime_error(msg);
         }
 
         /**
@@ -676,9 +386,68 @@ namespace siddiqsoft
          */
         void checkin(T&& rsrc)
         {
-            std::scoped_lock<std::mutex> l(_poolLock);
+            std::unique_lock<std::mutex> l(_poolLock);
+
             _pool.push_back(std::move(rsrc));
+            _resourcesCheckedout--;
+
+            /*
+             * This is not valid for the current implementation
+            if (rsrc._isValid) {
+                _pool.push_back(std::move(rsrc));
+                _resourcesCheckedout--;
+            }
+            else if (rsrc._isValid == false && _onResourceInvalidatedCallback) {
+                _invalidatedResources++;
+                l.unlock();
+                // Delegate is called outside the lock
+                _onResourceInvalidatedCallback(std::move(rsrc));
+            }
+             */
         }
+
+#if defined(NLOHMANN_JSON_VERSION_MAJOR)
+        /**
+         * @brief Serialize pool state to JSON
+         *
+         * Returns a JSON object containing diagnostic information about the pool state.
+         * Useful for monitoring and debugging.
+         *
+         * @return nlohmann::json object with pool statistics
+         *
+         * @note Thread-safe operation with acquire semantics
+         */
+        nlohmann::json toJson() const
+        {
+            std::scoped_lock<std::mutex> l(_poolLock);
+
+            return {{"_typver", "siddiqsoft.asynchrony-lib.resource_pool/0.10"},
+                    {"capacity", _capacity},
+                    {"poolSize", _pool.size()},
+                    {"invalidatedResources", _invalidatedResources},
+                    {"resourcesCheckedout", _resourcesCheckedout}};
+        }
+#endif
     };
+
+
+#if defined(NLOHMANN_JSON_VERSION_MAJOR)
+    /**
+     * @brief JSON serialization adapter for resource_pool
+     *
+     * Enables automatic JSON serialization of resource_pool objects via nlohmann::json.
+     *
+     * @param dest Destination JSON object to populate
+     * @param src Source resource_pool object to serialize
+     */
+    template <typename T, typename RW = resource_wrap<T>, uint8_t InitCapacity = resource_pool_limits::DefaultCapacity>
+        requires((InitCapacity <= resource_pool_limits::MaxCapacity)) && NonNumericMoveConstructible<T> &&
+                std::derived_from<RW, resource_wrap<T>>
+    static void to_json(nlohmann::json& dest, const siddiqsoft::resource_pool<T, RW, InitCapacity>& src)
+    {
+        dest = src.toJson();
+    }
+#endif
+
 } // namespace siddiqsoft
 #endif

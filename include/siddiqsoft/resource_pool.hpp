@@ -142,10 +142,17 @@ namespace siddiqsoft
         /// Uses FIFO ordering: resources are added to back, retrieved from front
         std::deque<T> _pool {};
 
+#if defined(DEBUG)
+        /// @brief Mutex protecting access to the resource pool
+        /// Uses a standard mutex
+        /// @note Marked as mutable to allow usage within const methods
+        mutable std::recursive_mutex _poolLock {};
+#else
         /// @brief Mutex protecting access to the resource pool
         /// Uses a recursive mutex since debugging might use a recursive mutex
         /// @note Marked as mutable to allow usage within const methods
-        mutable std::recursive_mutex _poolLock {};
+        mutable std::mutex _poolLock {};
+#endif
 
         /// @brief This callback is invoked when a new resource is to be added to the pool.
         /// The client cannot add a resource to the pool and must instead craft a callback
@@ -276,7 +283,7 @@ namespace siddiqsoft
             try {
                 // @note We use a unique_lock vs a scoped_lock to allow ourselves
                 // to create the resource outside the lock!
-                std::unique_lock<std::recursive_mutex> l(_poolLock);
+                std::unique_lock l(_poolLock);
 
                 if (!_pool.empty()) {
                     RunOnEnd roe([&]() {
@@ -319,7 +326,8 @@ namespace siddiqsoft
 #endif
                 }
             } // scope end
-            catch (std::exception&) {
+            catch (std::exception& ex) {
+                std::cerr << ex.what();
             }
 
             auto msg = std::format("Pool Size:{}  checkedout:{}  capacity:{}", _pool.size(), _resourcesCheckedout, _capacity);
@@ -418,7 +426,7 @@ namespace siddiqsoft
          */
         void checkin(T&& rsrc)
         {
-            std::unique_lock<std::recursive_mutex> l(_poolLock);
+            std::unique_lock l(_poolLock);
 
             _pool.push_back(std::move(rsrc));
             if (_resourcesCheckedout > 0) _resourcesCheckedout--;

@@ -143,9 +143,9 @@ namespace siddiqsoft
         std::deque<T> _pool {};
 
         /// @brief Mutex protecting access to the resource pool
-        /// Uses a regular mutex (not recursive) since no recursive locking is needed
+        /// Uses a recursive mutex since debugging might use a recursive mutex
         /// @note Marked as mutable to allow usage within const methods
-        mutable std::mutex _poolLock {};
+        mutable std::recursive_mutex _poolLock {};
 
         /// @brief This callback is invoked when a new resource is to be added to the pool.
         /// The client cannot add a resource to the pool and must instead craft a callback
@@ -201,7 +201,7 @@ namespace siddiqsoft
          */
         void clear()
         {
-            std::scoped_lock<std::mutex> l(_poolLock);
+            std::scoped_lock l(_poolLock);
             _pool.clear();
         }
 
@@ -220,7 +220,7 @@ namespace siddiqsoft
          */
         auto size()
         {
-            std::scoped_lock<std::mutex> l(_poolLock);
+            std::scoped_lock l(_poolLock);
             return _pool.size();
         }
 
@@ -263,15 +263,35 @@ namespace siddiqsoft
          */
         [[nodiscard]] auto checkout() -> RW&& /* throw() */
         {
+            auto _ = RunOnEnd {[this]() {
+#if defined(DEBUG) && defined(NLOHMANN_JSON_VERSION_MAJOR)
+                std::cerr << std::format("checkout - completed..{}\n", this->toJson().dump(2));
+#endif
+            }};
+
+#if defined(DEBUG) && defined(NLOHMANN_JSON_VERSION_MAJOR)
+            std::cerr << std::format("checkout - begin..{}\n", this->toJson().dump(2));
+#endif
+
             try {
                 // @note We use a unique_lock vs a scoped_lock to allow ourselves
                 // to create the resource outside the lock!
-                std::unique_lock<std::mutex> l(_poolLock);
+                std::unique_lock<std::recursive_mutex> l(_poolLock);
 
                 if (!_pool.empty()) {
-                    RunOnEnd roe([&]() { _pool.pop_front(); });
+                    RunOnEnd roe([&]() {
+                        _pool.pop_front();
+#if defined(DEBUG) && defined(NLOHMANN_JSON_VERSION_MAJOR)
+                        std::cerr << std::format("checkout - completed..from pool..{}\n", this->toJson().dump(2));
+#endif
+                    });
 
                     _resourcesCheckedout++;
+
+#if defined(DEBUG) && defined(NLOHMANN_JSON_VERSION_MAJOR)
+                    std::cerr << std::format("checkout - satisfy from pool.. {}\n", this->toJson().dump(2));
+#endif
+
                     return wrapResource(std::move(_pool.front()));
                     // The pop_front() happens within this scope and
                     // within the lock!
@@ -284,9 +304,19 @@ namespace siddiqsoft
                     _resourcesCheckedout++;
                     // We should unlock the resource and ..
                     l.unlock();
+#if defined(DEBUG) && defined(NLOHMANN_JSON_VERSION_MAJOR)
+                    std::cerr << std::format("checkout - under-capacity asking provider! {}\n", this->toJson().dump(2));
+#endif
+
                     // ..delegate the new resource acquisition
                     // outside the lock.
                     return wrapResource(std::move(_onNewResourceCallback(*this)));
+                }
+                else if (_capacity > _pool.size() + _resourcesCheckedout) {
+                    // We're under-capacity.. but no dynamic resource provider
+#if defined(DEBUG) && defined(NLOHMANN_JSON_VERSION_MAJOR)
+                    std::cerr << std::format("checkout - under-capacity but no provider! {}\n", this->toJson().dump(2));
+#endif
                 }
             } // scope end
             catch (std::exception&) {
@@ -323,27 +353,12 @@ namespace siddiqsoft
          */
         [[nodiscard]] auto wrapResource(T&& src) -> RW&&
         {
-            /// @brief Lambda that returns the resource back to the pool
-            /// Captures 'this' to access the pool's checkin method
-            /// Called by resource_wrap destructor to ensure automatic return
-            /// even if an exception occurs
-            auto autoReturnResource = [this](T&& src) {
-                this->checkin(std::move(src));
-            };
-
             // We return the resource back to the caller as a wrapper that has
             // the auto-checkin wired up to our pool.
             // For derived classes, we need to handle the case where the derived class
             // has a different constructor signature than the base class.
             // We construct the derived class first, then set the callback.
-            RW wrapper(std::move(src));
-
-            // Set the callback and validity on the base class members
-            // resource_pool is a friend of resource_wrap, so we can access protected members
-            wrapper._putbackCallback = std::move(autoReturnResource);
-            wrapper._isValid         = true;
-
-            return std::move(wrapper);
+            return wrapResource(RW(std::move(src)));
         }
 
 
@@ -403,10 +418,10 @@ namespace siddiqsoft
          */
         void checkin(T&& rsrc)
         {
-            std::unique_lock<std::mutex> l(_poolLock);
+            std::unique_lock<std::recursive_mutex> l(_poolLock);
 
             _pool.push_back(std::move(rsrc));
-            _resourcesCheckedout--;
+            if (_resourcesCheckedout > 0) _resourcesCheckedout--;
 
             /*
              * This is not valid for the current implementation
@@ -436,7 +451,7 @@ namespace siddiqsoft
          */
         nlohmann::json toJson() const
         {
-            std::scoped_lock<std::mutex> l(_poolLock);
+            std::scoped_lock l(_poolLock);
 
             return {{"_typver", "siddiqsoft.asynchrony-lib.resource_pool/0.10"},
                     {"capacity", _capacity},

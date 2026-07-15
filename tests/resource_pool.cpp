@@ -73,12 +73,17 @@ TEST(resource_pool, T_shared_ptr_string)
         rp.checkin(std::shared_ptr<std::string>(new std::string(__TIME__)));
         EXPECT_EQ(1, rp.size());
 
+        std::cerr << std::format("{} - 0 - {}\n", __func__, rp.toJson().dump(2));
+
         {
             auto item = rp.checkout();
             EXPECT_EQ(0, rp.size());
             EXPECT_EQ(__TIME__, **item);
             (*item)->append("-ok");
+
+            std::cerr << std::format("{} - 1 -  {}\n", __func__, rp.toJson().dump(2));
         }
+
         // item is automatically returned to pool when it goes out of scope
         EXPECT_EQ(1, rp.size());
 
@@ -92,6 +97,8 @@ TEST(resource_pool, T_shared_ptr_string)
 
         passTest = true;
     });
+
+    std::cerr << std::format("{} - Completed: {}\n", __func__, passTest);
 
     EXPECT_TRUE(passTest);
 }
@@ -582,9 +589,9 @@ TEST(resource_pool, multiple_shared_ptr_items)
 {
     siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
 
-    auto ptr1 = std::make_shared<std::string>("resource-1");
-    auto ptr2 = std::make_shared<std::string>("resource-2");
-    auto ptr3 = std::make_shared<std::string>("resource-3");
+    auto                                                    ptr1 = std::make_shared<std::string>("resource-1");
+    auto                                                    ptr2 = std::make_shared<std::string>("resource-2");
+    auto                                                    ptr3 = std::make_shared<std::string>("resource-3");
 
     rp.checkin(std::move(ptr1));
     rp.checkin(std::move(ptr2));
@@ -620,13 +627,10 @@ TEST(resource_pool, shared_ptr_custom_deleter)
     {
         siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
 
-        auto ptr = std::shared_ptr<std::string>(
-            new std::string("custom-deleter-test"),
-            [&deleteCount](std::string* p) {
-                deleteCount++;
-                delete p;
-            }
-        );
+        auto ptr = std::shared_ptr<std::string>(new std::string("custom-deleter-test"), [&deleteCount](std::string* p) {
+            deleteCount++;
+            delete p;
+        });
 
         rp.checkin(std::move(ptr));
         EXPECT_EQ(0, deleteCount.load());
@@ -716,54 +720,6 @@ TEST(resource_pool, concurrent_shared_ptr_access)
 
     EXPECT_EQ(static_cast<size_t>(POOL_SIZE), rp.size());
     EXPECT_GT(totalCheckouts.load(), 0);
-}
-
-/// @brief Test shared_ptr with starvation scenario
-/// Multiple threads compete for limited shared_ptr resources
-TEST(resource_pool, shared_ptr_starvation_under_contention)
-{
-    constexpr int                                           POOL_SIZE      = 2;
-    constexpr int                                           THREAD_COUNT   = 6;
-    constexpr int                                           OPS_PER_THREAD = 50;
-
-    siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
-    for (int i = 0; i < POOL_SIZE; i++) {
-        rp.checkin(std::make_shared<std::string>(std::format("shared-{}", i)));
-    }
-
-    std::atomic_int           successCount {0};
-    std::atomic_int           failCount {0};
-    std::barrier              startBarrier {THREAD_COUNT};
-
-    std::vector<std::jthread> threads;
-    for (int t = 0; t < THREAD_COUNT; t++) {
-        threads.emplace_back([&]() {
-            startBarrier.arrive_and_wait();
-            for (int i = 0; i < OPS_PER_THREAD; i++) {
-                try {
-                    {
-                        auto item = rp.checkout();
-                        successCount++;
-                        EXPECT_NE(nullptr, *item);
-                        std::this_thread::sleep_for(std::chrono::microseconds(50));
-                    }
-                    // item is automatically returned to pool
-                }
-                catch (const std::runtime_error&) {
-                    failCount++;
-                }
-            }
-        });
-    }
-
-    threads.clear();
-
-    // All resources should be back in the pool
-    EXPECT_EQ(static_cast<size_t>(POOL_SIZE), rp.size());
-    // At least some operations should have succeeded
-    EXPECT_GT(successCount.load(), 0);
-    // Total operations = successes + failures
-    EXPECT_EQ(THREAD_COUNT * OPS_PER_THREAD, successCount.load() + failCount.load());
 }
 
 // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

@@ -70,16 +70,16 @@ TEST(resource_pool, T_shared_ptr_string)
         siddiqsoft::resource_pool<std::shared_ptr<std::string>> rp {};
 
         EXPECT_EQ(0, rp.size());
-        rp.checkin(std::shared_ptr<std::string>(new std::string(__TIME__)));
+        rp.checkin(std::make_shared<std::string>("test-value"));
         EXPECT_EQ(1, rp.size());
 
         std::cerr << std::format("{} - 0 - {}\n", __func__, rp.toJson().dump(2));
 
         {
-            auto item = rp.checkout();
+            auto&& item = rp.checkout();
             EXPECT_EQ(0, rp.size());
-            EXPECT_EQ(__TIME__, **item);
-            (*item)->append("-ok");
+            EXPECT_EQ("test-value", **item);
+            **item += "-ok";
 
             std::cerr << std::format("{} - 1 -  {}\n", __func__, rp.toJson().dump(2));
         }
@@ -88,9 +88,9 @@ TEST(resource_pool, T_shared_ptr_string)
         EXPECT_EQ(1, rp.size());
 
         {
-            auto item2 = rp.checkout();
+            auto&& item2 = rp.checkout();
             EXPECT_EQ(0, rp.size());
-            EXPECT_TRUE((*item2)->ends_with("-ok"));
+            EXPECT_TRUE((**item2).ends_with("-ok"));
         }
         // item2 is automatically returned to pool when it goes out of scope
         EXPECT_EQ(1, rp.size());

@@ -30,6 +30,10 @@ For comprehensive documentation, visit our **[GitHub Pages](https://siddiqsoft.g
 - Use only C++20 standard code: jthread, deque, semaphore, and concepts
 - Depends on RunOnEnd for encapsulating cleanup code on destructor.
 
+> **BREAKING CHANGE!**
+>
+> The asynchrony library no longer has `resource_pool<>`. Please find the implementation over at [Auto Returning Resource Pool (arrp)](https://github.com/SiddiqSoft/arrp).
+
 # Usage
 
 > Requires C++20 support!

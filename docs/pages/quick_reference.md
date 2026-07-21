@@ -8,7 +8,6 @@
 | `simple_pool` | Parallel processing | N | Shared |
 | `roundrobin_pool` | Load balancing | N | Per-thread |
 | `periodic_worker` | Scheduled tasks | 1 | N/A |
-| `resource_pool` | Resource management | N/A | N/A |
 
 @section qr_includes Include Files
 
@@ -17,7 +16,6 @@
 #include "siddiqsoft/simple_pool.hpp"        // Multi-threaded pool
 #include "siddiqsoft/roundrobin_pool.hpp"    // Round-robin pool
 #include "siddiqsoft/periodic_worker.hpp"    // Periodic executor
-#include "siddiqsoft/resource_pool.hpp"      // Resource pool
 ```
 
 @section qr_basic_patterns Basic Patterns
@@ -58,15 +56,6 @@ siddiqsoft::periodic_worker<> timer{
 };
 ```
 
-@subsection qr_pattern_resource Resource Pool
-
-```cpp
-siddiqsoft::resource_pool<std::shared_ptr<Resource>> pool;
-auto res = pool.checkout();
-// use resource
-pool.checkin(std::move(res));
-```
-
 @section qr_template_params Template Parameters
 
 ### simple_worker<T, Pri>
@@ -84,11 +73,6 @@ pool.checkin(std::move(res));
 ### periodic_worker<Pri>
 - `Pri`: Thread priority (-10 to +10, default 0)
 
-### resource_pool<T, RW, InitCapacity>
-- `T`: Resource type (must satisfy NonNumericMoveConstructible)
-- `RW`: Resource wrapper type (default: resource_wrap<T>)
-- `InitCapacity`: Initial capacity hint in bytes (default: 1, max: 65535)
-
 @section qr_methods Common Methods
 
 ### queue(T&& item)
@@ -104,24 +88,10 @@ auto json = worker.toJson();
 std::cout << json.dump(2) << std::endl;
 ```
 
-### checkout() / checkin()
-Resource pool operations
-```cpp
-auto resource = pool.checkout();  // throws if empty
-// use resource
-pool.checkin(std::move(resource));
-```
-
 ### size()
-Get current pool size
+Get current queue size
 ```cpp
-auto sz = pool.size();
-```
-
-### clear()
-Clear all resources from pool
-```cpp
-pool.clear();
+auto sz = worker.size();
 ```
 
 @section qr_requirements Requirements
@@ -159,38 +129,6 @@ target_link_libraries(your_target PRIVATE asynchrony::asynchrony)
 5. **Choose right pool type** - Use roundrobin for variable-duration tasks
 6. **Lifetime management** - Keep worker/pool alive while queuing
 7. **Thread priority** - Use carefully, may affect system performance
-8. **Resource pool capacity** - Set to match thread pool size for optimal performance
-9. **Resource pool types** - Use std::shared_ptr or std::unique_ptr for resources
-
-@section qr_constraints Type Constraints
-
-### NonNumericMoveConstructible Concept
-
-The `resource_pool` and `resource_wrap` require types that satisfy the `NonNumericMoveConstructible` concept:
-
-```cpp
-template<typename T>
-concept NonNumericMoveConstructible = 
-    std::move_constructible<T> && !std::is_arithmetic_v<T>;
-```
-
-**Valid types for resource_pool:**
-- `std::string`
-- `std::shared_ptr<T>` (where T is non-numeric)
-- `std::unique_ptr<T>` (where T is non-numeric)
-- `std::vector<T>`
-- Custom classes and structs
-- File handles wrapped in classes
-- Database connections
-
-**Invalid types for resource_pool:**
-- `int`, `float`, `double`, `bool` (arithmetic types)
-- Use `std::string` or wrapper classes instead
-
-**Why this constraint?**
-- Arithmetic types are cheap to copy and don't benefit from pooling
-- Pooling is designed for expensive resources
-- The constraint prevents accidental misuse
 
 @section qr_troubleshooting Common Issues
 
@@ -201,9 +139,7 @@ concept NonNumericMoveConstructible =
 | High CPU usage | Increase wait timeout or reduce threads |
 | Deadlock | Avoid circular dependencies in callbacks |
 | Memory leak | Ensure proper RAII cleanup |
-| `checkout()` throws | Pool is empty, add resources first |
 | Clang compilation fails | Add `-fexperimental-library` flag |
-| `resource_pool<int>` compilation error | Use `std::string` or wrapper class instead |
 
 @section qr_performance Performance Tips
 
@@ -213,7 +149,6 @@ concept NonNumericMoveConstructible =
 - **Use roundrobin**: For variable-duration tasks
 - **Monitor metrics**: Use toJson() to track queue depth
 - **Avoid blocking**: Keep callbacks fast and non-blocking
-- **Resource pool**: Set capacity to match thread pool size
 
 @section qr_examples Quick Examples
 
@@ -242,15 +177,6 @@ siddiqsoft::periodic_worker<> monitor{
     std::chrono::seconds(1)
 };
 std::this_thread::sleep_for(std::chrono::seconds(10));
-```
-
-### Example 4: Resource Management
-```cpp
-siddiqsoft::resource_pool<std::shared_ptr<Connection>> pool;
-pool.checkin(std::make_shared<Connection>("localhost"));
-auto conn = pool.checkout();
-conn->query("SELECT * FROM users");
-pool.checkin(std::move(conn));
 ```
 
 @section qr_json_output JSON Output Format

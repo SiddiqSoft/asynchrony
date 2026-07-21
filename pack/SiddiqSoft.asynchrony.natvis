@@ -42,18 +42,6 @@
     </Expand>
   </Type>
 
-  <!-- resource_pool visualization -->
-  <Type Name="siddiqsoft::resource_pool&lt;*&gt;">
-    <DisplayString>resource_pool&lt;{*(($T1*)this)}&gt; [Available: {_pool.size()} resources]</DisplayString>
-    <Expand HideRawView="true">
-      <Item Name="Pool Size">_pool.size()</Item>
-      <ArrayItems>
-        <Size>_pool.size()</Size>
-        <ValuePointer>_pool._Myhead()->_Next</ValuePointer>
-      </ArrayItems>
-    </Expand>
-  </Type>
-
   <!-- roundrobin_pool visualization -->
   <Type Name="siddiqsoft::roundrobin_pool&lt;*,*&gt;">
     <DisplayString>roundrobin_pool&lt;{*(($T1*)this)}&gt; [Workers: {workersSize}, Total queued: {queueCounter}]</DisplayString>

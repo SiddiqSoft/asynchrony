@@ -50,75 +50,8 @@
 #include "../include/siddiqsoft/simple_pool.hpp"
 #include "../include/siddiqsoft/roundrobin_pool.hpp"
 #include "../include/siddiqsoft/periodic_worker.hpp"
-#include "../include/siddiqsoft/resource_pool.hpp"
 
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
-
-/// @brief BUG #1: TOCTOU Race Condition in resource_pool::size()
-/// The size() method checks if pool is empty, then returns size.
-/// Between the check and the return, another thread could modify the pool.
-TEST(additional_bugs, resource_pool_size_toctou_race)
-{
-    struct dummy_resource
-    {
-        int value;
-    };
-    siddiqsoft::resource_pool<dummy_resource> pool {};
-    std::atomic_int                           sizeReadCount {0};
-    std::atomic_int                           sizeInconsistency {0};
-
-    // Pre-populate
-    for (int i = 0; i < 10; i++) {
-        pool.checkin(dummy_resource {i});
-    }
-
-    std::atomic_bool          done {false};
-    std::vector<std::jthread> threads;
-
-    // Thread that repeatedly reads size
-    for (int t = 0; t < 4; t++) {
-        threads.emplace_back([&]() {
-            while (!done.load()) {
-                size_t sz = pool.size();
-                sizeReadCount++;
-                // If size is 0, but we can still checkout, there's a race
-                if (sz == 0) {
-                    try {
-                        auto item = pool.checkout();
-                        sizeInconsistency++;
-                    }
-                    catch (const std::runtime_error&) {
-                        // Expected when pool is actually empty
-                    }
-                }
-                std::this_thread::sleep_for(std::chrono::microseconds(10));
-            }
-        });
-    }
-
-    // Thread that modifies the pool
-    std::jthread modifier([&]() {
-        for (int i = 0; i < 100; i++) {
-            pool.checkin(dummy_resource {i});
-            std::this_thread::sleep_for(std::chrono::microseconds(50));
-            try {
-                auto _ = pool.checkout();
-            }
-            catch (const std::runtime_error&) {
-            }
-        }
-    });
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    done = true;
-    threads.clear();
-    modifier.request_stop();
-    if (modifier.joinable()) modifier.join();
-
-    // If there were inconsistencies, the race condition was triggered
-    std::cerr << "Size reads: " << sizeReadCount.load() << ", Inconsistencies: " << sizeInconsistency.load() << std::endl;
-}
-
 
 /// @brief BUG #3: Bare catch(...) Swallows Exceptions
 /// Tests that exceptions in callbacks are silently swallowed
@@ -165,31 +98,6 @@ TEST(additional_bugs, roundrobin_pool_uninitialized_workers_size)
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-}
-
-
-/// @brief BUG #2: Unnecessary Condition in resource_pool::clear()
-/// The condition !_pool.empty() is unnecessary and could cause issues
-TEST(additional_bugs, resource_pool_clear_semantics)
-{
-    siddiqsoft::resource_pool<std::string> pool {};
-
-    // Add items
-    pool.checkin(std::string("1"));
-    pool.checkin(std::string("2"));
-    pool.checkin(std::string("3"));
-    EXPECT_EQ(3u, pool.size());
-
-    // Clear
-    pool.clear();
-    EXPECT_EQ(0u, pool.size());
-
-    // Clear again (should be safe)
-    EXPECT_NO_THROW(pool.clear());
-    EXPECT_EQ(0u, pool.size());
-
-    // Clear on empty pool (should be safe)
-    EXPECT_NO_THROW(pool.clear());
 }
 
 
@@ -258,64 +166,6 @@ TEST(additional_bugs, simple_worker_destructor_exception_handling)
 
         // Destructor fires - should not hang or crash
     });
-}
-
-
-/// @brief BUG #1 (Extended): Concurrent size() and checkout() Race
-/// More aggressive test for the TOCTOU race in size()
-TEST(additional_bugs, resource_pool_size_checkout_race_aggressive)
-{
-    struct dummy_task
-    {
-        int value;
-    };
-    siddiqsoft::resource_pool<dummy_task> pool {};
-
-    // Pre-populate with many items
-    for (int i = 0; i < 100; i++) {
-        pool.checkin(dummy_task {i});
-    }
-
-    std::atomic_bool done {false};
-    std::atomic_int  racesDetected {0};
-
-    // Thread that repeatedly checks size then tries to checkout
-    std::jthread reader([&]() {
-        while (!done.load()) {
-            size_t sz = pool.size();
-            if (sz > 0) {
-                try {
-                    auto item = pool.checkout();
-                }
-                catch (const std::runtime_error&) {
-                    // Race detected: size said > 0, but checkout failed
-                    racesDetected++;
-                }
-            }
-        }
-    });
-
-    // Thread that repeatedly adds and removes items
-    std::jthread writer([&]() {
-        for (int i = 0; i < 1000; i++) {
-            pool.checkin(dummy_task {i});
-            try {
-                auto _ = pool.checkout();
-            }
-            catch (const std::runtime_error&) {
-            }
-        }
-    });
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    done = true;
-    reader.request_stop();
-    writer.request_stop();
-    if (reader.joinable()) reader.join();
-    if (writer.joinable()) writer.join();
-
-    // If races were detected, the TOCTOU bug was triggered
-    std::cerr << "Races detected: " << racesDetected.load() << std::endl;
 }
 
 

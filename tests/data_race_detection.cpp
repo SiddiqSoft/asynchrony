@@ -24,7 +24,6 @@
 #include "nlohmann/json.hpp"
 #include "../include/siddiqsoft/simple_worker.hpp"
 #include "../include/siddiqsoft/simple_pool.hpp"
-#include "../include/siddiqsoft/resource_pool.hpp"
 #include "../include/siddiqsoft/roundrobin_pool.hpp"
 
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
@@ -244,78 +243,6 @@ TEST(DataRaceDetection, simple_worker_queue_extraction_race)
     }
 
     std::cerr << std::format("simple_worker: processed={}, dropped={}\n", items_processed.load(), items_dropped.load());
-}
-
-
-/// @brief DATA RACE #5: resource_pool size() TOCTOU with concurrent operations
-/// Check size(), then checkout() - another thread could modify between the two
-TEST(DataRaceDetection, resource_pool_size_checkout_toctou_race)
-{
-    struct resource_item
-    {
-        int id;
-    };
-
-    std::atomic_bool                         done {false};
-    std::atomic_uint                         checkout_failures {0};
-    std::atomic_uint                         size_checks {0};
-    siddiqsoft::resource_pool<resource_item> pool {};
-
-    // Pre-populate
-    for (int i = 0; i < 100; i++) {
-        pool.checkin(resource_item {i});
-    }
-
-    std::vector<std::jthread> threads;
-
-    // Threads that check size then try to checkout
-    for (int t = 0; t < 8; t++) {
-        threads.emplace_back([&]() {
-            while (!done.load()) {
-                size_t sz = pool.size();
-                size_checks++;
-
-                if (sz > 0) {
-                    try {
-                        auto item = pool.checkout();
-                        // Successfully got an item
-                    }
-                    catch (const std::runtime_error&) {
-                        // TOCTOU race: size said > 0 but checkout failed
-                        checkout_failures++;
-                    }
-                }
-                std::this_thread::yield();
-            }
-        });
-    }
-
-    // Concurrent modifier threads
-    for (int m = 0; m < 4; m++) {
-        threads.emplace_back([&]() {
-            int counter = 100;
-            while (!done.load()) {
-                for (int i = 0; i < 50; i++) {
-                    pool.checkin(resource_item {counter++});
-                    try {
-                        auto _ = pool.checkout();
-                    }
-                    catch (const std::runtime_error&) {
-                    }
-                }
-            }
-        });
-    }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    done = true;
-
-    for (auto& t : threads) {
-        if (t.joinable()) t.join();
-    }
-
-    std::cerr << std::format(
-            "resource_pool TOCTOU: size_checks={}, checkout_failures={}\n", size_checks.load(), checkout_failures.load());
 }
 
 

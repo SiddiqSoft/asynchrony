@@ -12,7 +12,6 @@ This header-only library eliminates boilerplate synchronization code and provide
 - **Thread Pool**: Distribute work across multiple threads with a shared queue
 - **Round-Robin Pool**: Minimize contention with per-thread queues
 - **Periodic Worker**: Execute functions at regular intervals
-- **Resource Pool**: Manage a pool of reusable resources
 - **Modern C++20**: Uses only standard library features (no external dependencies for core functionality)
 - **Type-Safe**: Leverages C++ concepts for compile-time type checking
 - **Exception Safe**: Handles exceptions gracefully without thread termination
@@ -37,7 +36,6 @@ This header-only library eliminates boilerplate synchronization code and provide
 | @ref siddiqsoft::simple_pool | Multi-threaded pool with shared queue | Parallel processing with load balancing |
 | @ref siddiqsoft::roundrobin_pool | Multi-threaded pool with per-thread queues | Parallel processing with reduced contention |
 | @ref siddiqsoft::periodic_worker | Periodic task executor | Scheduled/recurring tasks |
-| @ref siddiqsoft::resource_pool | Resource pool manager | Connection/resource management |
 
 
 @section design Design Principles
@@ -143,33 +141,6 @@ int main() {
     };
 
     std::this_thread::sleep_for(std::chrono::seconds(5));
-    return 0;
-}
-```
-
-@subsection resource_example Resource Pool Example
-
-```cpp
-#include "siddiqsoft/resource_pool.hpp"
-
-class Connection {
-public:
-    void query(const std::string& sql) { /* ... */ }
-};
-
-int main() {
-    siddiqsoft::resource_pool<Connection> pool;
-    
-    // Populate pool
-    for (int i = 0; i < 10; ++i) {
-        pool.checkin(Connection{});
-    }
-
-    // Use resources
-    auto conn = pool.checkout();
-    conn.query("SELECT * FROM users");
-    pool.checkin(std::move(conn));
-
     return 0;
 }
 ```

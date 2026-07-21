@@ -1,4 +1,3 @@
-
 @page examples Examples
 
 @section ex_http_requests HTTP Request Queue
@@ -43,11 +42,10 @@ int main() {
 
 @section ex_database_operations Database Operations
 
-Process database queries with a connection pool:
+Process database queries with a thread pool:
 
 ```cpp
 #include "siddiqsoft/simple_pool.hpp"
-#include "siddiqsoft/resource_pool.hpp"
 
 class DbConnection {
 public:
@@ -62,12 +60,10 @@ struct DbQuery {
 };
 
 int main() {
-    siddiqsoft::resource_pool<DbConnection> connPool;
     siddiqsoft::simple_pool<DbQuery> queryPool{
-        [&connPool](auto&& query) {
-            auto conn = connPool.checkout();
+        [](auto&& query) {
+            DbConnection conn;
             conn.execute(query.sql);
-            connPool.checkin(std::move(conn));
         }
     };
 
@@ -312,4 +308,3 @@ int main() {
     return 0;
 }
 ```
-

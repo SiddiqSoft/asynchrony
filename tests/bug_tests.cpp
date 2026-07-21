@@ -51,7 +51,6 @@
 #include "../include/siddiqsoft/simple_pool.hpp"
 #include "../include/siddiqsoft/roundrobin_pool.hpp"
 #include "../include/siddiqsoft/periodic_worker.hpp"
-#include "../include/siddiqsoft/resource_pool.hpp"
 
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
@@ -151,77 +150,6 @@ TEST(bug_tests, periodic_worker_outstanding_callback_exception)
 
     // outstandingCallback should never exceed 1 (only one callback at a time)
     EXPECT_LE(outstandingPeak.load(), 1u) << "Outstanding callback counter exceeded 1, indicating a race condition";
-}
-
-
-/// @brief BUG TEST: Concurrent access to resource_pool with rapid clear/checkout
-/// Tests for potential race conditions between clear() and checkout/checkin operations.
-TEST(bug_tests, resource_pool_concurrent_clear_checkout_race)
-{
-    struct test_resource
-    {
-        int value;
-        test_resource(int v)
-            : value(v)
-        {
-        }
-    };
-    siddiqsoft::resource_pool<test_resource> pool {};
-    constexpr int                            INITIAL_SIZE = 100;
-    constexpr int                            THREAD_COUNT = 8;
-    constexpr int                            DURATION_MS  = 1000;
-
-    // Pre-populate
-    for (int i = 0; i < INITIAL_SIZE; i++) {
-        pool.checkin(test_resource(i));
-    }
-
-    std::atomic_bool done {false};
-    std::atomic_int  clearCount {0};
-    std::atomic_int  checkoutCount {0};
-    std::atomic_int  checkinCount {0};
-
-    // Thread that repeatedly clears
-    std::jthread clearer([&](std::stop_token st) {
-        while (!st.stop_requested() && !done.load()) {
-            pool.clear();
-            clearCount++;
-            // Repopulate
-            for (int i = 0; i < 10; i++) {
-                pool.checkin(i);
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        }
-    });
-
-    // Threads that checkout/checkin
-    std::vector<std::jthread> workers;
-    for (int t = 0; t < THREAD_COUNT; t++) {
-        workers.emplace_back([&]() {
-            while (!done.load()) {
-                try {
-                    auto item = pool.checkout();
-                    checkoutCount++;
-                    std::this_thread::sleep_for(std::chrono::microseconds(100));
-                    checkinCount++;
-                }
-                catch (const std::runtime_error&) {
-                    // Expected when pool is empty
-                }
-            }
-        });
-    }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(DURATION_MS));
-    done = true;
-    clearer.request_stop();
-    if (clearer.joinable()) clearer.join();
-    workers.clear();
-
-    // Verify consistency: checkins should equal checkouts (all items returned)
-    EXPECT_EQ(checkoutCount.load(), checkinCount.load())
-            << "Checkout/checkin mismatch: " << checkoutCount.load() << " vs " << checkinCount.load();
-    EXPECT_GT(clearCount.load(), 0);
 }
 
 
@@ -456,60 +384,5 @@ TEST(bug_tests, periodic_worker_invocation_consistency)
         EXPECT_LE(minInterval.load(), 120u) << "Min interval too large: " << minInterval.load() << "ms";
         EXPECT_GE(maxInterval.load(), 20u) << "Max interval too small: " << maxInterval.load() << "ms";
     }
-}
-
-
-/// @brief BUG TEST: Verify resource_pool doesn't leak resources under concurrent access
-/// Tests that all resources are properly accounted for even under high contention.
-TEST(bug_tests, resource_pool_no_resource_leak)
-{
-    constexpr int POOL_SIZE      = 10;
-    constexpr int THREAD_COUNT   = 8;
-    constexpr int OPS_PER_THREAD = 200;
-
-    struct test_resource
-    {
-        int value;
-        test_resource(int v)
-            : value(v)
-        {
-        }
-    };
-
-    siddiqsoft::resource_pool<test_resource> pool {};
-    for (int i = 0; i < POOL_SIZE; i++) {
-        pool.checkin(test_resource(i));
-    }
-
-    std::atomic_int           successCount {0};
-    std::atomic_int           failCount {0};
-
-    std::barrier              startBarrier {THREAD_COUNT};
-    std::vector<std::jthread> threads;
-
-    for (int t = 0; t < THREAD_COUNT; t++) {
-        threads.emplace_back([&]() {
-            startBarrier.arrive_and_wait();
-            for (int i = 0; i < OPS_PER_THREAD; i++) {
-                try {
-                    auto item = pool.checkout();
-                    successCount++;
-                    std::this_thread::sleep_for(std::chrono::microseconds(50));
-                }
-                catch (const std::runtime_error&) {
-                    failCount++;
-                }
-            }
-        });
-    }
-
-    threads.clear();
-
-    // All resources should be back in the pool
-    EXPECT_EQ(static_cast<size_t>(POOL_SIZE), pool.size())
-            << "Resource leak detected: expected " << POOL_SIZE << " resources, got " << pool.size();
-
-    // Total operations should equal successes + failures
-    EXPECT_EQ(THREAD_COUNT * OPS_PER_THREAD, successCount.load() + failCount.load());
 }
 // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

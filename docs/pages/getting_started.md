@@ -1,4 +1,3 @@
-
 @page getting_started Getting Started
 
 @section installation Installation
@@ -116,18 +115,6 @@ siddiqsoft::periodic_worker<> timer{
 };
 ```
 
-### Pattern 4: Resource Pool
-
-Manage a pool of reusable resources:
-
-```cpp
-siddiqsoft::resource_pool<Connection> connPool;
-
-auto conn = connPool.checkout();
-conn.execute("SELECT * FROM users");
-connPool.checkin(std::move(conn));
-```
-
 @section troubleshooting Troubleshooting
 
 ### Compilation Errors
@@ -160,4 +147,3 @@ connPool.checkin(std::move(conn));
 - Read the @ref usage_guide for detailed usage examples
 - Check the @ref quick_reference for API quick lookup
 - Explore the @ref examples for more complex scenarios
-

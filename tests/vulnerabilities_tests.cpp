@@ -51,7 +51,6 @@
 #include "../include/siddiqsoft/simple_pool.hpp"
 #include "../include/siddiqsoft/roundrobin_pool.hpp"
 #include "../include/siddiqsoft/periodic_worker.hpp"
-#include "../include/siddiqsoft/resource_pool.hpp"
 
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 

@@ -39,7 +39,6 @@ The asynchrony library is designed with security as a core principle. This guide
 ### Resource Management
 - ✅ RAII principles throughout
 - ✅ std::jthread ensures thread cleanup
-- ✅ resource_wrap ensures resource return
 - ✅ No resource leaks
 - ✅ Graceful shutdown procedures
 
@@ -172,20 +171,6 @@ for (auto& item : items) {
 }
 ```
 
-### Resource Pool Capacity
-
-Set resource pool capacity appropriately:
-
-```cpp
-// ✅ GOOD: Set pool capacity
-siddiqsoft::resource_pool<Connection> pool;
-
-// Populate with appropriate number of resources
-for (int i = 0; i < std::thread::hardware_concurrency(); ++i) {
-    pool.checkin(Connection{});
-}
-```
-
 @section exception_handling Exception Handling
 
 ### Callback Exceptions
@@ -228,18 +213,6 @@ All queue operations are thread-safe:
 // Safe to call from multiple threads
 std::thread t1([&]() { worker.queue(item1); });
 std::thread t2([&]() { worker.queue(item2); });
-t1.join();
-t2.join();
-```
-
-### Resource Pool Operations
-
-All resource pool operations are thread-safe:
-
-```cpp
-// Safe to call from multiple threads
-std::thread t1([&]() { auto res = pool.checkout(); });
-std::thread t2([&]() { auto res = pool.checkout(); });
 t1.join();
 t2.join();
 ```
@@ -322,7 +295,6 @@ Before deploying asynchrony-based code:
 - [ ] Callbacks don't block indefinitely
 - [ ] No circular dependencies between workers
 - [ ] Queue depth is controlled
-- [ ] Resource pool capacity is appropriate
 - [ ] Shutdown is tested
 - [ ] Memory usage is monitored
 - [ ] Thread count is appropriate

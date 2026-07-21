@@ -1,4 +1,3 @@
-
 @page usage_guide Usage Guide
 
 @section overview Overview
@@ -214,57 +213,6 @@ siddiqsoft::periodic_worker<> timer{
 };
 ```
 
-@section resource_pool Resource Pool
-
-Manage a pool of reusable resources (e.g., database connections).
-
-@subsection rp_basic Basic Usage
-
-```cpp
-#include "siddiqsoft/resource_pool.hpp"
-
-class DatabaseConnection {
-public:
-    void execute(const std::string& query) { /* ... */ }
-};
-
-int main() {
-    siddiqsoft::resource_pool<DatabaseConnection> pool;
-
-    // Checkout a resource
-    auto conn = pool.checkout();
-    conn.execute("SELECT * FROM users");
-
-    // Checkin returns the resource to the pool
-    pool.checkin(std::move(conn));
-
-    return 0;
-}
-```
-
-@subsection rp_methods Resource Pool Methods
-
-The objects you store in the `resource_pool<T>` are returned via a `resource_wrap<T>` object which is designed to offer you easy conversion to the underlying stored type `T`.
-The `resource_wrap<T>` when it goes out of scope will return the object to the pool.
-
-You must use move semantics to allow the resource_pool to hold the resource. If you're using a `shared_ptr` then make sure you understand that you're going to std::move into the pool.
-
-```cpp
-siddiqsoft::resource_pool<T> pool;
-
-// Get current pool size
-auto size = pool.size();
-
-// Checkout a resource (throws if empty)
-auto resource = pool.checkout();
-
-// Return a resource to the pool
-pool.checkin(std::move(resource));
-
-// Clear all resources
-pool.clear();
-```
-
 @section best_practices Best Practices
 
 @subsection bp_lifetime Lifetime Management
@@ -337,4 +285,3 @@ The JSON output includes:
 - `threadPriority`: Thread priority level
 - `outstandingCallback`: Callbacks currently executing
 - `waitInterval`: Wait timeout in milliseconds
-

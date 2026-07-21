@@ -22,7 +22,6 @@ For comprehensive documentation, visit our **[GitHub Pages](https://siddiqsoft.g
 # Motivation
 - We needed to add asynchrony to our code.
   - A periodic worker
-  - A resource pool
   - A round robin pool
   - A simple thread pool
   - A simple worker pool
@@ -171,23 +170,6 @@ int main()
    // Keep the program running
    std::this_thread::sleep_for(std::chrono::seconds(5));
    return 0;
-}
-```
-
-## Resource Pool
-
-Provides a basic resource pool useful for keeping a pool of connection objects for the various threadpools to checkout/checkin.
-
-```cpp
-namespace siddiqsoft {
-    template<typename T>
-    class resource_pool {
-        public:
-        auto size();                           // Get current pool size
-        [[nodiscard]] T checkout();            // Checkout a resource (throws if empty)
-        void checkin(T&& rsrc);                // Return a resource to the pool
-        void clear();                          // Clear all resources from the pool
-    };
 }
 ```
 

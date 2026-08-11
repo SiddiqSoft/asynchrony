@@ -2,7 +2,7 @@
 
 @section intro Introduction
 
-The **asynchrony** library provides a comprehensive set of modern C++20 utilities for building asynchronous and multi-threaded applications. It leverages standard library features like `std::jthread`, `std::semaphore`, `std::deque`, and `std::concepts` to provide clean, efficient abstractions for common asynchronous patterns.
+The **asynchrony** library provides a comprehensive set of modern C++23 utilities for building asynchronous and multi-threaded applications. It leverages standard library features like `std::jthread`, `std::semaphore`, `std::deque`, and `std::concepts` to provide clean, efficient abstractions for common asynchronous patterns.
 
 This header-only library eliminates boilerplate synchronization code and provides a simple, type-safe API for concurrent programming scenarios.
 
@@ -12,7 +12,7 @@ This header-only library eliminates boilerplate synchronization code and provide
 - **Thread Pool**: Distribute work across multiple threads with a shared queue
 - **Round-Robin Pool**: Minimize contention with per-thread queues
 - **Periodic Worker**: Execute functions at regular intervals
-- **Modern C++20**: Uses only standard library features (no external dependencies for core functionality)
+- **Modern C++23**: Uses only standard library features (no external dependencies for core functionality)
 - **Type-Safe**: Leverages C++ concepts for compile-time type checking
 - **Exception Safe**: Handles exceptions gracefully without thread termination
 - **Move Semantics**: Efficient resource transfer with perfect forwarding
@@ -20,7 +20,7 @@ This header-only library eliminates boilerplate synchronization code and provide
 
 @section requirements Requirements
 
-- **C++20 Support**: Requires `std::jthread` and `std::stop_token`
+- **C++23 Support**: Requires `std::jthread` and `std::stop_token`
 - **Compiler Support**:
   - GCC 10+
   - MSVC 16.11+ (Visual Studio 2019 or later)
@@ -45,7 +45,7 @@ This header-only library eliminates boilerplate synchronization code and provide
 - **Exception Safety**: Exceptions in callbacks are caught and logged, not propagated
 - **Thread Safety**: Internal synchronization using mutexes and semaphores
 - **Zero-Copy**: Minimal data copying through perfect forwarding
-- **Type Safety**: C++20 concepts ensure compile-time type checking
+- **Type Safety**: C++23 concepts ensure compile-time type checking
 - **Simplicity**: Clean API that hides complexity of thread management
 
 @section documentation Documentation

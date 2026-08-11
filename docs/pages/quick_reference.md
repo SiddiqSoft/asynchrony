@@ -96,7 +96,7 @@ auto sz = worker.size();
 
 @section qr_requirements Requirements
 
-- **C++20** or later
+- **C++23** or later
 - **Compiler**: GCC 10+, MSVC 16.11+, Clang 10+
 - **Platform**: Windows, Linux, macOS
 - **Dependencies**: None (header-only for core functionality)
@@ -106,13 +106,13 @@ auto sz = worker.size();
 
 **GCC/Clang:**
 ```bash
-g++ -std=c++20 -pthread your_file.cpp
-clang++ -std=c++20 -fexperimental-library -pthread your_file.cpp
+g++ -std=C++23 -pthread your_file.cpp
+clang++ -std=C++23 -fexperimental-library -pthread your_file.cpp
 ```
 
 **MSVC:**
 ```bash
-cl /std:c++20 your_file.cpp
+cl /std:C++23 your_file.cpp
 ```
 
 **CMake:**
@@ -134,7 +134,7 @@ target_link_libraries(your_target PRIVATE asynchrony::asynchrony)
 
 | Issue | Solution |
 |-------|----------|
-| Compilation error: `jthread not found` | Use C++20 or later |
+| Compilation error: `jthread not found` | Use C++23 or later |
 | Tasks not executing | Ensure worker/pool is not destroyed |
 | High CPU usage | Increase wait timeout or reduce threads |
 | Deadlock | Avoid circular dependencies in callbacks |

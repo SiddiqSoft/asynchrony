@@ -31,7 +31,7 @@ The asynchrony library is designed with security as a core principle. This guide
 
 ### Type Safety
 - ✅ Strong typing throughout
-- ✅ C++20 concepts for compile-time checking
+- ✅ C++23 concepts for compile-time checking
 - ✅ No unsafe casts
 - ✅ No type confusion vulnerabilities
 - ✅ Template-based type safety

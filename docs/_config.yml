@@ -5,7 +5,7 @@ plugins:
 
 # Site metadata
 title: asynchrony
-description: Add asynchrony to your C++ applications using standard C++20
+description: Add asynchrony to your C++ applications using standard C++23
 url: https://siddiqsoft.github.io/asynchrony
 
 # Logo and branding

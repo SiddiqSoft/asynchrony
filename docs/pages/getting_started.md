@@ -27,19 +27,19 @@ nuget install SiddiqSoft.asynchrony
 
 #### Visual Studio 2019 or later
 
-- Set C++ Language Standard to `/std:c++20` or `/std:c++latest`
+- Set C++ Language Standard to `/std:C++23` or `/std:c++latest`
 - No additional flags required
 
 #### GCC 10+
 
 ```bash
-g++ -std=c++20 -pthread your_file.cpp
+g++ -std=C++23 -pthread your_file.cpp
 ```
 
 #### Clang 10+
 
 ```bash
-clang++ -std=c++20 -fexperimental-library -pthread your_file.cpp
+clang++ -std=C++23 -fexperimental-library -pthread your_file.cpp
 ```
 
 @section first_program Your First Program
@@ -120,13 +120,13 @@ siddiqsoft::periodic_worker<> timer{
 ### Compilation Errors
 
 **Error**: `'jthread' is not a member of 'std'`
-- **Solution**: Ensure you're using C++20 or later. Update your compiler flags to `-std=c++20` or `/std:c++20`.
+- **Solution**: Ensure you're using C++23 or later. Update your compiler flags to `-std=C++23` or `/std:C++23`.
 
 **Error**: `undefined reference to pthread_*`
 - **Solution**: Link against pthread library: `-pthread` flag or `target_link_libraries(... pthread)`
 
 **Error**: `'stop_token' is not a member of 'std'`
-- **Solution**: Ensure your compiler supports C++20. Update to GCC 10+, MSVC 16.11+, or Clang 10+.
+- **Solution**: Ensure your compiler supports C++23. Update to GCC 10+, MSVC 16.11+, or Clang 10+.
 
 ### Runtime Issues
 

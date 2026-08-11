@@ -27,7 +27,7 @@ For comprehensive documentation, visit our **[GitHub Pages](https://siddiqsoft.g
   - A simple worker pool
 - The code here is a set of helpers that utilize the underlying deque, semaphore, mutex features found in std.
 - Be instructive while providing functional code.
-- Use only C++20 standard code: jthread, deque, semaphore, and concepts
+- Use only C++23 standard code: jthread, deque, semaphore, and concepts
 - Depends on RunOnEnd for encapsulating cleanup code on destructor.
 
 > **BREAKING CHANGE!**
@@ -36,7 +36,7 @@ For comprehensive documentation, visit our **[GitHub Pages](https://siddiqsoft.g
 
 # Usage
 
-> Requires C++20 support!
+> Requires C++23 support!
 >
 > Specifically we require `jthread` and `stop_token` support. This library works with GCC 10+, MSVC 16.11+, or Clang 10+.
 

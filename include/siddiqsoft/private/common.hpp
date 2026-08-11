@@ -42,7 +42,7 @@ namespace siddiqsoft
      *         std::rethrow_exception(ep);
      *     } else {
      *         // Log and continue
-     *         std::cerr << "Non-critical exception occurred" << std::endl;
+     *         std::println(std::cerr, "Non-critical exception occurred");
      *     }
      * }
      * @endcode

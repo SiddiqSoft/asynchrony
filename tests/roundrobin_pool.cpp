@@ -64,7 +64,7 @@ TEST(roundrobin_pool, test1)
     // This is important otherwise the destructor will kill the thread before it has a chance to process anything!
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     EXPECT_EQ(passTest.load(), std::thread::hardware_concurrency());
-    std::cerr << nlohmann::json(workers).dump() << std::endl;
+    std::println(std::cerr, "{}", nlohmann::json(workers).dump());
 }
 
 
@@ -381,7 +381,7 @@ TEST(roundrobin_pool, adl_to_json)
     EXPECT_TRUE(j.contains("queueCounter"));
     EXPECT_EQ(2u, j["workersSize"].get<unsigned>());
     EXPECT_EQ(1u, j["queueCounter"].get<uint64_t>());
-    std::cerr << "to_json result: " << j.dump() << std::endl;
+    std::println(std::cerr, "to_json result: {}", j.dump());
 }
 
 

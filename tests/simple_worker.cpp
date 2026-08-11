@@ -64,7 +64,7 @@ TEST(simple_worker, test1)
     std::this_thread::sleep_for(std::chrono::seconds(1));
     EXPECT_TRUE(passTest);
 
-    std::cerr << worker.to_json().dump() << std::endl;
+    std::println(std::cerr, "{}", worker.to_json().dump());
 }
 
 
@@ -390,7 +390,7 @@ TEST(simple_worker, adl_to_json)
     EXPECT_TRUE(j.contains("_typver"));
     EXPECT_TRUE(j.contains("queueCounter"));
     EXPECT_EQ(1u, j["queueCounter"].get<uint64_t>());
-    std::cerr << "ADL to_json result: " << j.dump() << std::endl;
+    std::println(std::cerr, "ADL to_json result: {}", j.dump());
 }
 
 // If we enable this test for CI, it is guaranteed to throw ASAN on Linux

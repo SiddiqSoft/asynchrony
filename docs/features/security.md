@@ -27,7 +27,7 @@ worker.queue([](auto&& item) {
     try {
         item.process();
     } catch (const std::exception& e) {
-        std::cerr << "Callback error: " << e.what() << std::endl;
+        std::println(std::cerr, "Callback error: {}", e.what());
     }
 });
 ```

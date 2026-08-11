@@ -120,8 +120,7 @@ TEST(vuln_simple_worker, graceful_shutdown)
         siddiqsoft::simple_worker<std::string> worker([&](auto&& val) {
             items_processed++;
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
-            std::cerr << "  task completed for   `" << val << "`   via tid: " << std::this_thread::get_id()
-                      << "; items_processed: " << items_processed.load() << "\n";
+            std::println(std::cerr, "  task completed for   `{}`   via tid: {} ; items_processed: {}", val, std::this_thread::get_id(), items_processed.load());
         });
 
         for (int i = 0; i < 10; i++) {

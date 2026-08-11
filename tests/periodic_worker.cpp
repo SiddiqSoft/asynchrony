@@ -64,7 +64,7 @@ TEST(periodic_worker, test1)
     // the wait on the semaphore is accurate.
     EXPECT_LE(44, passTest);
 
-    std::cerr << worker.to_json().dump() << std::endl;
+    std::println(std::cerr, "{}", worker.to_json().dump());
 }
 
 TEST(periodic_worker, nosleep_test2)
@@ -73,10 +73,10 @@ TEST(periodic_worker, nosleep_test2)
 
     siddiqsoft::periodic_worker worker {[&]() {
                                             // this sleep will force the worker to terminate mid-call
-                                            std::cerr << "  Started......`" << __func__ << "`......" << std::endl;
+                                            std::println(std::cerr, "  Started......`" + std::string(__func__) + "`......");
                                             std::this_thread::sleep_for(std::chrono::seconds(2));
                                             passTest++;
-                                            std::cerr << "  Completed....`" << __func__ << "`......" << std::endl;
+                                            std::println(std::cerr, "  Completed....`" + std::string(__func__) + "`......");
                                         },
                                         // run the above code every 50ms
                                         std::chrono::milliseconds(50)};
@@ -84,7 +84,7 @@ TEST(periodic_worker, nosleep_test2)
     // We expect at least one iteration completed.
     EXPECT_GE(1, passTest) << std::format("At least one iteration; completed: {}", passTest);
 
-    std::clog << worker.to_json().dump() << std::endl;
+    std::println(std::clog, "{}", worker.to_json().dump());
 }
 
 
@@ -100,7 +100,7 @@ TEST(periodic_worker, named_worker)
 
     auto j = worker.to_json();
     EXPECT_EQ("my-test-worker", j["threadName"].get<std::string>());
-    std::cerr << j.dump() << std::endl;
+    std::println(std::cerr, "{}", j.dump());
 }
 
 
@@ -122,7 +122,7 @@ TEST(periodic_worker, toJson_fields)
     EXPECT_TRUE(j.contains("waitInterval"));
     EXPECT_EQ(0, j["threadPriority"].get<int>());
     EXPECT_GT(j["invokeCounter"].get<uint64_t>(), 0u);
-    std::cerr << j.dump() << std::endl;
+    std::println(std::cerr, "{}", j.dump());
 }
 
 
@@ -280,7 +280,7 @@ TEST(periodic_worker, adl_to_json)
     EXPECT_TRUE(j.contains("_typver"));
     EXPECT_TRUE(j.contains("invokeCounter"));
     EXPECT_GT(j["invokeCounter"].get<uint64_t>(), 0u);
-    std::cerr << "ADL to_json result: " << j.dump() << std::endl;
+    std::println(std::cerr, "ADL to_json result: {}", j.dump());
 }
 
 

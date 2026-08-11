@@ -176,7 +176,7 @@ namespace siddiqsoft
                             std::println(std::cerr, "worker shutdown failed; isDrained: {}. size:{}", isDrained, items.size());
                         }
 
-                        std::cerr << "WARNING: Graceful shutdown timeout exceeded\n";
+                        std::println(std::cerr, "WARNING: Graceful shutdown timeout exceeded");
 #endif
 
                         status = isDrained; // Timeout occurred

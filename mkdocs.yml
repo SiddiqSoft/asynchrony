@@ -1,0 +1,84 @@
+site_name: asynchrony
+site_description: Add asynchrony to your C++ applications using standard C++23
+site_author: Siddiq Software LLC
+site_url: https://siddiqsoft.github.io/asynchrony/
+repo_url: https://github.com/SiddiqSoft/asynchrony
+repo_name: SiddiqSoft/asynchrony
+edit_uri: edit/main/docs/
+
+exclude_docs: |
+  MIGRATE_DOCS_PROMPT.md
+
+theme:
+  name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - navigation.footer
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+
+extra_css:
+  - css/custom.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Features:
+    - Overview: features/index.md
+    - Simple Worker: features/simple_worker.md
+    - Simple Pool: features/simple_pool.md
+    - Round-Robin Pool: features/roundrobin_pool.md
+    - Periodic Worker: features/periodic_worker.md
+    - Quick Reference: features/quick_reference.md
+    - Security: features/security.md
+  - Integration: integration/index.md
+  - API Reference:
+    - Overview: api/index.md
+    - simple_worker: api/simple_worker.md
+    - simple_pool: api/simple_pool.md
+    - roundrobin_pool: api/roundrobin_pool.md
+    - periodic_worker: api/periodic_worker.md
+  - License: license.md

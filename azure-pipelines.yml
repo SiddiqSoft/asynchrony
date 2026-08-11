@@ -115,6 +115,11 @@ parameters:
     default: false
     displayName: "Deploy documentation to GitHub Pages (auto-enabled on main/master)"
 
+  - name: PublishDocs
+    type: boolean
+    default: false
+    displayName: "Publish MkDocs documentation to GitHub Pages (auto-enabled on main/master)"
+
   # Cleanup
   - name: Cleanup
     type: boolean
@@ -133,6 +138,8 @@ variables:
       value: true
     - name: DeployPages
       value: true
+    - name: PublishDocs
+      value: true
   - ${{ else }}:
     - name: PublishNuGet
       value: ${{ parameters.PublishNuGet }}
@@ -140,6 +147,8 @@ variables:
       value: ${{ parameters.PublishGitHub }}
     - name: DeployPages
       value: ${{ parameters.DeployPages }}
+    - name: PublishDocs
+      value: ${{ parameters.PublishDocs }}
   - group: Common
 
   # System information
@@ -217,7 +226,7 @@ stages:
     dependsOn:
       - Windows
       - Linux
-    condition: and(or(eq(${{ variables.PublishGitHub }}, true), eq(${{ variables.PublishNuGet }}, true)), succeeded())
+    condition: and(or(eq(${{ variables.PublishGitHub }}, true), or(eq(${{ variables.PublishNuGet }}, true), eq(${{ variables.PublishDocs }}, true))), succeeded())
     jobs:
       - ${{ if eq(variables.PublishNuGet, true) }}:
         - template: .azure/az-publish-nuget.yml
@@ -230,6 +239,11 @@ stages:
           displayName: GitHub Release
           PublishGitHub: ${{ variables.PublishGitHub }}
 
+      - template: .azure/az-publish-docs.yml
+        parameters:
+          displayName: Publish MkDocs to GitHub Pages
+          PublishDocs: ${{ variables.PublishDocs }}
+
   # ==========================================================================
   # STAGE 4: DOCUMENTATION DEPLOYMENT
   # This stage can be run independently and without the requisite code build.
@@ -237,9 +251,9 @@ stages:
   - stage: Documentation
     displayName: Documentation
     dependsOn: []
-    condition: or(eq(${{ variables.DeployPages }}, true), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master')))
+    condition: or(eq(${{ variables.PublishDocs }}, true), or(eq(${{ variables.DeployPages }}, true), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))))
     jobs:
-      - template: .azure/az-deploy-pages.yml
+      - template: .azure/az-publish-docs.yml
         parameters:
-          displayName: Deploy to GitHub Pages
-          DeployPages: ${{ variables.DeployPages }}
+          displayName: Deploy MkDocs to GitHub Pages
+          PublishDocs: ${{ variables.PublishDocs }}

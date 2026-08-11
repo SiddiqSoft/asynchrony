@@ -13,11 +13,11 @@ asynchrony : Add asynchrony to your apps
 
 For comprehensive documentation, visit our **[GitHub Pages](https://siddiqsoft.github.io/asynchrony/)**:
 
-- **[API Reference](https://siddiqsoft.github.io/asynchrony/doxygen/html/index.html)** - Complete Doxygen-generated API documentation
-- **[Getting Started](https://siddiqsoft.github.io/asynchrony/doxygen/html/md_docs_pages_getting_started.html)** - Installation and setup guide
-- **[Usage Guide](https://siddiqsoft.github.io/asynchrony/doxygen/html/md_docs_pages_usage_guide.html)** - Detailed usage examples and best practices
-- **[Examples](https://siddiqsoft.github.io/asynchrony/doxygen/html/md_docs_pages_examples.html)** - Real-world code examples
-- **[Quick Reference](https://siddiqsoft.github.io/asynchrony/doxygen/html/md_docs_pages_quick_reference.html)** - Quick lookup guide for common tasks
+- **[Features Overview](https://siddiqsoft.github.io/asynchrony/features/)** - Detailed feature guides
+- **[Integration Guide](https://siddiqsoft.github.io/asynchrony/integration/)** - Installation and setup guide
+- **[API Reference](https://siddiqsoft.github.io/asynchrony/api/)** - Complete class and function API documentation
+- **[Quick Reference](https://siddiqsoft.github.io/asynchrony/features/quick_reference/)** - Quick lookup guide for common tasks
+- **[Security Guide](https://siddiqsoft.github.io/asynchrony/features/security/)** - Concurrency and memory safety best practices
 
 # Motivation
 - We needed to add asynchrony to our code.

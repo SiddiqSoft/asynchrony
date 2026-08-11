@@ -1,4 +1,6 @@
-# Doxygen generated documentation
+# MkDocs build directory and virtual environment
+site/
+.venv/
 docs/doxygen/
 
 ## Ignore Visual Studio temporary files, build results, and

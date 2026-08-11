@@ -17,22 +17,22 @@ The **asynchrony** library provides a comprehensive set of modern **C++23** head
   <div class="card">
     <h3>Single-threaded Worker</h3>
     <p>Process items asynchronously in a dedicated worker thread with low overhead and full move semantics.</p>
-    <a href="features/simple_worker.md">Read Guide &rarr;</a>
+    <a href="features/simple_worker/">Read Guide &rarr;</a>
   </div>
   <div class="card">
     <h3>Shared Thread Pool</h3>
     <p>Distribute work across a pool of threads consuming from a single shared queue with automatic load balancing.</p>
-    <a href="features/simple_pool.md">Read Guide &rarr;</a>
+    <a href="features/simple_pool/">Read Guide &rarr;</a>
   </div>
   <div class="card">
     <h3>Round-Robin Pool</h3>
     <p>Minimize lock contention in high-throughput applications using per-thread queues and round-robin dispatch.</p>
-    <a href="features/roundrobin_pool.md">Read Guide &rarr;</a>
+    <a href="features/roundrobin_pool/">Read Guide &rarr;</a>
   </div>
   <div class="card">
     <h3>Periodic Worker</h3>
     <p>Execute recurring background tasks or timers at regular intervals cleanly using RAII lifecycle management.</p>
-    <a href="features/periodic_worker.md">Read Guide &rarr;</a>
+    <a href="features/periodic_worker/">Read Guide &rarr;</a>
   </div>
 </div>
 

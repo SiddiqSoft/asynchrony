@@ -8,22 +8,22 @@ The `siddiqsoft::asynchrony` library is organized into header-only class templat
   <div class="card">
     <h3>siddiqsoft::simple_worker</h3>
     <p>Single-threaded asynchronous worker class template.</p>
-    <a href="simple_worker.md">View Class Reference &rarr;</a>
+    <a href="simple_worker/">View Class Reference &rarr;</a>
   </div>
   <div class="card">
     <h3>siddiqsoft::simple_pool</h3>
     <p>Multi-threaded pool with a shared task queue.</p>
-    <a href="simple_pool.md">View Class Reference &rarr;</a>
+    <a href="simple_pool/">View Class Reference &rarr;</a>
   </div>
   <div class="card">
     <h3>siddiqsoft::roundrobin_pool</h3>
     <p>Multi-threaded pool with per-thread task queues.</p>
-    <a href="roundrobin_pool.md">View Class Reference &rarr;</a>
+    <a href="roundrobin_pool/">View Class Reference &rarr;</a>
   </div>
   <div class="card">
     <h3>siddiqsoft::periodic_worker</h3>
     <p>Periodic interval timer worker class template.</p>
-    <a href="periodic_worker.md">View Class Reference &rarr;</a>
+    <a href="periodic_worker/">View Class Reference &rarr;</a>
   </div>
 </div>
 

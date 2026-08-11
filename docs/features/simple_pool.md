@@ -12,7 +12,7 @@ The `simple_pool` is a multi-threaded pool that distributes work across multiple
 
 ---
 
-## Basic Usage Example
+## Basic Example
 
 ```cpp
 #include "siddiqsoft/simple_pool.hpp"

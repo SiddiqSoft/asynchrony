@@ -50,7 +50,7 @@ Constructs the thread pool with `ThreadCount` background worker threads (or hard
 - **Parameters**: `callback` – Callable function invoked by worker threads when dequeuing work items.
 - **Copy/Move**: Copy and move constructors/operators are deleted.
 
-#### Usage Example
+#### Example
 
 ```cpp
 #include "siddiqsoft/simple_pool.hpp"
@@ -78,7 +78,7 @@ siddiqsoft::simple_pool<std::string, 4> fixedPool([](std::string&& item) {
 
 Gracefully shuts down all worker threads. Sends stop requests to threads, signals waiting semaphores, and joins each worker thread before destruction completes.
 
-#### Usage Example
+#### Example
 
 ```cpp
 {
@@ -104,7 +104,7 @@ Adds a work item to the shared queue via perfect forwarding and signals an idle 
 - **Parameters**: `item` – Rvalue reference to work item.
 - **Thread Safety**: Safe to call concurrently from multiple producer threads.
 
-#### Usage Example
+#### Example
 
 ```cpp
 siddiqsoft::simple_pool<std::string> pool([](std::string&& task) {
@@ -142,7 +142,7 @@ template <typename T, uint16_t N = 0>
 static auto to_json(nlohmann::json& dest, const siddiqsoft::simple_pool<T, N>& src) -> void const;
 ```
 
-#### Usage Example
+#### Example
 
 ```cpp
 #include <nlohmann/json.hpp>

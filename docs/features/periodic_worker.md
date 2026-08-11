@@ -11,7 +11,7 @@ The `periodic_worker` executes a specified function or lambda at regular time in
 
 ---
 
-## Basic Usage Example
+## Basic Example
 
 ```cpp
 #include "siddiqsoft/periodic_worker.hpp"

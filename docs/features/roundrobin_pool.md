@@ -12,7 +12,7 @@ The `roundrobin_pool` is a high-throughput multi-threaded worker pool that uses 
 
 ---
 
-## Basic Usage Example
+## Basic Example
 
 ```cpp
 #include "siddiqsoft/roundrobin_pool.hpp"

@@ -46,7 +46,7 @@ Constructs a `periodic_worker` and immediately launches the background timer loo
     - `name`: Diagnostic name string for identifying the worker thread (default: `"anonymous-periodic-worker"`).
 - **Copy/Move**: Copy and move constructors/operators are deleted.
 
-#### Usage Example
+#### Example
 
 ```cpp
 #include "siddiqsoft/periodic_worker.hpp"
@@ -77,7 +77,7 @@ siddiqsoft::periodic_worker<3> highPriorityWorker(
 
 Gracefully shuts down the periodic worker thread. Sets `invokePeriod` to `0` to instantly trigger semaphore wakeup, requests thread cancellation, and joins the background thread.
 
-#### Usage Example
+#### Example
 
 ```cpp
 {
@@ -105,7 +105,7 @@ Forcefully terminates the worker thread using platform native thread APIs (`pthr
 
 - **Parameters**: `sl` – Source location automatically captured for diagnostic error logging.
 
-#### Usage Example
+#### Example
 
 ```cpp
 siddiqsoft::periodic_worker<> worker(
@@ -141,7 +141,7 @@ template <int Pri = 0>
 static void to_json(nlohmann::json& dest, const siddiqsoft::periodic_worker<Pri>& src);
 ```
 
-#### Usage Example
+#### Example
 
 ```cpp
 #include <nlohmann/json.hpp>

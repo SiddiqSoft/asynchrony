@@ -42,7 +42,7 @@ Constructs a `roundrobin_pool` with `ThreadCount` worker threads (or hardware co
 - **Parameters**: `callback` – Callable function invoked by individual worker threads.
 - **Copy/Move**: Copy and move constructors/operators are deleted.
 
-#### Usage Example
+#### Example
 
 ```cpp
 #include "siddiqsoft/roundrobin_pool.hpp"
@@ -70,7 +70,7 @@ siddiqsoft::roundrobin_pool<std::string, 8> customPool([](std::string&& item) {
 
 Destroys the `roundrobin_pool` instance and triggers destruction of all worker threads in the internal `std::deque`. Each worker drains its queue and joins cleanly.
 
-#### Usage Example
+#### Example
 
 ```cpp
 {
@@ -96,7 +96,7 @@ Assigns `item` to the next worker thread using round-robin index dispatch (`queu
 - **Parameters**: `item` – Rvalue reference to work item.
 - **Thread Safety**: Safe to call concurrently from multiple producer threads. Atomic `fetch_add` guarantees unique round-robin indexes.
 
-#### Usage Example
+#### Example
 
 ```cpp
 siddiqsoft::roundrobin_pool<int> pool([](int&& val) {
@@ -130,7 +130,7 @@ template <typename T, uint16_t N = 0>
 static void to_json(nlohmann::json& dest, const siddiqsoft::roundrobin_pool<T, N>& src);
 ```
 
-#### Usage Example
+#### Example
 
 ```cpp
 #include <nlohmann/json.hpp>

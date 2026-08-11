@@ -12,7 +12,7 @@ The `simple_worker` is a single-threaded asynchronous task processor. It manages
 
 ---
 
-## Basic Usage Example
+## Basic Example
 
 ```cpp
 #include "siddiqsoft/simple_worker.hpp"

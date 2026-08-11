@@ -53,7 +53,7 @@ Constructs a `simple_worker` and immediately launches the background processing 
 - **Parameters**: `callback` – Function or callable invoked for each dequeued item.
 - **Copy/Move**: Copy and move constructors are deleted.
 
-#### Usage Example
+#### Example
 
 ```cpp
 #include "siddiqsoft/simple_worker.hpp"
@@ -76,7 +76,7 @@ siddiqsoft::simple_worker<std::string> worker([](std::string&& item) {
 
 Gracefully shuts down the worker thread. Automatically invokes [`shutdown()`](#shutdown) to drain remaining tasks and join the background thread before object destruction completes.
 
-#### Usage Example
+#### Example
 
 ```cpp
 {
@@ -103,7 +103,7 @@ Pushes an item into the worker's internal queue. Ownership of `item` is transfer
 - **Exceptions**: Throws `std::runtime_error` if the worker is currently shutting down (`accepting_items` is `false`).
 - **Thread Safety**: Safe to call concurrently from multiple producer threads.
 
-#### Usage Example
+#### Example
 
 ```cpp
 siddiqsoft::simple_worker<std::string> worker([](std::string&& item) {
@@ -136,7 +136,7 @@ Initiates a graceful shutdown of the worker thread.
 - **Parameters**: `timeout` – Maximum duration to wait for the queue to drain (default `1000ms`).
 - **Returns**: `bool` – `true` if all items were drained before timeout; `false` if timeout occurred.
 
-#### Usage Example
+#### Example
 
 ```cpp
 siddiqsoft::simple_worker<int> worker([](int&& val) {
@@ -181,7 +181,7 @@ template <typename T, int Pri = 0>
 static void to_json(nlohmann::json& dest, const siddiqsoft::simple_worker<T, Pri>& src);
 ```
 
-#### Usage Example
+#### Example
 
 ```cpp
 #include <nlohmann/json.hpp>

@@ -37,6 +37,7 @@
 
 #include <iostream>
 #include <format>
+#include <print>
 #include <string>
 #include <thread>
 #include <atomic>
@@ -53,7 +54,7 @@ TEST(simple_worker, test1)
     bool                                      passTest {false};
 
     siddiqsoft::simple_worker<nlohmann::json> worker {[&](auto&& item) {
-        std::cerr << std::format("Got object: {}\n", item.dump());
+        std::println(std::cerr, "Got object: {}", item.dump());
         passTest = true;
     }};
 
@@ -72,7 +73,7 @@ TEST(simple_worker, test2)
     bool                                                       passTest {false};
 
     siddiqsoft::simple_worker<std::shared_ptr<nlohmann::json>> worker {[&](auto&& item) {
-        std::cerr << std::format("Got object: {}\n", item->dump());
+        std::println(std::cerr, "Got object: {}", item->dump());
         passTest = true;
     }};
 
@@ -106,7 +107,7 @@ TEST(simple_worker, test3)
     };
 
     siddiqsoft::simple_worker<nonCopyableObject> worker {[&](auto&& item) {
-        std::cerr << std::format("Got object: {}\n", item.Data);
+        std::println(std::cerr, "Got object: {}", item.Data);
         passTest = true;
     }};
 
@@ -510,7 +511,7 @@ TEST(simple_worker, forceCleanupTerminate_multiple_calls)
     catch (...) {
     }
 
-    std::cerr << std::format("{} - Post test the processCount: {}", __func__, processedCount.load());
+    std::println(std::cerr, "{} - Post test the processCount: {}", __func__, processedCount.load());
     EXPECT_GT(processedCount.load(), 0u);
 }
 #endif

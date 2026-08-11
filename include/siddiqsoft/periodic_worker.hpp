@@ -39,6 +39,7 @@
 
 
 #include <iostream>
+#include <print>
 #include <functional>
 #include <memory>
 #include <thread>
@@ -138,8 +139,9 @@ namespace siddiqsoft
         ~periodic_worker()
         {
 #if defined(DEBUG) || defined(_DEBUG)
-            std::cerr << std::format(
-                    "Shutting down periodic worker [{}] with outstanding callbacks [{}] and total invoke count [{}]\n",
+            std::println(
+                    std::cerr,
+                    "Shutting down periodic worker [{}] with outstanding callbacks [{}] and total invoke count [{}]",
                     threadName,
                     outstandingCallback.load(std::memory_order_acquire),
                     invokeCounter.load(std::memory_order_acquire));
@@ -153,7 +155,7 @@ namespace siddiqsoft
             signal.release();
 
 #if defined(DEBUG) || defined(_DEBUG)
-            std::cerr << std::format("Signaled shutdown for periodic worker [{}], waiting for thread to join...\n", threadName);
+            std::println(std::cerr, "Signaled shutdown for periodic worker [{}], waiting for thread to join...", threadName);
 #endif
 
             try {
@@ -164,11 +166,11 @@ namespace siddiqsoft
                 // if (processor.joinable()) processor.join();
             }
             catch (const std::exception& ex) {
-                std::cerr << std::format("Exception while shutting down periodic worker [{}]: {}", threadName, ex.what());
+                std::println(std::cerr, "Exception while shutting down periodic worker [{}]: {}", threadName, ex.what());
             }
 
 #if defined(DEBUG) || defined(_DEBUG)
-            std::cerr << std::format("End of destructor for periodic worker [{}], waiting for thread to join...\n", threadName);
+            std::println(std::cerr, "End of destructor for periodic worker [{}], waiting for thread to join...", threadName);
 #endif
         }
 
@@ -200,7 +202,8 @@ namespace siddiqsoft
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 #if defined(_Linux_) || defined(__linux__) || defined(__linux) || (defined(__APPLE__) && defined(__MACH__))
                     auto nativeHandle = processor.native_handle();
-                    std::cerr << std::format(
+                    std::println(
+                            std::cerr,
                             "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
                             "ending! from: {}:{}",
                             sl.file_name(),
@@ -209,7 +212,8 @@ namespace siddiqsoft
                     processor.detach();
 #elif defined(_WIN32) || defined(WIN32) || defined(_WIN64) || defined(WIN64)
                 auto nativeHandle = processor.native_handle();
-                std::cerr << std::format(
+                std::println(
+                             std::cerr,
                              "forceCleanupTerminate - WARNING!! Calling native thread shutdown; only perform this when app is "
                              "ending! from: {}:{}",
                              sl.file_name(),
@@ -219,7 +223,7 @@ namespace siddiqsoft
 #endif
                 }
                 catch (const std::exception& ex) {
-                    std::cerr << std::format("forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
+                    std::println(std::cerr, "forceCleanupTerminate - Exception while shutting down worker: {}", ex.what());
                 }
             });
         }
@@ -360,13 +364,13 @@ namespace siddiqsoft
                         }
                         catch (const std::exception& ex) {
                             // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                            std::cerr << std::format("Ignoring Exception (inner) in periodic_worker callback: {}", ex.what());
+                            std::println(std::cerr, "Ignoring Exception (inner) in periodic_worker callback: {}", ex.what());
                         }
                     }
                 }
                 catch (const std::exception& ex) {
                     // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                    std::cerr << std::format("Ignoring Exception (outer) in periodic_worker callback: {}", ex.what());
+                    std::println(std::cerr, "Ignoring Exception (outer) in periodic_worker callback: {}", ex.what());
                 }
             } // while ..continue until we're asked to stop
         }};

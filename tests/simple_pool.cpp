@@ -37,6 +37,7 @@
 
 #include <iostream>
 #include <format>
+#include <print>
 #include <string>
 #include <thread>
 #include <barrier>
@@ -52,7 +53,7 @@ TEST(simple_pool, test1)
     std::atomic_uint                        passTest {0};
 
     siddiqsoft::simple_pool<nlohmann::json> workers {[&passTest](auto&& item) {
-        std::cerr << std::format("Item:{} .. Got object: {}\n", passTest.load(), item.dump());
+        std::println(std::cerr, "Item:{} .. Got object: {}", passTest.load(), item.dump());
         passTest++;
     }};
 
@@ -77,7 +78,7 @@ TEST(simple_pool, test2)
 
     // The target is our workers
     siddiqsoft::simple_pool<nlohmann::json, WORKER_POOLSIZE> workers {[&passTest](auto&& item) {
-        std::cerr << std::this_thread::get_id() << std::format("..Item {:03} .. Got object: {}\n", passTest.load(), item.dump());
+        std::println(std::cerr, "{}..Item {:03} .. Got object: {}", std::this_thread::get_id(), passTest.load(), item.dump());
         passTest++;
     }};
 
@@ -159,7 +160,7 @@ TEST(simple_pool, test3)
 
 
     siddiqsoft::simple_pool<cat_type> workers {[&passTest](auto&& item) {
-        std::cerr << std::format("Item:{} .. Got object: >{} -- {}<\n", passTest.load(), item.meow.dump(), item.name);
+        std::println(std::cerr, "Item:{} .. Got object: >{} -- {}<", passTest.load(), item.meow.dump(), item.name);
         passTest++;
     }};
 

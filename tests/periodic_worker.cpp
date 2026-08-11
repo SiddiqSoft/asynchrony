@@ -37,6 +37,7 @@
 
 #include <iostream>
 #include <format>
+#include <print>
 #include <string>
 #include <thread>
 #include <atomic>
@@ -192,8 +193,8 @@ TEST(periodic_worker, callback_exception_resilience)
     // Should have continued past exceptions
     EXPECT_GE(invokeCount.load(), 10u);
     EXPECT_GE(exceptionCount.load(), 3u);
-    std::cerr << std::format(
-            "periodic callback_exception_resilience: invocations={}, exceptions={}\n", invokeCount.load(), exceptionCount.load());
+    std::println(
+            std::cerr, "periodic callback_exception_resilience: invocations={}, exceptions={}", invokeCount.load(), exceptionCount.load());
 }
 
 
@@ -390,7 +391,7 @@ TEST(periodic_worker, forceCleanupTerminate_rapid_invocations)
         EXPECT_NO_THROW({ worker.forceCleanupTerminate(); });
     }
 
-    std::cerr << std::format("{} - Invocations prior to kill: {}", __func__, invokeCount.load());
+    std::println(std::cerr, "{} - Invocations prior to kill: {}", __func__, invokeCount.load());
     // Verify that many invocations occurred before termination
     EXPECT_GT(invokeCount.load(), 5u);
 }

@@ -37,6 +37,7 @@
 
 #include <iostream>
 #include <format>
+#include <print>
 #include <string>
 #include <thread>
 #include <atomic>
@@ -644,7 +645,7 @@ TEST(callback_lockup, periodic_worker_indefinite_lockup_cleanup)
         // TODO: This test tends to lockup the build servers and we should
         // exclude it from the CI tests and instead ust it only manually.
         worker.forceCleanupTerminate();
-        std::cerr << std::format("WE SHOULD be destroying periodic_worker while locked up...");
+        std::println(std::cerr, "WE SHOULD be destroying periodic_worker while locked up...");
     });
 
     EXPECT_EQ(1u, invokeCount->load());
@@ -674,11 +675,12 @@ TEST(callback_exception, periodic_worker_exception)
     // Wait for multiple invocations
     std::this_thread::sleep_for(std::chrono::milliseconds(800));
 
-    std::cerr << std::format("{} - invokeCount:{}.. and div by 3: {} - exceptionCount:{}",
-                             __func__,
-                             invokeCount->load(),
-                             invokeCount->load() / 3,
-                             exceptionCount->load());
+    std::println(std::cerr,
+                 "{} - invokeCount:{}.. and div by 3: {} - exceptionCount:{}",
+                 __func__,
+                 invokeCount->load(),
+                 invokeCount->load() / 3,
+                 exceptionCount->load());
 
     // Verify results
     EXPECT_GT(invokeCount->load(), 5u);

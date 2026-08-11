@@ -37,6 +37,7 @@
 
 #include <iostream>
 #include <format>
+#include <print>
 #include <string>
 #include <barrier>
 #include <vector>
@@ -52,7 +53,7 @@ TEST(roundrobin_pool, test1)
     std::atomic_uint                            passTest {0};
 
     siddiqsoft::roundrobin_pool<nlohmann::json> workers {[&passTest](auto&& item) {
-        std::cerr << std::format("Item:{} .. Got object: {}\n", passTest.load(), item.dump());
+        std::println(std::cerr, "Item:{} .. Got object: {}", passTest.load(), item.dump());
         passTest++;
     }};
 
@@ -77,7 +78,7 @@ TEST(roundrobin_pool, test2)
 
     // The target is our workers
     siddiqsoft::roundrobin_pool<nlohmann::json, WORKER_POOLSIZE> workers {[&passTest](auto&& item) {
-        std::cerr << std::this_thread::get_id() << std::format("..Item {:03} .. Got object: {}\n", passTest.load(), item.dump());
+        std::println(std::cerr, "{}..Item {:03} .. Got object: {}", std::this_thread::get_id(), passTest.load(), item.dump());
         passTest++;
     }};
 

@@ -37,6 +37,7 @@
 
 #include <iostream>
 #include <format>
+#include <print>
 #include <string>
 #include <thread>
 #include <atomic>
@@ -143,7 +144,7 @@ TEST(bug_tests, periodic_worker_outstanding_callback_exception)
         unsigned outstanding = j["outstandingCallbacks"].get<unsigned>();
         if (outstanding > outstandingPeak.load()) {
             outstandingPeak = outstanding;
-            std::cerr << std::format("Outstanding callbacks: {}", outstanding);
+            std::println(std::cerr, "Outstanding callbacks: {}", outstanding);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }

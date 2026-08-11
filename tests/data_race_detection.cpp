@@ -12,6 +12,7 @@
 
 #include <iostream>
 #include <format>
+#include <print>
 #include <string>
 #include <thread>
 #include <atomic>
@@ -75,7 +76,7 @@ TEST(DataRaceDetection, simple_worker_toJson_size_race)
         if (t.joinable()) t.join();
     }
 
-    std::cerr << std::format("simple_worker to_json races detected: {}\n", races_detected.load());
+    std::println(std::cerr, "simple_worker to_json races detected: {}", races_detected.load());
 }
 
 
@@ -138,8 +139,8 @@ TEST(DataRaceDetection, simple_pool_toJson_size_race)
         if (t.joinable()) t.join();
     }
 
-    std::cerr << std::format(
-            "simple_pool to_json attempts: {}, mismatches: {}\n", serialization_attempts.load(), size_mismatches.load());
+    std::println(
+            std::cerr, "simple_pool to_json attempts: {}, mismatches: {}", serialization_attempts.load(), size_mismatches.load());
 }
 
 
@@ -182,7 +183,7 @@ TEST(DataRaceDetection, roundrobin_pool_index_collision_race)
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    std::cerr << std::format("roundrobin pool collisions: {}, attempts: {}\n", collision_count.load(), queue_attempts.load());
+    std::println(std::cerr, "roundrobin pool collisions: {}, attempts: {}", collision_count.load(), queue_attempts.load());
 }
 
 
@@ -242,7 +243,7 @@ TEST(DataRaceDetection, simple_worker_queue_extraction_race)
         if (t.joinable()) t.join();
     }
 
-    std::cerr << std::format("simple_worker: processed={}, dropped={}\n", items_processed.load(), items_dropped.load());
+    std::println(std::cerr, "simple_worker: processed={}, dropped={}", items_processed.load(), items_dropped.load());
 }
 
 
@@ -297,8 +298,8 @@ TEST(DataRaceDetection, simple_worker_concurrent_toJson_race)
         if (t.joinable()) t.join();
     }
 
-    std::cerr << std::format(
-            "concurrent to_json: successes={}, errors={}\n", serialization_count.load(), serialization_errors.load());
+    std::println(
+            std::cerr, "concurrent to_json: successes={}, errors={}", serialization_count.load(), serialization_errors.load());
 }
 
 
@@ -338,6 +339,6 @@ TEST(DataRaceDetection, simple_pool_destruction_race)
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
-    std::cerr << std::format("simple_pool destruction: total_processed={}\n", total_processed.load());
+    std::println(std::cerr, "simple_pool destruction: total_processed={}", total_processed.load());
 }
 // NOLINTEND(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)

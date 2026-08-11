@@ -39,6 +39,7 @@
 
 
 #include <iostream>
+#include <print>
 #include <functional>
 #include <memory>
 #include <thread>
@@ -145,7 +146,7 @@ namespace siddiqsoft
                     [&](bool& status, std::chrono::milliseconds& t) {
                         accepting_items.store(false, std::memory_order_release);
 #if defined(DEBUG)
-                        std::cerr << std::format("worker shutdown started inside call_once.. asking for waitUntilEmpty...for {}ms\n", t.count());
+                        std::println(std::cerr, "worker shutdown started inside call_once.. asking for waitUntilEmpty...for {}ms", t.count());
 #endif
 
                         // Drain existing items and wait for the queue to be empty.
@@ -154,25 +155,25 @@ namespace siddiqsoft
                         auto isDrained = items.waitUntilEmpty(t);
 
 #if defined(DEBUG)
-                        std::cerr << std::format("worker shutdown possible; isDrained: {}. size:{}\n", isDrained, items.size());
+                        std::println(std::cerr, "worker shutdown possible; isDrained: {}. size:{}", isDrained, items.size());
 #endif
 
                         // Notify the processor to shutdown (we should have no outstanding items.)
                         processor.request_stop();
 #if defined(DEBUG)
-                        std::cerr << std::format("worker shutdown started inside call_once\n");
+                        std::println(std::cerr, "worker shutdown started inside call_once");
 #endif
 
                         if (processor.joinable()) {
                             processor.join();
                             status = isDrained;
 #if defined(DEBUG)
-                            std::cerr << std::format("worker shutdown ok; isDrained: {}. size:{}\n", isDrained, items.size());
+                            std::println(std::cerr, "worker shutdown ok; isDrained: {}. size:{}", isDrained, items.size());
 #endif
                         }
 #if defined(DEBUG)
                         else {
-                            std::cerr << std::format("worker shutdown failed; isDrained: {}. size:{}\n", isDrained, items.size());
+                            std::println(std::cerr, "worker shutdown failed; isDrained: {}. size:{}", isDrained, items.size());
                         }
 
                         std::cerr << "WARNING: Graceful shutdown timeout exceeded\n";
@@ -333,17 +334,17 @@ namespace siddiqsoft
                         }
                         catch (const std::exception& ex) {
                             // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                            std::cerr << std::format("Ignoring Exception in simple_worker callback: {} - inner\n", ex.what());
+                            std::println(std::cerr, "Ignoring Exception in simple_worker callback: {} - inner", ex.what());
                         }
                     }
                 }
                 catch (const std::exception& ex) {
                     // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                    std::cerr << std::format("Ignoring Exception in simple_worker callback: {} - outer\n", ex.what());
+                    std::println(std::cerr, "Ignoring Exception in simple_worker callback: {} - outer", ex.what());
                 }
             } // while ..continue until we're asked to stop
 #if defined(DEBUG)
-            std::cerr << std::format("WARNING: Abandon {} items processing due to stop request!\n", items.size());
+            std::println(std::cerr, "WARNING: Abandon {} items processing due to stop request!", items.size());
 #endif
         }};
     };

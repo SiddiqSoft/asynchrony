@@ -37,6 +37,7 @@
 #define SIMPLE_POOL_HPP
 
 #include "simple_worker.hpp"
+#include <print>
 #include <optional>
 #include <latch>
 #include <exception>
@@ -175,7 +176,7 @@ namespace siddiqsoft
                         }
                         catch (const std::exception& ex) {
                             // We swallow exceptions from the callback to avoid thread termination and log it if needed.
-                            std::cerr << std::format("Ignoring Exception in simple_worker callback: {}", ex.what());
+                            std::println(std::cerr, "Ignoring Exception in simple_worker callback: {}", ex.what());
                         }
                     } // while ..continue until we're asked to stop
                 });

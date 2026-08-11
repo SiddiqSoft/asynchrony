@@ -23,8 +23,8 @@
 		<!-- Dependencies -->
 		<dependencies>
             <dependency id="Siddiqsoft.RunOnEnd" version="1.4.5" />
-            <dependency id="Siddiqsoft.RWLEnvelope" version="1.5.0" />
-            <dependency id="Siddiqsoft.RWLContainer" version="1.5.3" />
+            <dependency id="Siddiqsoft.RWLEnvelope" version="1.5.3" />
+            <dependency id="Siddiqsoft.RWLContainer" version="1.5.5" />
 		</dependencies>
 	</metadata>
 

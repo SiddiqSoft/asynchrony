@@ -1,5 +1,5 @@
 /*
-    asynchrony-lib - Bug Detection Tests
+    asynchrony - Bug Detection Tests
     Add asynchrony to your apps
 
     BSD 3-Clause License
@@ -83,7 +83,7 @@ TEST(bug_tests, simple_pool_queue_counter_race)
     producers.clear();
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    auto     j            = pool.toJson();
+    auto     j            = pool.to_json();
     uint64_t queueCounter = j["queueCounter"].get<uint64_t>();
 
     // BUG: If queueCounter is not properly synchronized, it may not equal TOTAL_ITEMS
@@ -139,7 +139,7 @@ TEST(bug_tests, periodic_worker_outstanding_callback_exception)
 
     // Monitor outstanding callbacks
     for (int i = 0; i < 100; i++) {
-        auto     j           = worker.toJson();
+        auto     j           = worker.to_json();
         unsigned outstanding = j["outstandingCallbacks"].get<unsigned>();
         if (outstanding > outstandingPeak.load()) {
             outstandingPeak = outstanding;
@@ -174,7 +174,7 @@ TEST(bug_tests, simple_pool_queue_counter_consistency)
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    auto     j1       = pool.toJson();
+    auto     j1       = pool.to_json();
     uint64_t counter1 = j1["queueCounter"].get<uint64_t>();
 
     // Phase 2: Queue more items with slow processing
@@ -184,7 +184,7 @@ TEST(bug_tests, simple_pool_queue_counter_consistency)
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    auto     j2       = pool.toJson();
+    auto     j2       = pool.to_json();
     uint64_t counter2 = j2["queueCounter"].get<uint64_t>();
 
     // Counter should have increased by 50
@@ -220,7 +220,7 @@ TEST(bug_tests, roundrobin_pool_queue_counter_atomic)
     producers.clear();
     std::this_thread::sleep_for(std::chrono::seconds(5));
 
-    auto     j            = pool.toJson();
+    auto     j            = pool.to_json();
     uint64_t queueCounter = j["queueCounter"].get<uint64_t>();
 
     EXPECT_EQ(static_cast<uint64_t>(TOTAL_ITEMS), queueCounter)
@@ -336,7 +336,7 @@ TEST(bug_tests, simple_pool_queue_counter_large_volume)
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        auto j        = pool.toJson();
+        auto j        = pool.to_json();
         auto counter  = j["queueCounter"].get<uint64_t>();
         auto expected = static_cast<uint64_t>((b + 1) * BATCH_SIZE);
 

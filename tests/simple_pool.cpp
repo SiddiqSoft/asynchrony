@@ -1,5 +1,5 @@
 /*
-    asynchrony-lib
+    asynchrony
     Add asynchrony to your apps
 
     BSD 3-Clause License
@@ -102,7 +102,7 @@ TEST(simple_pool, test2)
 
 /*
  * The test is to check if we have the proper capability to handle default copy/move constructors/operators
- * for the simple_pool object. See the issue: https://github.com/SiddiqSoft/asynchrony-lib/issues/3
+ * for the simple_pool object. See the issue: https://github.com/SiddiqSoft/asynchrony/issues/3
  */
 
 
@@ -200,7 +200,7 @@ TEST(simple_pool, fixed_pool_size)
 }
 
 
-/// @brief Test toJson returns expected fields
+/// @brief Test to_json returns expected fields
 TEST(simple_pool, toJson_fields)
 {
     siddiqsoft::simple_pool<nlohmann::json, 2> workers {[](auto&&) {}};
@@ -208,7 +208,7 @@ TEST(simple_pool, toJson_fields)
     workers.queue({{"test", true}});
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    auto j = workers.toJson();
+    auto j = workers.to_json();
     EXPECT_TRUE(j.contains("_typver"));
     EXPECT_TRUE(j.contains("workersSize"));
     EXPECT_TRUE(j.contains("dequeSize"));
@@ -432,7 +432,7 @@ TEST(simple_pool, adl_to_json)
     workers.queue({{"test", "adl"}});
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    // This uses the to_json free function, not the member toJson()
+    // This uses the to_json free function, not the member to_json()
     nlohmann::json j;
     siddiqsoft::to_json(j, workers);
     EXPECT_TRUE(j.contains("_typver"));

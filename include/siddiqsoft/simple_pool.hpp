@@ -228,10 +228,10 @@ namespace siddiqsoft
          *
          * @note Thread-safe operation
          */
-        auto toJson() const -> nlohmann::json
+        auto to_json() const -> nlohmann::json
         {
             const auto sz = items.size();
-            return nlohmann::json {{"_typver", "siddiqsoft.asynchrony-lib.simple_pool/0.10"},
+            return nlohmann::json {{"_typver", "siddiqsoft.asynchrony.simple_pool/2.3.3"},
                                    {"workersSize", workers.size()},
                                    {"dequeSize", sz},
                                    {"queueCounter", queueCounter.load(std::memory_order_acquire)},
@@ -297,7 +297,7 @@ namespace siddiqsoft
     template <typename T, uint16_t N = 0>
     static auto to_json(nlohmann::json& dest, const siddiqsoft::simple_pool<T, N>& src) -> void const
     {
-        dest = src.toJson();
+        dest = src.to_json();
     }
 #endif
 

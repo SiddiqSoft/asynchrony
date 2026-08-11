@@ -1,5 +1,5 @@
 /*
-    asynchrony-lib
+    asynchrony
     Add asynchrony to your apps
 
     BSD 3-Clause License
@@ -63,7 +63,7 @@ TEST(simple_worker, test1)
     std::this_thread::sleep_for(std::chrono::seconds(1));
     EXPECT_TRUE(passTest);
 
-    std::cerr << worker.toJson().dump() << std::endl;
+    std::cerr << worker.to_json().dump() << std::endl;
 }
 
 
@@ -133,12 +133,12 @@ TEST(simple_worker, multiple_items)
     std::this_thread::sleep_for(std::chrono::seconds(2));
     EXPECT_EQ(ITEM_COUNT, processedCount.load());
 
-    auto j = worker.toJson();
+    auto j = worker.to_json();
     EXPECT_EQ(ITEM_COUNT, j["queueCounter"].get<uint64_t>());
 }
 
 
-/// @brief Test that toJson returns expected fields
+/// @brief Test that to_json returns expected fields
 TEST(simple_worker, toJson_fields)
 {
     siddiqsoft::simple_worker<nlohmann::json> worker {[](auto&&) { }};
@@ -146,7 +146,7 @@ TEST(simple_worker, toJson_fields)
     worker.queue({{"test", true}});
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    auto j = worker.toJson();
+    auto j = worker.to_json();
     EXPECT_TRUE(j.contains("_typver"));
     EXPECT_TRUE(j.contains("itemsSize"));
     EXPECT_TRUE(j.contains("queueCounter"));
@@ -383,7 +383,7 @@ TEST(simple_worker, adl_to_json)
     worker.queue({{"test", "adl"}});
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    // This uses the ADL to_json free function, not the member toJson()
+    // This uses the ADL to_json free function, not the member to_json()
     nlohmann::json j;
     siddiqsoft::to_json(j, worker);
     EXPECT_TRUE(j.contains("_typver"));

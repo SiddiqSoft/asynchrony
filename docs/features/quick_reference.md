@@ -49,7 +49,7 @@ uint64_t totalProcessed = worker.removeCounter();
 ```cpp
 #include <nlohmann/json.hpp>
 
-nlohmann::json info = worker.toJson();
+nlohmann::json info = worker.to_json();
 std::cout << info.dump(2) << std::endl;
 ```
 

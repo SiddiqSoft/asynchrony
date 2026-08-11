@@ -133,7 +133,7 @@ namespace siddiqsoft
         ~simple_worker()
         {
 #if defined(DEBUG) || defined(_DEBUG)
-            std::cerr << std::format("{} - Waiting for queue to be empty: {}\n", __func__, items.toJson().dump(2));
+            std::cerr << std::format("{} - Waiting for queue to be empty: {}\n", __func__, items.to_json().dump(2));
 #endif
             // Performs a graceful shutdown (drains and kills the threads.)
             shutdown();
@@ -264,14 +264,14 @@ namespace siddiqsoft
          *
          * @note Thread-safe operation with acquire semantics
          */
-        auto toJson() const -> nlohmann::json
+        auto to_json() const -> nlohmann::json
         {
             auto itemsSize        = items.size();
             auto itemsQueued      = items.addCounter();
             auto itemsPopped      = items.removeCounter();
             auto itemsOutstanding = itemsQueued - itemsPopped;
 
-            return {{"_typver", "siddiqsoft.asynchrony-lib.simple_worker/0.10"},
+            return {{"_typver", "siddiqsoft.asynchrony.simple_worker/2.3.3"},
                     {"itemsSize", itemsSize},
                     {"queueCounter", queueCounter.load(std::memory_order_acquire)},
                     {"itemsQueued", itemsQueued},
@@ -365,7 +365,7 @@ namespace siddiqsoft
     template <typename T, int Pri = 0>
     static void to_json(nlohmann::json& dest, const siddiqsoft::simple_worker<T, Pri>& src)
     {
-        dest = src.toJson();
+        dest = src.to_json();
     }
 #endif
 

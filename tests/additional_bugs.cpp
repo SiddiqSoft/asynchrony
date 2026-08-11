@@ -1,5 +1,5 @@
 /*
-    asynchrony-lib - Additional Bug Detection Tests
+    asynchrony - Additional Bug Detection Tests
     Add asynchrony to your apps
 
     BSD 3-Clause License
@@ -124,7 +124,7 @@ TEST(additional_bugs, roundrobin_pool_queue_counter_overflow_documentation)
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     // The counter should be around 10000
-    auto     j       = pool.toJson();
+    auto     j       = pool.to_json();
     uint64_t counter = j["queueCounter"].get<uint64_t>();
     EXPECT_EQ(10000u, counter);
 

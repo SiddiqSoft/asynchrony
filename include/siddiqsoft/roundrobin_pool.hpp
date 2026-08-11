@@ -182,9 +182,9 @@ namespace siddiqsoft
          *
          * @note Thread-safe operation with acquire semantics
          */
-        nlohmann::json toJson() const
+        nlohmann::json to_json() const
         {
-            return {{"_typver", "siddiqsoft.asynchrony-lib.roundrobin_pool/0.10"},
+            return {{"_typver", "siddiqsoft.asynchrony.roundrobin_pool/2.3.3"},
                     {"workersSize", workersSize},
                     {"queueCounter", queueCounter.load(std::memory_order_acquire)}};
         }
@@ -253,7 +253,7 @@ namespace siddiqsoft
     template <typename T, uint16_t N = 0>
     static void to_json(nlohmann::json& dest, const siddiqsoft::roundrobin_pool<T, N>& src)
     {
-        dest = src.toJson();
+        dest = src.to_json();
     }
 #endif
 

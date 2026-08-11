@@ -7,7 +7,7 @@ This document outlines memory safety guarantees, thread synchronization rules, c
 ## Built-in Library Safeguards
 
 - **Memory Safety**: Completely header-only C++23 design avoiding raw pointers, manual memory allocation (`malloc`/`free`), or legacy C-string functions (`strcpy`/`sprintf`).
-- **Thread Safety**: All public entry points (`queue()`, `size()`, `addCounter()`, `removeCounter()`, `toJson()`) are thread-safe and protect internal queue structures via `std::mutex`, `std::counting_semaphore`, or `std::atomic`.
+- **Thread Safety**: All public entry points (`queue()`, `size()`, `addCounter()`, `removeCounter()`, `to_json()`) are thread-safe and protect internal queue structures via `std::mutex`, `std::counting_semaphore`, or `std::atomic`.
 - **RAII Lifetimes**: Background threads (`std::jthread`) request cancellation via `std::stop_token` and automatically join upon destruction.
 - **Exception Isolation**: Exceptions originating within client-provided callbacks are caught internally to prevent stack unwinding from destroying background threads unexpectedly.
 

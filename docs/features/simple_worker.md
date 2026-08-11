@@ -105,7 +105,7 @@ When `nlohmann/json` is included:
 ```cpp
 #include <nlohmann/json.hpp>
 
-auto state = worker.toJson();
+auto state = worker.to_json();
 std::cout << state.dump(2) << std::endl;
 ```
 

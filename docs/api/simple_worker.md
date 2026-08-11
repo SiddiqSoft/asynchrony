@@ -78,10 +78,10 @@ Returns the cumulative total number of items processed and popped from the queue
 
 ---
 
-### `toJson`
+### `to_json`
 
 ```cpp
-[[nodiscard]] nlohmann::json toJson() const;
+[[nodiscard]] nlohmann::json to_json() const;
 ```
 
 Generates a JSON snapshot containing worker state and performance counters.

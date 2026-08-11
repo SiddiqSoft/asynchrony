@@ -1,5 +1,5 @@
 /*
-    asynchrony-lib - Data Race Detection Tests
+    asynchrony - Data Race Detection Tests
     Add asynchrony to your apps
 
     BSD 3-Clause License
@@ -28,8 +28,8 @@
 
 // NOLINTBEGIN(cppcoreguidelines-pro-bounds-avoid-unchecked-container-access)
 
-/// @brief DATA RACE #1: simple_worker toJson() reads items.size() without lock
-/// Concurrent queue() modifies deque while toJson() reads size
+/// @brief DATA RACE #1: simple_worker to_json() reads items.size() without lock
+/// Concurrent queue() modifies deque while to_json() reads size
 TEST(DataRaceDetection, simple_worker_toJson_size_race)
 {
     std::atomic_bool                       done {false};
@@ -50,7 +50,7 @@ TEST(DataRaceDetection, simple_worker_toJson_size_race)
         });
     }
 
-    // Serializer threads call toJson() which reads items.size() without lock
+    // Serializer threads call to_json() which reads items.size() without lock
     for (int s = 0; s < 4; s++) {
         threads.emplace_back([&]() {
             while (!done.load()) {
@@ -75,11 +75,11 @@ TEST(DataRaceDetection, simple_worker_toJson_size_race)
         if (t.joinable()) t.join();
     }
 
-    std::cerr << std::format("simple_worker toJson races detected: {}\n", races_detected.load());
+    std::cerr << std::format("simple_worker to_json races detected: {}\n", races_detected.load());
 }
 
 
-/// @brief DATA RACE #2: simple_pool toJson() reads items.size() without lock
+/// @brief DATA RACE #2: simple_pool to_json() reads items.size() without lock
 /// Multiple producers and serializers racing
 TEST(DataRaceDetection, simple_pool_toJson_size_race)
 {
@@ -139,7 +139,7 @@ TEST(DataRaceDetection, simple_pool_toJson_size_race)
     }
 
     std::cerr << std::format(
-            "simple_pool toJson attempts: {}, mismatches: {}\n", serialization_attempts.load(), size_mismatches.load());
+            "simple_pool to_json attempts: {}, mismatches: {}\n", serialization_attempts.load(), size_mismatches.load());
 }
 
 
@@ -246,7 +246,7 @@ TEST(DataRaceDetection, simple_worker_queue_extraction_race)
 }
 
 
-/// @brief DATA RACE #6: Concurrent toJson() calls on simple_worker
+/// @brief DATA RACE #6: Concurrent to_json() calls on simple_worker
 /// Multiple threads serializing the same worker simultaneously
 TEST(DataRaceDetection, simple_worker_concurrent_toJson_race)
 {
@@ -298,7 +298,7 @@ TEST(DataRaceDetection, simple_worker_concurrent_toJson_race)
     }
 
     std::cerr << std::format(
-            "concurrent toJson: successes={}, errors={}\n", serialization_count.load(), serialization_errors.load());
+            "concurrent to_json: successes={}, errors={}\n", serialization_count.load(), serialization_errors.load());
 }
 
 

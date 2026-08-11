@@ -26,7 +26,7 @@ All queue operations accept rvalue references (`T&&`). This ensures that non-cop
 Worker threads can optionally set system thread priority levels ranging from `-10` (lowest) to `+10` (highest priority), defaulting to `0` (normal priority).
 
 ### Diagnostic JSON Output
-If `nlohmann/json` is available in your build, calling `.toJson()` on any worker or pool returns a structured JSON object detailing queue depth, cumulative pushed/popped item counts, and thread status.
+If `nlohmann/json` is available in your build, calling `.to_json()` on any worker or pool returns a structured JSON object detailing queue depth, cumulative pushed/popped item counts, and thread status.
 
 ---
 

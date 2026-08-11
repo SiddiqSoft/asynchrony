@@ -1,5 +1,5 @@
 /*
-    asynchrony-lib - Callback Lockup and Exception Tests
+    asynchrony - Callback Lockup and Exception Tests
     Add asynchrony to your apps
 
     BSD 3-Clause License

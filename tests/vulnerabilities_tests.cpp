@@ -1,5 +1,5 @@
 /*
-    asynchrony-lib - Bug Detection Tests
+    asynchrony - Bug Detection Tests
     Add asynchrony to your apps
 
     BSD 3-Clause License

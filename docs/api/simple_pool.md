@@ -71,10 +71,10 @@ Returns total number of items processed across all threads.
 
 ---
 
-### `toJson`
+### `to_json`
 
 ```cpp
-[[nodiscard]] nlohmann::json toJson() const;
+[[nodiscard]] nlohmann::json to_json() const;
 ```
 
 Exports JSON diagnostic state.

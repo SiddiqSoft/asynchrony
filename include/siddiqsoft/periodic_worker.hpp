@@ -1,5 +1,5 @@
 /*
-    asynchrony-lib : Add asynchrony to your apps
+    asynchrony : Add asynchrony to your apps
 
     BSD 3-Clause License
 
@@ -270,11 +270,11 @@ namespace siddiqsoft
          *
          * @note Thread-safe operation with acquire semantics
          */
-        nlohmann::json toJson() const
+        nlohmann::json to_json() const
         {
             using namespace std;
 
-            return {{"_typver"s, "siddiqsoft.asynchrony-lib.periodic_worker/0.10"s},
+            return {{"_typver"s, "siddiqsoft.asynchrony.periodic_worker/2.3.3"s},
                     {"threadName", threadName},
                     {"outstandingCallbacks", outstandingCallback.load(std::memory_order_acquire)},
                     {"invokeCounter"s, invokeCounter.load(std::memory_order_acquire)},
@@ -385,7 +385,7 @@ namespace siddiqsoft
     template <int Pri = 0>
     static void to_json(nlohmann::json& dest, const siddiqsoft::periodic_worker<Pri>& src)
     {
-        dest = src.toJson();
+        dest = src.to_json();
     }
 #endif
 

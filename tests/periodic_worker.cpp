@@ -1,5 +1,5 @@
 /*
-    asynchrony-lib
+    asynchrony
     Add asynchrony to your apps
 
     BSD 3-Clause License
@@ -63,7 +63,7 @@ TEST(periodic_worker, test1)
     // the wait on the semaphore is accurate.
     EXPECT_LE(44, passTest);
 
-    std::cerr << worker.toJson().dump() << std::endl;
+    std::cerr << worker.to_json().dump() << std::endl;
 }
 
 TEST(periodic_worker, nosleep_test2)
@@ -83,11 +83,11 @@ TEST(periodic_worker, nosleep_test2)
     // We expect at least one iteration completed.
     EXPECT_GE(1, passTest) << std::format("At least one iteration; completed: {}", passTest);
 
-    std::clog << worker.toJson().dump() << std::endl;
+    std::clog << worker.to_json().dump() << std::endl;
 }
 
 
-/// @brief Test that the named periodic worker stores the name correctly in toJson
+/// @brief Test that the named periodic worker stores the name correctly in to_json
 TEST(periodic_worker, named_worker)
 {
     std::atomic_uint            passTest {0};
@@ -97,13 +97,13 @@ TEST(periodic_worker, named_worker)
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
     EXPECT_GT(passTest.load(), 0u);
 
-    auto j = worker.toJson();
+    auto j = worker.to_json();
     EXPECT_EQ("my-test-worker", j["threadName"].get<std::string>());
     std::cerr << j.dump() << std::endl;
 }
 
 
-/// @brief Test toJson returns all expected fields
+/// @brief Test to_json returns all expected fields
 TEST(periodic_worker, toJson_fields)
 {
     std::atomic_uint            passTest {0};
@@ -112,7 +112,7 @@ TEST(periodic_worker, toJson_fields)
 
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
-    auto j = worker.toJson();
+    auto j = worker.to_json();
     EXPECT_TRUE(j.contains("_typver"));
     EXPECT_TRUE(j.contains("threadName"));
     EXPECT_TRUE(j.contains("outstandingCallbacks"));
@@ -164,7 +164,7 @@ TEST(periodic_worker, default_thread_name)
 {
     siddiqsoft::periodic_worker worker {[]() { }, std::chrono::milliseconds(100)};
 
-    auto                        j = worker.toJson();
+    auto                        j = worker.to_json();
     EXPECT_EQ("anonymous-periodic-worker", j["threadName"].get<std::string>());
 }
 
@@ -272,7 +272,7 @@ TEST(periodic_worker, adl_to_json)
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     EXPECT_GT(passTest.load(), 0u);
 
-    // This uses the ADL to_json free function, not the member toJson()
+    // This uses the ADL to_json free function, not the member to_json()
     nlohmann::json j;
     siddiqsoft::to_json(j, worker);
     EXPECT_TRUE(j.contains("_typver"));
@@ -303,7 +303,7 @@ TEST(periodic_worker, outstanding_callback_tracking)
     }
 
     // While callback is blocked, outstandingCallbacks should be 1
-    auto j = worker.toJson();
+    auto j = worker.to_json();
     EXPECT_EQ(1u, j["outstandingCallbacks"].get<unsigned>());
 
     // Let the callback finish
@@ -313,7 +313,7 @@ TEST(periodic_worker, outstanding_callback_tracking)
     // After callback completes, outstandingCallbacks should be 0 (between invocations)
     // Note: there's a small window where it could be 1 again if another invocation started
     // so we just verify it's <= 1
-    j = worker.toJson();
+    j = worker.to_json();
     EXPECT_LE(j["outstandingCallbacks"].get<unsigned>(), 1u);
 }
 

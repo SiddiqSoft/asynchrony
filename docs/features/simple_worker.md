@@ -106,7 +106,7 @@ When `nlohmann/json` is included:
 #include <nlohmann/json.hpp>
 
 auto state = worker.to_json();
-std::cout << state.dump(2) << std::endl;
+std::println(state.dump(2));
 ```
 
 Outputs metrics like `itemsSize`, `queueCounter`, `itemsQueued`, `itemsPopped`, `itemsOutstanding`, and `threadPriority`.

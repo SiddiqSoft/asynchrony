@@ -57,7 +57,7 @@ struct MyWork
    std::string data{};
    void operator()(){
       // magic_post_to(urlDestination, data);
-      std::cout << "Processing: " << urlDestination << std::endl;
+      std::println ( "Processing: {}" , urlDestination);
    }
 };
 
@@ -166,7 +166,7 @@ int main()
    // Create a periodic worker that executes every 500ms
    siddiqsoft::periodic_worker<> timer{
       []() {
-         std::cout << "Tick!" << std::endl;
+         std::println("Tick!")
       },
       std::chrono::milliseconds(500)
    };

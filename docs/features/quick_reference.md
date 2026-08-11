@@ -46,7 +46,7 @@ bool drained = worker.shutdown(std::chrono::seconds(1));
 
 // Obtain JSON snapshot (itemsSize, itemsQueued, itemsPopped, etc.)
 nlohmann::json info = worker.to_json();
-std::cout << info.dump(2) << std::endl;
+std::println(info.dump(2));
 ```
 
 ---

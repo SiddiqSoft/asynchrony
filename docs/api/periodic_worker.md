@@ -55,7 +55,7 @@ Constructs a `periodic_worker` and immediately launches the background timer loo
 
 // Execute heartbeat every 500 milliseconds
 siddiqsoft::periodic_worker<> heartbeat(
-    []() { std::cout << "Heartbeat tick!" << std::endl; },
+    []() { std::println("Heartbeat tick!") },
     std::chrono::milliseconds(500),
     "HeartbeatWorker"
 );
@@ -82,7 +82,7 @@ Gracefully shuts down the periodic worker thread. Sets `invokePeriod` to `0` to 
 ```cpp
 {
     siddiqsoft::periodic_worker<> worker(
-        []() { std::cout << "Tick" << std::endl; },
+        []() { std::println("Tick"); },
         std::chrono::seconds(1)
     );
 
@@ -154,10 +154,10 @@ siddiqsoft::periodic_worker<> worker(
 
 // Direct method call
 nlohmann::json info = worker.to_json();
-std::cout << info.dump(2) << std::endl;
+std::println(info.dump(2));
 
 // Convert via nlohmann::json ADL
 nlohmann::json j = worker;
-std::cout << "Total invocations: " << j["invokeCounter"] << std::endl;
+std::println( "Total invocations: {}", j["invokeCounter"] );
 ```
 

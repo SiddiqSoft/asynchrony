@@ -152,7 +152,7 @@ pool.queue(100);
 
 // Direct JSON dump
 nlohmann::json info = pool.to_json();
-std::cout << info.dump(2) << std::endl;
+std::println(info.dump(2));
 
 // Implicit JSON conversion
 nlohmann::json j = pool;

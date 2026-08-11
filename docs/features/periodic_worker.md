@@ -22,7 +22,7 @@ int main() {
     // Execute a heartbeat check every 250 milliseconds
     siddiqsoft::periodic_worker<> heartbeat{
         []() {
-            std::cout << "Heartbeat ping!" << std::endl;
+            std::println("Heartbeat ping!");
         },
         std::chrono::milliseconds(250)
     };

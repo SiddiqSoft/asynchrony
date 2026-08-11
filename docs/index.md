@@ -50,7 +50,7 @@ The **asynchrony** library provides a comprehensive set of modern **C++23** head
     struct MyTask {
         std::string data;
         void operator()() { 
-            std::cout << "Processing: " << data << std::endl;
+            std::println("Processing: {}", data);
         }
     };
 
@@ -79,6 +79,7 @@ The **asynchrony** library provides a comprehensive set of modern **C++23** head
     struct MyTask {
         std::string data;
         void operator()() { 
+            // The std::format() does not have serializer for get_id()..
             std::cout << "Thread " << std::this_thread::get_id()
                       << " processing " << data << std::endl;
         }
@@ -109,7 +110,7 @@ The **asynchrony** library provides a comprehensive set of modern **C++23** head
     struct MyTask {
         std::string data;
         void operator()() { 
-            std::cout << "Round-robin item: " << data << std::endl;
+            std::println( "Round-robin item: {}" , data);
         }
     };
 
@@ -139,7 +140,7 @@ The **asynchrony** library provides a comprehensive set of modern **C++23** head
         // Execute callback every 500ms
         siddiqsoft::periodic_worker<> timer{
             []() {
-                std::cout << "Tick!" << std::endl;
+                std::println("Tick!");
             },
             std::chrono::milliseconds(500)
         };

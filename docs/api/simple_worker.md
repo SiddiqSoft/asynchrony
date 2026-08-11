@@ -81,7 +81,7 @@ Gracefully shuts down the worker thread. Automatically invokes [`shutdown()`](#s
 ```cpp
 {
     siddiqsoft::simple_worker<std::string> worker([](std::string&& item) {
-        std::cout << item << std::endl;
+        std::println(item);
     });
 
     worker.queue("Task A");
@@ -150,7 +150,7 @@ for (int i = 0; i < 10; ++i) {
 // Gracefully shutdown with a custom 2-second timeout
 bool drained = worker.shutdown(std::chrono::seconds(2));
 if (drained) {
-    std::cout << "All items processed successfully before shutdown." << std::endl;
+    std::println("All items processed successfully before shutdown.");
 }
 ```
 
@@ -191,10 +191,10 @@ worker.queue(42);
 
 // Direct method call
 nlohmann::json stats = worker.to_json();
-std::cout << stats.dump(2) << std::endl;
+std::println(stats.dump(2));
 
 // Implicit conversion via nlohmann::json ADL
 nlohmann::json j = worker;
-std::cout << j["itemsQueued"] << std::endl;
+std::println(j["itemsQueued"]);
 ```
 

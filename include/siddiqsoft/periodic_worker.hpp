@@ -90,7 +90,7 @@ namespace siddiqsoft
      * @code
      * // Create a periodic worker that runs every 5 seconds
      * siddiqsoft::periodic_worker<> worker(
-     *     []() { std::cout << "Periodic task running" << std::endl; },
+     *     []() { std::println("Periodic task running"); },
      *     std::chrono::seconds(5),
      *     "health-check-worker"
      * );

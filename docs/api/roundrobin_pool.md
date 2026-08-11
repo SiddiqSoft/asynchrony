@@ -51,7 +51,7 @@ Constructs a `roundrobin_pool` with `ThreadCount` worker threads (or hardware co
 
 // Create a pool using default hardware thread count
 siddiqsoft::roundrobin_pool<std::string> pool([](std::string&& item) {
-    std::cout << "Worker processed: " << item << std::endl;
+    std::println( "Worker processed: {}", item);
 });
 
 // Create a pool with explicitly 8 worker threads

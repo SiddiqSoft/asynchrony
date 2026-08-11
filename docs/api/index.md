@@ -32,6 +32,6 @@ The `siddiqsoft::asynchrony` library is organized into header-only class templat
 ## Common Concepts & Conventions
 
 - **Move Semantics**: All queue methods accept rvalue references `T&& item`.
-- **Thread Safety**: Method invocations on `queue()`, `size()`, `addCounter()`, `removeCounter()`, and `to_json()` are thread-safe.
+- **Thread Safety**: Method invocations on `queue()`, `shutdown()`, `forceCleanupTerminate()`, and `to_json()` are thread-safe.
 - **Exceptions**: Callback exceptions are caught locally without terminating background worker threads.
 - **Diagnostics**: `.to_json()` methods return `nlohmann::json` objects containing snapshot telemetry.

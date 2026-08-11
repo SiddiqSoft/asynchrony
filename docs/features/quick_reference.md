@@ -34,21 +34,17 @@ This page provides a quick lookup for common headers, template declarations, met
 worker.queue(std::move(task));
 ```
 
-### Checking Queue Size
+### Graceful Worker Shutdown
 ```cpp
-size_t pending = worker.size();
+// Explicit shutdown with 1-second timeout
+bool drained = worker.shutdown(std::chrono::seconds(1));
 ```
 
-### Counters & Metrics
-```cpp
-uint64_t totalAdded = worker.addCounter();
-uint64_t totalProcessed = worker.removeCounter();
-```
-
-### Diagnostics JSON Output
+### Diagnostics & Telemetry
 ```cpp
 #include <nlohmann/json.hpp>
 
+// Obtain JSON snapshot (itemsSize, itemsQueued, itemsPopped, etc.)
 nlohmann::json info = worker.to_json();
 std::cout << info.dump(2) << std::endl;
 ```

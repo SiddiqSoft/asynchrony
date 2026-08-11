@@ -132,9 +132,6 @@ namespace siddiqsoft
          */
         ~simple_worker()
         {
-#if defined(DEBUG) || defined(_DEBUG)
-            std::cerr << std::format("{} - Waiting for queue to be empty: {}\n", __func__, items.to_json().dump(2));
-#endif
             // Performs a graceful shutdown (drains and kills the threads.)
             shutdown();
         }

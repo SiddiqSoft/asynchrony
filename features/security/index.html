@@ -1205,7 +1205,7 @@
 <h2 id="built-in-library-safeguards">Built-in Library Safeguards<a class="headerlink" href="#built-in-library-safeguards" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Memory Safety</strong>: Completely header-only C++23 design avoiding raw pointers, manual memory allocation (<code>malloc</code>/<code>free</code>), or legacy C-string functions (<code>strcpy</code>/<code>sprintf</code>).</li>
-<li><strong>Thread Safety</strong>: All public entry points (<code>queue()</code>, <code>size()</code>, <code>addCounter()</code>, <code>removeCounter()</code>, <code>toJson()</code>) are thread-safe and protect internal queue structures via <code>std::mutex</code>, <code>std::counting_semaphore</code>, or <code>std::atomic</code>.</li>
+<li><strong>Thread Safety</strong>: All public entry points (<code>queue()</code>, <code>size()</code>, <code>addCounter()</code>, <code>removeCounter()</code>, <code>to_json()</code>) are thread-safe and protect internal queue structures via <code>std::mutex</code>, <code>std::counting_semaphore</code>, or <code>std::atomic</code>.</li>
 <li><strong>RAII Lifetimes</strong>: Background threads (<code>std::jthread</code>) request cancellation via <code>std::stop_token</code> and automatically join upon destruction.</li>
 <li><strong>Exception Isolation</strong>: Exceptions originating within client-provided callbacks are caught internally to prevent stack unwinding from destroying background threads unexpectedly.</li>
 </ul>

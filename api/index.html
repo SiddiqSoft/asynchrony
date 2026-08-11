@@ -1129,9 +1129,9 @@
 <h2 id="common-concepts-conventions">Common Concepts &amp; Conventions<a class="headerlink" href="#common-concepts-conventions" title="Permanent link">&para;</a></h2>
 <ul>
 <li><strong>Move Semantics</strong>: All queue methods accept rvalue references <code>T&amp;&amp; item</code>.</li>
-<li><strong>Thread Safety</strong>: Method invocations on <code>queue()</code>, <code>size()</code>, <code>addCounter()</code>, <code>removeCounter()</code>, and <code>toJson()</code> are thread-safe.</li>
+<li><strong>Thread Safety</strong>: Method invocations on <code>queue()</code>, <code>shutdown()</code>, <code>forceCleanupTerminate()</code>, and <code>to_json()</code> are thread-safe.</li>
 <li><strong>Exceptions</strong>: Callback exceptions are caught locally without terminating background worker threads.</li>
-<li><strong>Diagnostics</strong>: <code>.toJson()</code> methods return <code>nlohmann::json</code> objects containing snapshot telemetry.</li>
+<li><strong>Diagnostics</strong>: <code>.to_json()</code> methods return <code>nlohmann::json</code> objects containing snapshot telemetry.</li>
 </ul>
 
 

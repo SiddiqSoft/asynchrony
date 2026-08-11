@@ -14,7 +14,7 @@
 # 1. Windows - Cleanup, build, and test for Windows with matrix for architecture and compiler
 # 2. Linux - Cleanup, build, and test for Linux with matrix for architecture and compiler
 # 3. Publication - Publishes to NuGet and GitHub
-# 4. Documentation - Builds and deploys Doxygen docs to GitHub Pages
+# 4. Documentation - Builds and deploys MkDocs docs to GitHub Pages
 #
 # Documentation: See PIPELINE_DOCUMENTATION_INDEX.md for detailed information
 # ============================================================================

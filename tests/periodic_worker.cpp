@@ -73,10 +73,10 @@ TEST(periodic_worker, nosleep_test2)
 
     siddiqsoft::periodic_worker worker {[&]() {
                                             // this sleep will force the worker to terminate mid-call
-                                            std::println(std::cerr, "  Started......`" + std::string(__func__) + "`......");
+                                            std::println(std::cerr, "  Started......`{}`......", __func__);
                                             std::this_thread::sleep_for(std::chrono::seconds(2));
                                             passTest++;
-                                            std::println(std::cerr, "  Completed....`" + std::string(__func__) + "`......");
+                                            std::println(std::cerr, "  Completed....`{}`" ,__func__);
                                         },
                                         // run the above code every 50ms
                                         std::chrono::milliseconds(50)};

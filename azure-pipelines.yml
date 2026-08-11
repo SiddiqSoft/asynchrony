@@ -8,13 +8,11 @@
 #    - Linux (x64) with Clang and GCC
 # 2. Runs tests on all platforms (configurable)
 # 3. Publishes to NuGet and GitHub (on main/master branches)
-# 4. Deploys documentation to GitHub Pages (on main/master branches)
 #
 # Pipeline Stages:
 # 1. Windows - Cleanup, build, and test for Windows with matrix for architecture and compiler
 # 2. Linux - Cleanup, build, and test for Linux with matrix for architecture and compiler
 # 3. Publication - Publishes to NuGet and GitHub
-# 4. Documentation - Builds and deploys MkDocs docs to GitHub Pages
 #
 # Documentation: See PIPELINE_DOCUMENTATION_INDEX.md for detailed information
 # ============================================================================
@@ -34,15 +32,12 @@ trigger:
     exclude:
       - README.md
       - .azure/*
-      - docs/* # Sometimes we would like to deploy manually
       - azure-pipelines.yml # Avoids recursive triggers when modifying the pipeline itself
 pr:
   branches:
     include:
       - main
       - release/*
-    exclude:
-      - README.md
 
 # ============================================================================
 # RESOURCES
@@ -64,7 +59,7 @@ parameters:
   
   - name: Platforms
     type: stringList
-    default: [ Linux, Windows ]
+    default: [ Windows, Linux ]
     values: [ Windows, Linux, Darwin ]
     displayName: "Platforms to build (Windows, Linux)"
   
@@ -77,7 +72,7 @@ parameters:
 
   - name: Compilers_Linux
     type: stringList
-    default: [ Clang, GCC ]
+    default: [ GCC, Clang ]
     values: [ Clang, GCC ]
     displayName: "Linux compilers to build (Clang, GCC)"
 
@@ -110,15 +105,10 @@ parameters:
     default: false
     displayName: "Create GitHub release (auto-enabled on main/master)"
 
-  - name: DeployPages
-    type: boolean
-    default: false
-    displayName: "Deploy documentation to GitHub Pages (auto-enabled on main/master)"
-
   - name: PublishDocs
     type: boolean
     default: false
-    displayName: "Publish MkDocs documentation to GitHub Pages (auto-enabled on main/master)"
+    displayName: "Publish documentation site (auto-enabled on main/master)"
 
   # Cleanup
   - name: Cleanup
@@ -131,39 +121,23 @@ parameters:
 # ============================================================================
 variables:
   # Auto-enable publishing on main/master branches
-  - ${{ if and(eq(parameters.PublishNuGet, false), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))) }}:
-    - name: PublishNuGet
-      value: true
-    - name: PublishGitHub
-      value: true
-    - name: DeployPages
-      value: true
-    - name: PublishDocs
-      value: true
-  - ${{ else }}:
-    - name: PublishNuGet
-      value: ${{ parameters.PublishNuGet }}
-    - name: PublishGitHub
-      value: ${{ parameters.PublishGitHub }}
-    - name: DeployPages
-      value: ${{ parameters.DeployPages }}
-    - name: PublishDocs
-      value: ${{ parameters.PublishDocs }}
-  - group: Common
+  ${{ if and(eq(parameters.PublishNuGet, false), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))) }}:
+    PublishNuGet: true
+    PublishGitHub: true
+    PublishDocs: true
+  ${{ else }}:
+    PublishNuGet: ${{ parameters.PublishNuGet }}
+    PublishGitHub: ${{ parameters.PublishGitHub }}
+    PublishDocs: ${{ parameters.PublishDocs }}
 
   # System information
-  - name: AgentOS
-    value: $(Agent.OS)
-  - name: AgentArch
-    value: $(Agent.OSArchitecture)
+  AgentOS: $(Agent.OS)
+  AgentArch: $(Agent.OSArchitecture)
 
   # Build paths
-  - name: cpmCachePath
-    value: $(Agent.HomeDirectory)/.cpmcache
-  - name: buildOutputPath
-    value: $(System.DefaultWorkingDirectory)/build/$(cmakePreset)
-  - name: testResultsPath
-    value: $(System.DefaultWorkingDirectory)/build/$(cmakePreset)/tests/results
+  cpmCachePath: $(Agent.HomeDirectory)/.cpmcache
+  buildOutputPat_h: $(System.DefaultWorkingDirectory)/build/$(cmakePreset)
+  testResultsPat_h: $(System.DefaultWorkingDirectory)/build/$(cmakePreset)/tests/results
 
 # ============================================================================
 # STAGES
@@ -195,7 +169,7 @@ stages:
         publishNuGet: ${{ variables.PublishNuGet }}
 
   # ==========================================================================
-  # STAGE 2: LINUX BUILD
+  # STAGE 1: LINUX BUILD
   # ==========================================================================
   - stage: Linux
     displayName: Linux
@@ -226,7 +200,7 @@ stages:
     dependsOn:
       - Windows
       - Linux
-    condition: and(or(eq(${{ variables.PublishGitHub }}, true), or(eq(${{ variables.PublishNuGet }}, true), eq(${{ variables.PublishDocs }}, true))), succeeded())
+    condition: and(or(or(eq(${{ variables.PublishGitHub }}, true), eq(${{ variables.PublishNuGet }}, true)), eq(${{ variables.PublishDocs }}, true)), succeeded())
     jobs:
       - ${{ if eq(variables.PublishNuGet, true) }}:
         - template: .azure/az-publish-nuget.yml
@@ -234,26 +208,13 @@ stages:
             displayName: NuGet Release
             PublishNuGet: ${{ variables.PublishNuGet }}
   
-      - template: .azure/az-publish-github.yml
-        parameters:
-          displayName: GitHub Release
-          PublishGitHub: ${{ variables.PublishGitHub }}
+      - ${{ if eq(variables.PublishGitHub, true) }}:
+        - template: .azure/az-publish-github.yml
+          parameters:
+            displayName: GitHub Release
+            PublishGitHub: ${{ variables.PublishGitHub }}
 
-      - template: .azure/az-publish-docs.yml
-        parameters:
-          displayName: Publish MkDocs to GitHub Pages
-          PublishDocs: ${{ variables.PublishDocs }}
-
-  # ==========================================================================
-  # STAGE 4: DOCUMENTATION DEPLOYMENT
-  # This stage can be run independently and without the requisite code build.
-  # ==========================================================================
-  - stage: Documentation
-    displayName: Documentation
-    dependsOn: []
-    condition: or(eq(${{ variables.PublishDocs }}, true), or(eq(${{ variables.DeployPages }}, true), or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq(variables['Build.SourceBranch'], 'refs/heads/master'))))
-    jobs:
-      - template: .azure/az-publish-docs.yml
-        parameters:
-          displayName: Deploy MkDocs to GitHub Pages
-          PublishDocs: ${{ variables.PublishDocs }}
+      - ${{ if eq(variables.PublishDocs, true) }}:
+        - template: .azure/az-publish-docs.yml
+          parameters:
+            displayName: Publish Documentation Site
